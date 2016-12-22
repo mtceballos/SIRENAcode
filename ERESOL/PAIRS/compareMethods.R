@@ -11,10 +11,10 @@ library(Hmisc)
 # LOAD methods characteristics
 load("/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat")
 
-plotFWHM_GAINCORRS <- 0   # FWHM vs. Energy
-plotFWHM_GAINCORRE <- 0   # FWHM vs. Energy
+plotFWHM_GAINCORRS <- 1   # FWHM vs. Energy
+plotFWHM_GAINCORRE <- 1   # FWHM vs. Energy
 plotBiasCorrFit    <- 0   # Bias-gainScaleCorrected vs. separation
-plotFWHM_rlength   <- 1   # FWHM vs. Record Length     
+plotFWHM_rlength   <- 0   # FWHM vs. Record Length     
 if(plotFWHM_GAINCORRS || plotFWHM_GAINCORRE){
     pdfName <- "fwhmVSenergy_methods"
 }else if (plotBiasCorrFit){
@@ -29,7 +29,7 @@ subtitle <- "FIXEDLIB"
 #subtitle <- "PERF"
 #subtitle <- "OPTFILT"
 #subtitle <- "RSPACE"
-#subtitle <- "SPIE2016" # SPIE2016/SPIE2016PP (to plot also PP points)
+subtitle <- "SPIE2016PP" # SPIE2016/SPIE2016PP (to plot also PP points)
 plttype="b"
 useGainCorr <- "PRIM" # or "SEC" (pulses used for Gain Curve)
 par(pty="s")
@@ -62,6 +62,8 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
     }else if(subtitle == "FIXEDLIB"){
         methods <- list(fixed1, fixed1_I2R, fixed1_I2RALL, fixed1_I2RNOL, fixed1_I2RFITTED,
                         fixed1OF, fixed1OF_I2R, fixed1OF_I2RALL, fixed1OF_I2RNOL, fixed1OF_I2RFITTED)
+        methods <- list(fixed1, fixed1_I2R, fixed1_I2RNOL, fixed1_I2RFITTED,
+                        fixed1OF, fixed1OF_I2R, fixed1OF_I2RNOL, fixed1OF_I2RFITTED)
     }else if(subtitle == "OPTFILT"){
         methods <- list(fixed1,fixed1OF,multi)
 
@@ -78,7 +80,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
 
     
     for (use in c("PRIM","SEC", "ALL")){
-        
+        cat("Using ",use, "\n")
         if(plotFWHM_GAINCORRE || plotFWHM_GAINCORRS){
             Emin <- 0.1
             Emax <- 9.
@@ -344,14 +346,17 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
             rlens <- c(32, 64, 128, 256, 512, 1024, 2048)
             EkeV_rl <- 7
             TRIGG <- "_NTRIG"
+            separation<-20000 # plot method comparison for this separation
             
             # INITIALIZE MATRICES #
             # =======================
             
             fwhmPrimGAINCORRE <- matrix(NA,nrow=length(rlens), ncol=nmethods) # FWHM of Ecorr 
             fwhmSecGAINCORRE  <- matrix(NA,nrow=length(rlens), ncol=nmethods) # FWHM of Ecorr 
+            fwhmAllGAINCORRE  <- matrix(NA,nrow=length(rlens), ncol=nmethods) # FWHM Err of Ecorr 
             fwhmPrimGAINCORREErr <- matrix(NA,nrow=length(rlens), ncol=nmethods) # FWHM Err of Ecorr 
             fwhmSecGAINCORREErr  <- matrix(NA,nrow=length(rlens), ncol=nmethods) # FWHM Err of Ecorr 
+            fwhmAllGAINCORREErr  <- matrix(NA,nrow=length(rlens), ncol=nmethods) # FWHM Err of Ecorr 
             fwhmGAINCORRE    <- matrix(NA,nrow=length(rlens), ncol=nmethods) # IF USE=PRIM/SEC
             fwhmGAINCORREErr <- matrix(NA,nrow=length(rlens), ncol=nmethods) # IF USE=PRIM/SEC
             
@@ -368,8 +373,10 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                         idxSep <- which(sapply(jsondata,function(x) x$separation)==separation)
                         fwhmPrimGAINCORRE[il,im] <- as.numeric(jsondata[[idxSep]]$fwhmEreal$primaries)
                         fwhmSecGAINCORRE[il,im] <- as.numeric(jsondata[[idxSep]]$fwhmEreal$secondaries)
+                        fwhmAllGAINCORRE[il,im] <- as.numeric(jsondata[[idxSep]]$fwhmEreal$all)
                         fwhmPrimGAINCORREErr[il,im] <- as.numeric(jsondata[[idxSep]]$fwhmEreal_err$primaries)
                         fwhmSecGAINCORREErr[il,im] <- as.numeric(jsondata[[idxSep]]$fwhmEreal_err$secondaries)
+                        fwhmAllGAINCORREErr[il,im] <- as.numeric(jsondata[[idxSep]]$fwhmEreal_err$all)
                     }else{
                         warning("Non-existing file:", eresolFile,"\n")
                         fwhmPrimGAINCORRE[il,im] <- NaN
@@ -377,9 +384,16 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                     }
                 }
             }
-            
-            fwhmGAINCORRE <- fwhmSecGAINCORRE
-            fwhmGAINCORREErr <- fwhmSecGAINCORREErr
+            if (use == "PRIM"){
+                fwhmGAINCORRE <- fwhmPrimGAINCORRE
+                fwhmGAINCORREErr <- fwhmPrimGAINCORREErr
+            } else if(use == "SEC"){
+                fwhmGAINCORRE <- fwhmSecGAINCORRE
+                fwhmGAINCORREErr <- fwhmSecGAINCORREErr
+            } else if(use == "ALL"){
+                fwhmGAINCORRE <- fwhmAllGAINCORRE
+                fwhmGAINCORREErr <- fwhmAllGAINCORREErr
+            }
             
             # PLOT ENERGY RESOLUTION CORRECTED vs. record length
             #===================================================

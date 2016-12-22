@@ -111,7 +111,7 @@ def getEresolCurves(pixType, labelLib, monoEkeV, reconMethod, filterMeth, nsampl
         sepsStr = ['00023', '00031', '00042', '00056', '00075', '00101', '00136', '00182', '00244', '00328',
                    '00439', '00589', '00791', '01061', '01423', '01908', '20000'
                    ]  # end always in 20000 to get also single pulses
-        # sepsStr = [separation]
+        sepsStr = ['00589', '00791']
 
     if "LPA3" in pixType:
         scaleFactor = 0.02
@@ -366,6 +366,9 @@ def getEresolCurves(pixType, labelLib, monoEkeV, reconMethod, filterMeth, nsampl
                     # print("For:", alias, " Recon energy=", rclosest, "npCoeffs=", npCoeffs)
                     ErealKeV[ie] = rclosest
                     ie += 1
+                    if aries == "secondaries":
+                        #print("For:", alias, " Recon energy SEC=", SIGNALKeV, " Real energy SEC=", rclosest)
+                        print(rclosest)
 
                 ErealKeVsigma = ErealKeV.std()
                 fwhm = ErealKeVsigma * 2.35 * 1000.

@@ -41,7 +41,6 @@ for samplefreq in XMLroot.findall('samplefreq'):
     samprate = samplefreq.get('value')
 
 cpsN = "pairs"  # counts per second or pairs of pulses
-triggerSize = 10000
 preBuffer = 1000
 Ifit = 45.3E-6
 tmpDir = tempfile.mkdtemp()
@@ -428,12 +427,13 @@ def simulNoise(pixName, pulseLength, space, acbias, scaleFactor, samplesUp, nSgm
 
     """
 
-    global samprate
+    global samprate, preBuffer
 
     cwd = os.getcwd()
 
     # set input params dependent variables
     # -------------------------------------
+    triggerSize = max(10000, pulseLength+preBuffer)
     simSIXTEdir = "/home/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE"
     # PixTypeFile = "'file:" + simSIXTEdir + "/tespixels.fits[" + array + "]'"
     PixTypeFile = "'file:" + simSIXTEdir + "/newpixels.fits[" + pixName + "]'"
@@ -442,8 +442,9 @@ def simulNoise(pixName, pulseLength, space, acbias, scaleFactor, samplesUp, nSgm
     os.chdir(wdir)
     # define files
     rootN = "forNoise" + str(pulseLength) + "samples_" + tessim + "_" + str(simTimeN) + "s_" + cpsN + "cps_" + space
-    noiseFile = "noise" + str(pulseLength) + "samples_" + tessim + "_B0_" + str(simTimeN) + "s_" + cpsN + "cps_" + \
-                space + ".fits"
+    #noiseFile = "noise" + str(pulseLength) + "samples_" + tessim + "_B0_" + str(simTimeN) + "s_" + cpsN + "cps_" +
+    # space + ".fits"
+    noiseFile = "noise" + str(pulseLength) + "samples_" + tessim + "_B0_" + space + ".fits"
     pixFileN = rootN + ".piximpact"
     fitsFileN = rootN + ".fits"
 

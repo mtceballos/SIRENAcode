@@ -365,6 +365,9 @@ def getEresolCurves(pixType, labelLib, monoEkeV, reconMethod, filterMeth, nsampl
                     # print("For:", alias, " Recon energy=", rclosest, "npCoeffs=", npCoeffs)
                     ErealKeV[ie] = rclosest
                     ie += 1
+                    if aries == "secondaries":
+                        #print("For:", alias, " Recon energy SEC=", SIGNALKeV, " Real energy SEC=", rclosest)
+                        print(rclosest)
 
                 ErealKeVsigma = ErealKeV.std()
                 fwhm = ErealKeVsigma * 2.35 * 1000.
