@@ -33,11 +33,11 @@ XMLdir = os.environ["SIXTE"] + "/" + "share/sixte/instruments/athena/1469mm_xifu
 XMLfile = XMLdir + "/" + "xifu_detector_hex_baseline.xml"
 
 
-def getEresolTrios(pixType, labelLib, monoEkeV, reconMethod, filterMeth, nsamples, pulseLength, nSimPulses,
+def getEresolTrios(pixName, labelLib, monoEkeV, reconMethod, filterMeth, nsamples, pulseLength, nSimPulses,
                    fdomain, scaleFactor, samplesUp0, nSgms0, tstartPulse1, tstartPulse2Init, nSimPulsesLib,
                    tstartPulse3Init, coeffsFile):
     """
-    :param pixType: Extension name for FITS pixel definition file (SPA*, LPA1*, LPA2*, LPA3*)
+    :param pixName: Extension name for FITS pixel definition file (SPA*, LPA1*, LPA2*, LPA3*)
     :param labelLib: Label identifying the library (multilib, multilibOF, fixedlib?, fixedlib?OF,...)
     :param monoEkeV: Monochromatic energy (keV) of input simulated pulses
     :param reconMethod: Energy reconstruction Method (OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED)
@@ -64,16 +64,16 @@ def getEresolTrios(pixType, labelLib, monoEkeV, reconMethod, filterMeth, nsample
         TRIGG = "_NTRIG"
 
     monoEeV = float(monoEkeV) * 1000.
-    tessim = "tessim" + pixType
+    tessim = "tessim" + pixName
     Fil = ""
     OFLib = "no"
     aliaslib = labelLib
     if "OF" in labelLib:
         OFLib = "yes"
-        aliaslib = aliaslib.replace("OF", "") # to  look for a conversion factor in the gain scale table (= no OF)
+        # aliaslib = aliaslib.replace("OF", "") # to  look for a conversion factor in the gain scale table (= no OF)
 
     simDir = cwd + "/TRIOS/" + tessim
-    resultsDir = cwd + "/TRIOS/eresol" + pixType
+    resultsDir = cwd + "/TRIOS/eresol" + pixName
     simSIXTEdir = "/home/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE"
 
     # -- LIB & NOISE dirs and files ----------
@@ -82,7 +82,7 @@ def getEresolTrios(pixType, labelLib, monoEkeV, reconMethod, filterMeth, nsample
     if reconMethod in ("I2R", "I2RALL", "I2RNOL", "I2RFITTED"):
         space = reconMethod.lstrip('I2')
 
-    noiseFile = noiseDir + "/noise" + str(nsamples) + "samples_" + tessim + "_B0_100s_pairscps_" + space + ".fits"
+    noiseFile = noiseDir + "/noise" + str(nsamples) + "samples_" + tessim + "_B0_" + space + ".fits"
     libDirRoot = simSIXTEdir + "/LIBRARIES/" + tessim
     libDir = libDirRoot + "/GLOBAL/" + space
 
@@ -92,25 +92,30 @@ def getEresolTrios(pixType, labelLib, monoEkeV, reconMethod, filterMeth, nsample
     if 'multilib' in labelLib:
         libFile = libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) + "_" + str(nSimPulsesLib) + "p.fits"
     elif 'fixedlib' in labelLib:
-        fixedEkeV = labelLib[8:]
-        if "OF" in fixedEkeV:  # rm OF suffix from energy
-            fixedEkeV = fixedEkeV.replace("OF", "")
+        #fixedEkeV = labelLib[8:]
+        #if "OF" in fixedEkeV:  # rm OF suffix from energy
+        #    fixedEkeV = fixedEkeV.replace("OF", "")
+        fixedEkeV = labelLib.replace("OF", "")[8:]
         libFile = libDir + "/library" + fixedEkeV + "keV_PL" + str(nsamples) + "_" + str(nSimPulsesLib) + "p.fits"
     os.chdir(resultsDir)
 
     # -- Define pulses separations based on pixel type --------
-    if "SPA" in pixType:
+    if "SPA" in pixName:
 
         sepsStr = ['00004', '00006', '00009', '00014', '00021', '00031', '00047', '00071', '00108', '00163', '00246',
                    '00371', '00560', '00845', '01276', '01926', '02907', '04389']
 
     else:
 
-        sepsStr = ['00004', '00005', '00007', '00010', '00013', '00017', '00023', '00031', '00042', '00056', '00075',
-                   '00101', '00136', '00182', '00244', '00328', '00439', '00589', '00791', '01061', '01423', '01908',
-                   '02560', '03433', '04605', '06178', '08287']
+        #sepsStr = ['00004', '00005', '00007', '00010', '00013', '00017', '00023', '00031', '00042', '00056', '00075',
+        #           '00101', '00136', '00182', '00244', '00328', '00439', '00589', '00791', '01061', '01423', '01908',
+        #           '02560', '03433', '04605', '06178', '08287']
+        sepsStr = ['00050', '00061', '00076', '00093', '00114', '00140', '00173', '00212', '00261', '00321', '00395',
+                   '00485', '00597', '00733', '00902', '01109', '01363', '01676', '02061', '02534', '03115', '03830',
+                   '04709', '05790', '07119', '08752', '10761', '13231', '16267', '20000']
 
-    if "LPA3" in pixType:
+
+    if "LPA3" in pixName:
         scaleFactor = 0.02
         # if triggering is required, do filtering
         if tstartPulse1 == 0:
@@ -163,13 +168,15 @@ def getEresolTrios(pixType, labelLib, monoEkeV, reconMethod, filterMeth, nsample
             print("Setting evtFile: ", evtFile)
             print("Setting eresolFile: ", eresolFile)
             print("=============================================")
-
+            
             # when run also in detection mode, run it iteratively to get the best possible combination
             # of sigmas/samples able to detect all pulses
             nSgms = nSgms0
             samplesUp = samplesUp0
 
             # -- SIRENA processing -----
+            if not os.path.isfile(inFile):
+                continue
             if os.path.isfile(evtFile):
                 # if events already exist get number nSgms used to get events
                 print("Event file", evtFile, " already DOES exist: recalculating FWHMs...")
@@ -265,6 +272,8 @@ def getEresolTrios(pixType, labelLib, monoEkeV, reconMethod, filterMeth, nsample
                     # EVENT file processing to calculate FWHM
                     # -----------------------------------------
             rootEvt = os.path.splitext(evtFile)[0]
+
+            # continue
 
             for aries in ("primaries", "secondaries", "tertiaries"):  # PRIMARIES & SECONDARIES & TERTIARIES
                 print("Working with:", aries, "\n")
@@ -402,7 +411,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Get Energy resolution for trios of pulses', prog='getEresolTrios')
 
-    parser.add_argument('--pixType', help='Extension name in the FITS pixel definition file (SPA*, LPA1*, LPA2*, LPA3*)',
+    parser.add_argument('--pixName', help='Extension name in the FITS pixel definition file (SPA*, LPA1*, LPA2*, LPA3*)',
                         required=True)
     parser.add_argument('--lib',
                         help='Label identifying the library (monolib, multilib, multilibOF, fixedlib, fixedlib2,...)',
@@ -442,7 +451,7 @@ if __name__ == "__main__":
         print("Start sample of pulses or detection parameters must be provided")
         sys.exit()
 
-    getEresolTrios(pixType=args.pixType, labelLib=args.lib, monoEkeV=args.monoEnergy, reconMethod=args.reconMethod,
+    getEresolTrios(pixName=args.pixName, labelLib=args.lib, monoEkeV=args.monoEnergy, reconMethod=args.reconMethod,
                    filterMeth=args.filter, nsamples=args.nsamples, fdomain=args.fdomain, scaleFactor=args.scaleFactor,
                    samplesUp0=args.samplesUp, nSgms0=args.nSgms, pulseLength=args.pulseLength,
                    nSimPulses=args.nSimPulses, nSimPulsesLib=args.nSimPulsesLib, tstartPulse1=args.tstartPulse1,

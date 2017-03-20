@@ -8,6 +8,7 @@
 #          pulseLength: length of pulses (in samples)
 *          nsamples: samples for the noise
 #          space: ADC (current space) or R or RALL or RNOL or RFITTED(resistance space)
+#          simTimeN: simulation time (s)
 #
 #
 #
@@ -29,11 +30,8 @@ from subprocess import Popen, check_call, STDOUT
 from astropy.io import fits
 
 # ----GLOBAL VARIABLES -------------
-# XMLrect = "$HOME/INSTRUMEN/EURECA/testHarness/simulations/SIXTE/CALIBRATION/newFormat/xifu_detector_300us_156kHz_rect.xml"
 XMLdir = os.environ["SIXTE"] + "/" + "share/sixte/instruments/athena/1469mm_xifu"
-# XMLfile = XMLdir + "/" + "xifu_baseline.xml"
 XMLfile = XMLdir + "/" + "xifu_detector_hex_baseline.xml"
-# XMLfile = XMLrect
 
 XMLtree = ET.parse(XMLfile)
 XMLroot = XMLtree.getroot()
@@ -137,6 +135,7 @@ def getBaselines(simTimeB, pixel, PixTypeFile, space, pulseLength, pixName, acbi
     return baselines
 
 # Different R transformation are requiered due to the different format in stream/trigger files (derivatives)
+
 
 def RfromItrigger(infile, Icol, current, Rcol, Rmethod):
     """
@@ -319,7 +318,7 @@ def RfromIstream(infile, Icol, current, Rcol, Rmethod):
     global samprate, Ifit
     comm = ""
 
-    triggsz = fstr[1].header['TRIGGSZ']
+    fstr = fits.open(infile)
     RPARA = fstr[1].header['RPARA']
     TTR = fstr[1].header['TTR']
     LFILTER = fstr[1].header['LFILTER']
@@ -410,7 +409,7 @@ def RfromIstream(infile, Icol, current, Rcol, Rmethod):
 
 # ----MAIN routine definition ------
 
-def simulNoise(pixName, pulseLength, space, acbias, scaleFactor, samplesUp, nSgms, simTimeN, pixel):
+def simulNoise(pixName, pulseLength, space, acbias, scaleFactor, samplesUp, nSgms, nintervals, simTimeN, pixel):
     """ simulate data in input parameter space, calculate the data baseline and 
           create Noise file to be ingested in SIRENA processing tasks
 
@@ -421,6 +420,7 @@ def simulNoise(pixName, pulseLength, space, acbias, scaleFactor, samplesUp, nSgm
           :param scaleFactor : Param scaleFactor for gennoise tool
           :param samplesUp : Param samplesUp for gennoise tool
           :param nSgms : Param nSgms for gennoise tool
+          :param nintervals : Number of intervals for gennoisespec noise calculation
           :param simTimeN : Simulation time (s) for noise spectra calculation
           :param pixel : Pixel number
           :return fits file with Noise spectra in specified space and sampling
@@ -442,7 +442,7 @@ def simulNoise(pixName, pulseLength, space, acbias, scaleFactor, samplesUp, nSgm
     os.chdir(wdir)
     # define files
     rootN = "forNoise" + str(pulseLength) + "samples_" + tessim + "_" + str(simTimeN) + "s_" + cpsN + "cps_" + space
-    #noiseFile = "noise" + str(pulseLength) + "samples_" + tessim + "_B0_" + str(simTimeN) + "s_" + cpsN + "cps_" +
+    # noiseFile = "noise" + str(pulseLength) + "samples_" + tessim + "_B0_" + str(simTimeN) + "s_" + cpsN + "cps_" +
     # space + ".fits"
     noiseFile = "noise" + str(pulseLength) + "samples_" + tessim + "_B0_" + space + ".fits"
     pixFileN = rootN + ".piximpact"
@@ -497,6 +497,7 @@ def simulNoise(pixName, pulseLength, space, acbias, scaleFactor, samplesUp, nSgm
         shutil.rmtree(tmpDir)
         raise
     print("TESSIM: ................................END")
+    #sys.exit()
 
     print("\nMAKINGUP (remove tricky first records + fixed-lenghtify) trigger file for NOISE...")
     try:
@@ -564,7 +565,7 @@ def simulNoise(pixName, pulseLength, space, acbias, scaleFactor, samplesUp, nSgm
     print("\nGENNOISESPEC: Generating NOISE spectrum file in (", space, " space)")
     comm = ("gennoisespec --inFile=" + fitsFileN + " --outFile=" + noiseFile +
             " --intervalMinSamples=" + str(pulseLength) +
-            " --nintervals=1000 " + " --scaleFactor=" + str(scaleFactor) +
+            " --nintervals=" + str(nintervals) + " --scaleFactor=" + str(scaleFactor) +
             " --samplesUp=" + str(samplesUp) + " --nSgms=" + str(nSgms) +
             " --pulse_length=" + str(pulseLength) + " --clobber=yes verbosity=0 ")
     args = shlex.split(comm)
@@ -616,10 +617,12 @@ if __name__ == "__main__":
                       help='Param nSgms for gennoise [default %default]', default=20)
     parser.add_option('--simTimeN',  action='store', dest='simTimeN', type='float',
                       help='Simulation time (s) for noise spectra calculation [default %default]', default=100)
+    parser.add_option('--nintervals', action='store', dest='nintervals', type='int',
+                      help='Number of intervals in gennoisespec for pectra calculation [default %default]', default=1000)
     parser.add_option('--pixel', action='store', dest='pixel', type='int', help='Pixel [default %default]',
                       default=1)
 
-    (opts, args) = parser.parse_args()
+    (opts, inargs) = parser.parse_args()
 
     if not opts.pixName:
 
@@ -644,6 +647,6 @@ if __name__ == "__main__":
 
         simulNoise(pixName=opts.pixName, pulseLength=opts.pulseLength,
                    space=opts.space, acbias=opts.acbias,
-                   scaleFactor=opts.scaleFactor,
-                   samplesUp=opts.samplesUp, nSgms=opts.nSgms,
+                   scaleFactor=opts.scaleFactor, samplesUp=opts.samplesUp,
+                   nSgms=opts.nSgms, nintervals=opts.nintervals,
                    simTimeN=opts.simTimeN, pixel=opts.pixel)

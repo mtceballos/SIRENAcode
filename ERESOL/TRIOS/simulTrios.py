@@ -1,10 +1,15 @@
 """
 # TRIOS simulation
 #
+#      |\     |\   |\                     |\     |\   |\                      |\     |\   |\
+#   ___| \____| \__|_\____________________| \____| \__|_\_____________________| \____| \__|_\_________
+#           record                             record                             record
+#   <----------------------->          <----------------------->           <----------------------->
+
 # python simulTrios.py
 #
 #  Input parameters:
-#          pixType (SPA|LPA1*|LPA2*|LPA3*)
+#          pixName (SPA|LPA1*|LPA2*|LPA3*)
 #          monoEkeV: monochromatic energy (in keV)
 #          acbias: AC or DC
 #
@@ -29,7 +34,9 @@ os.environ["PFILES"] = tmpDir + ":" + os.environ["PFILES"]
 os.environ["HEADASNOQUERY"] = ""
 os.environ["HEADASPROMPT"] = "/dev/null/"
 
-nSimPulses = 10000
+nSimPulses = 30000  # 10000 records = 10000 middle pulses
+recordSeparation = 40000  # separation from tertiary --> primary for next record
+
 simSIXTEdir = "/home/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE"
 TRIOSdir = "/home/ceballos/INSTRUMEN/EURECA/ERESOL/TRIOS"
 # XMLrect = simSIXTEdir + "/CALIBRATION/newFormat/xifu_detector_300us_156kHz_rect.xml"
@@ -44,52 +51,50 @@ XMLroot = XMLtree.getroot()
 for samplefreq in XMLroot.findall('samplefreq'):
     samprate = samplefreq.get('value')
 
+triggerTH = {'LPA1shunt': 50, 'LPA2shunt': 20}
 
-def simulTrios(pixType, monoEkeV, acbias):
+
+def simulTrios(pixName, monoEkeV, acbias):
     """
-    :param pixType: Extension name in the FITS pixel definition file (SPA*, LPA1*, LPA2*, LPA3*)
+    :param pixName: Extension name in the FITS pixel definition file (SPA*, LPA1*, LPA2*, LPA3*)
     :param monoEkeV: Monochromatic energy (keV) of input simulated pulses
     :param acbias: Operating Current (AC if acbias=yes or DC if acbias=no)
     :return: files with simulated TRIPLETS
     """
 
-    global cwd, nSimPulses, XMLfile, pixel, samprate, PreBufferSize, simSIXTEdir
-    tessim = "tessim" + pixType
+    global cwd, nSimPulses, XMLfile, pixel, samprate, PreBufferSize, simSIXTEdir, triggerTH
+    tessim = "tessim" + pixName
     SIMFILESdir = TRIOSdir + "/" + tessim
     # PixType = "file:" + simSIXTEdir + "/newpixels.fits[" + array + ACDC + "]"
-    PixTypeFile = "file:" + simSIXTEdir + "/newpixels.fits[" + pixType + "]"
+    PixTypeFile = "file:" + simSIXTEdir + "/newpixels.fits[" + pixName + "]"
 
-    thres = 100
-    if (monoEkeV < 0.5):
-        thres = 80
-
-    if "SPA" in pixType:
+    if "SPA" in pixName:
 
         sepsStr = ['00004', '00005', '00007', '00010', '00013', '00017', '00023', '00031', '00042', '00056', '00075',
                    '00101', '00136', '00182', '00244', '00328', '00439', '00589', '00791', '01061', '01423', '01908']
         pulseLength = 1024  # only to calculate triggerSize
 
-    elif "LPA1" in pixType:
+    elif "LPA1" in pixName:
 
         sepsStr = ['00004', '00005', '00007', '00010', '00013', '00017', '00023', '00031', '00042', '00056', '00075',
                    '00101', '00136', '00182', '00244', '00328', '00439', '00589', '00791', '01061', '01423', '01908',
                    '02560', '03433', '04605', '06178', '08287']
         pulseLength = 2048  # only to calculate triggerSize
 
-    elif ("LPA2" in pixType) or ("LPA3" in pixType):
+    elif ("LPA2" in pixName) or ("LPA3" in pixName):
+        # 10**seq(log10(50),log10(20000),length.out=30)
+        sepsStr = ['00050', '00061', '00076', '00093', '00114', '00140', '00173', '00212', '00261', '00321', '00395',
+                   '00485', '00597', '00733', '00902', '01109', '01363', '01676', '02061', '02534', '03115', '03830',
+                   '04709', '05790', '07119', '08752', '10761', '13231', '16267', '20000']
 
-        sepsStr = ['00004', '00005', '00007', '00010', '00013', '00017', '00023', '00031', '00042', '00056', '00075',
-                   '00101', '00136', '00182', '00244', '00328', '00439', '00589', '00791', '01061', '01423', '01908',
-                   '02560', '03433', '04605', '06178', '08287', '11115', '14910', '20000']
-
-        pulseLength = 2048  # only to calculate triggerSize
+        pulseLength = 4096  # only to calculate triggerSize
 
     for sepA in sepsStr:
         sep12 = int(sepA)
 
         for sepB in sepsStr:
             sep23 = int(sepB)
-            triggerSizeTC = PreBufferSize + sep12 + sep23 + 20000 + PreBufferSize + 1000
+            triggerSizeTC = PreBufferSize + sep12 + sep23 + recordSeparation + 1000
             triggerSizeTS = PreBufferSize + sep12 + sep23 + pulseLength + 1000
             triggerTS3val = triggerSizeTS - PreBufferSize
             triggerSizeTC = int(triggerSizeTC)
@@ -113,7 +118,7 @@ def simulTrios(pixType, monoEkeV, acbias):
                         " energy2=" + str(monoEkeV) + " energy3=" + str(monoEkeV) + " TriggerSize=" +
                         str(triggerSizeTC) + " clobber=yes")
                 print("\n##### Runing tesconstpileup #########")
-                print(comm,"\n")
+                print(comm, "\n")
                 try:
                     args = shlex.split(comm)
                     check_call(args, stderr=STDOUT)
@@ -125,14 +130,11 @@ def simulTrios(pixType, monoEkeV, acbias):
                 # continue  # to simulate only piximpact files
 
             if not os.path.isfile(fitsFile):
-                # comm = ("tessim PixID=" + str(pixel) + " PixImpList=" + pixFile + " Streamfile=" + fitsFile +
-                #        " tstart=0. tstop=" + simTime + " sample_rate=" + str(samprate) + " triggerSize=" +
-                #        str(triggerSizeTS) + " preBuffer=" + str(PreBufferSize) + " triggertype='movavg:5:1.1:0' " +
-                #        " PixType=" + PixType)
                 comm = ("tessim PixID=" + str(pixel) + " PixImpList=" + pixFile + " Streamfile=" + fitsFile +
                         " tstart=0. tstop=" + simTime + " triggerSize=" + str(triggerSizeTS) + " preBuffer=" +
-                        str(PreBufferSize) + " triggertype='diff:3:" + str(thres) + ":" + str(triggerTS3val) +
-                        "' acbias=" + acbias + " sample_rate=" + samprate + " PixType=" + PixTypeFile)
+                        str(PreBufferSize) + " triggertype='diff:3:" + str(triggerTH[pixName]) + ":" +
+                        str(triggerTS3val) + "' acbias=" + acbias + " sample_rate=" + samprate +
+                        " PixType=" + PixTypeFile)
                 print("\n##### Runing tessim #########")
                 print(comm, "\n")
                 try:
@@ -179,11 +181,11 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Simulate triplets of pulses', prog='simulTrios')
 
-    parser.add_argument('--pixType', help='Extension name in pixel definition FITS file (SPA*, LPA1*, LPA2*, LPA3*)')
+    parser.add_argument('--pixName', help='Extension name in pixel definition FITS file (SPA*, LPA1*, LPA2*, LPA3*)')
     parser.add_argument('--monoEnergy', default=1,  help='Monochromatic energy (keV) of input simulated pulses')
     parser.add_argument('--acbias', choices=['yes', 'no'],
                         help='Operating Current (acbias=yes for AC or acbias=no for DC)')
 
     args = parser.parse_args()
-    simulTrios(pixType=args.pixType, monoEkeV=args.monoEnergy, acbias=args.acbias)
+    simulTrios(pixName=args.pixName, monoEkeV=args.monoEnergy, acbias=args.acbias)
 

@@ -53,25 +53,22 @@ for samplefreq in XMLroot.findall('samplefreq'):
     samprate = samplefreq.get('value')
 dtaums = int(singleSeparation) / float(samprate) * 1000.  # separation time (ms) between pulses
 
+triggerTH = {'LPA1shunt': 50, 'LPA2shunt': 20}
 
-def simulPairs(pixType, monoEkeV, acbias):
+
+def simulSingles(pixName, monoEkeV, acbias):
     """
-    :param pixType: Extension name in the FITS pixel definition file (SPA*, LPA1*, LPA2*, LPA3*)
+    :param pixName: Extension name in the FITS pixel definition file (SPA*, LPA1*, LPA2*, LPA3*)
     :param monoEkeV: Monochromatic energy (keV) of input simulated pulses
     :param acbias: Operating Current (AC if acbias=yes or DC if acbias=no)
-    :return: files with simulated PAIRS
+    :return: files with simulated PULSES
     """
 
-    global cwd, nSimPulses, XMLfile, pixel, PreBufferSize, simSIXTEdir, samprate
+    global cwd, nSimPulses, XMLfile, pixel, PreBufferSize, simSIXTEdir, samprate, triggerTH
 
-    tessim = "tessim" + pixType
+    tessim = "tessim" + pixName
     SIMFILESdir = PAIRSdir + "/" + tessim
-    PixTypeFile = "file:" + simSIXTEdir + "/newpixels.fits[" + pixType + "]"
-
-    if pixType == "LPA2shunt" and monoEkeV == 0.2:
-        triggerTH = 50
-    else:
-        triggerTH = 100
+    PixTypeFile = "file:" + simSIXTEdir + "/newpixels.fits[" + pixName + "]"
 
     triggerSizeTS = PreBufferSize + pulseLength + 1000  # ___|\_ooo
     triggerTS3val = triggerSizeTS - PreBufferSize
@@ -80,8 +77,8 @@ def simulPairs(pixType, monoEkeV, acbias):
     simTime = nSimPulses * int(singleSeparation) / float(samprate)  # if tesgenimpacts
     simTime = '{0:0.0f}'.format(simTime)
 
-    root0 = "sep" + singleSeparation + "sam_" + simTime + "s_" + str(monoEkeV) + "keV"  # for piximpact
-    root = "sep" + singleSeparation + "sam_" + str(nSimPulses) + "p_" + str(monoEkeV) + "keV"  # for fits
+    root0 = "sep" + singleSeparation + "sam_" + simTime + "s_" + monoEkeV + "keV"  # for piximpact
+    root = "sep" + singleSeparation + "sam_" + str(nSimPulses) + "p_" + monoEkeV + "keV"  # for fits
     pixFile = cwd + "/PIXIMPACT/" + root0 + ".piximpact"
     fitsFile = SIMFILESdir + "/" + root + ".fits"
     print("-------------------------------------------\n")
@@ -90,7 +87,7 @@ def simulPairs(pixType, monoEkeV, acbias):
 
     if not os.path.isfile(pixFile):
         comm = ("tesgenimpacts PixImpList=" + pixFile + " mode=const tstart=0 tstop=" + simTime +
-                " EConst=" + str(monoEkeV) + " dtau=" + str(dtaums) + " clobber=yes")
+                " EConst=" + monoEkeV + " dtau=" + str(dtaums) + " clobber=yes")
         print("\n##### Runing tesgenimpacts #########")
         print(comm, "\n")
         try:
@@ -106,8 +103,9 @@ def simulPairs(pixType, monoEkeV, acbias):
     if not os.path.isfile(fitsFile):
         comm = ("tessim PixID=" + str(pixel) + " PixImpList=" + pixFile + " Streamfile=" + fitsFile +
                 " tstart=0. tstop=" + simTime + " triggerSize=" + str(triggerSizeTS) + " preBuffer=" +
-                str(PreBufferSize) + " triggertype='diff:3:" + str(triggerTH) + ":" + str(triggerTS3val) + "'" +
-                " acbias=" + acbias + " sample_rate=" + samprate + " PixType=" + PixTypeFile)
+                str(PreBufferSize) + " triggertype='diff:3:" + str(triggerTH[pixName]) + ":" +
+                str(triggerTS3val) + "'" + " acbias=" + acbias + " sample_rate=" + samprate +
+                " PixType=" + PixTypeFile)
 
         print("\n##### Runing tessim #########")
         print(comm, "\n")
@@ -137,7 +135,7 @@ def simulPairs(pixType, monoEkeV, acbias):
             fsim = fits.open(fitsFile, mode='update')
             nrows2 = fsim[1].header['NAXIS2']
             assert nrows2 == nrows-2, "Failure removing initial & last rows in (%s): " % fitsFile
-            nettot = nrows2 * 2  # new number of pulses
+            nettot = nrows2  # new number of pulses
             fsim[1].header['NETTOT'] = nettot
             fsim.close()
         except:
@@ -156,11 +154,11 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Simulate pairs of pulses', prog='simulPairs')
 
-    parser.add_argument('--pixType', help='Extension name in pixel definition FITS file (SPA*, LPA1*, LPA2*, LPA3*)')
+    parser.add_argument('--pixName', help='Extension name in pixel definition FITS file (SPA*, LPA1*, LPA2*, LPA3*)')
     parser.add_argument('--monoEnergy', help='Monochromatic energy (keV) of input simulated pulses')
     parser.add_argument('--acbias', choices=['yes', 'no'],
                         help='Operating Current (acbias=yes for AC or acbias=no for DC)')
 
     inargs = parser.parse_args()
-    simulPairs(pixType=inargs.pixType, monoEkeV=inargs.monoEnergy, acbias=inargs.acbias)
+    simulSingles(pixName=inargs.pixName, monoEkeV=inargs.monoEnergy, acbias=inargs.acbias)
 

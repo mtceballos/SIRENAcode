@@ -4,21 +4,21 @@ library("fields")
 library(rjson)
 library("colorRamps")
 
-array  <- "LPA1shunt"
+array  <- "LPA2shunt"
 eresolDir <- paste("/home/ceballos/INSTRUMEN/EURECA/ERESOL/TRIOS/eresol",array,sep="")
 fmeth  <- "F0"
-lib    <- "fixedlib1"
+lib    <- "fixedlib1OF"
 EkeVforTrios <- "7keV"
-nSimPulses <- "10000"
-nSamples <- "2048"
-pulseLength <-"2048"
+nSimPulses <- "30000"
+nSamples <- "4096"
+pulseLength <-"4096"
 plotBias <- "N"
 TRIGG <- "_NTRIG"
 rootname <- paste("eresol_",nSimPulses,"p_SIRENA",nSamples,"_pL",pulseLength,"_",EkeVforTrios,
                   "_F0F_",lib,"_OPTFILT",TRIGG,sep="")
 
 # GRADING TABLE from SPIE 2016
-gradingTable <- data.frame(ARRAY=c("LPA1shunt","LPA2","SPA"),
+gradingTable <- data.frame(ARRAY=c("LPA1shunt","LPA2shunt","SPA"),
                 breakBIAS=c(400,700,190), breakHIGHRES=c(1024,16384,512),
                 breakMIDRES=c(256,512,128),stringsAsFactors=FALSE)
 biasBreak<-gradingTable[gradingTable[,1]==array,"breakBIAS"]
@@ -46,7 +46,7 @@ if(array == "SPA"){
     FWHMmin   <- 2
     FWHMmax   <- 8
     if(EkeVforTrios == "6keV") FWHMmax <- 6 #6keV
-}else if(grep("LPA1",array)){    
+}else if(length(grep("LPA1",array))>0){    
     biasLabelCol<-"white"
     if(EkeVforTrios=="1keV"){
         biasLabelPos<-c(50,200)
@@ -73,7 +73,7 @@ if(array == "SPA"){
     seps12 <- as.numeric(sepsStr)
     seps23 <- as.numeric(sepsStr)
     
-}else if(array == "LPA2"){
+}else if(array == "LPA2shunt"){
     #nsamples <- 1024
     #biasBreak <- 800.
     #HRbreak <- 16384
@@ -97,7 +97,13 @@ if(array == "SPA"){
         LRlabelPos <- c(5000,30)
     }
     FWHMmin   <- 2
-    FWHMmax   <- 50
+    FWHMmax   <- 16
+    sepsStr = c('00050', '00061', '00076', '00093', '00114', '00140', '00173', '00212', '00261', 
+               '00321', '00395', '00485', '00597', '00733', '00902', '01109', '01363', '01676', 
+               '02061', '02534', '03115', '03830', '04709', '05790', '07119', '08752', '10761', 
+               '13231', '16267', '20000')
+    seps12 <- as.numeric(sepsStr)
+    seps23 <- as.numeric(sepsStr)
 }else if(array == "LPA3"){
     #nsamples <- 2048
     #biasBreak <- 1400.
@@ -178,8 +184,8 @@ par(mar=c(5,5,5,7))
 # create template for image plot
 image(x=seps12,y=seps23,z=log10(mat_data_eresol), axes=FALSE, log="xy",
       zlim=c(log10(minzFWHM),log10(maxzFWHM)),col=tim.colors(400),
-      xlab="Time from previous pulse [samples]",
-      ylab="Time to next pulse [samples]",
+      xlab="Time since previous pulse [samples]",
+      ylab="Time until next pulse [samples]",
       main=paste("Energy Resolution FWHM [eV] - ",array," - (",EkeVforTrios,")",sep="")) 
 box()
 # add new log axes and new log labels (ugly in image.plot)

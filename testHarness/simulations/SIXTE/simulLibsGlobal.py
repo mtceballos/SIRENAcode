@@ -8,11 +8,10 @@ python simulLibsGlobal.py
 # ----IMPORT MODULES --------------
 from __future__ import print_function
 import os
-# import sys
+import sys
 import shlex
 import shutil
 import tempfile
-import numpy as np
 from subprocess import check_call, STDOUT
 from astropy.io import fits
 import xml.etree.ElementTree as ET
@@ -33,8 +32,8 @@ PreBufferSize = 1000
 # separation = 20000  # LPA1shunt
 separation = 40000    # LPA2shunt
 dtaums = separation / float(samprate) * 1000.  # separation time (ms) between pulses
-maxFilterLength = 32768
-
+triggerTH = {'LPA1shunt': 50, 'LPA2shunt': 20}
+pulsesPerRecord = {'LPA1shunt': 2, 'LPA2shunt': 1}
 noise = ""
 Fil = ""
 pixel = 1
@@ -46,8 +45,49 @@ os.environ["HEADASNOQUERY"] = ""
 os.environ["HEADASPROMPT"] = "/dev/null/"
 
 
+def rmLastAndFirst(simfile, ppr):
+
+    """
+    rm first (and LAST) record and update NETTOT (first starts high and last can be cut)
+    (see Christian's email from 19 Jan 2017 @ EURECA)
+    Also update number of pulses in NETTOT
+
+    :type simfile: str
+    :param simfile: simulated file where cleaning must be done
+    :type ppr: int
+    :param ppr: pulses per record in simulations
+
+    """
+
+    fsim = fits.open(simfile)
+    nrows = fsim[1].header["NAXIS2"]
+    fsim.close()
+    assert nrows > 1, "Tessim failed for (%s): just one row present " % simfile
+
+    try:
+        comm = "fdelrow infile=" + simfile + "+1 firstrow=" + str(nrows) + " nrows=1 confirm=no proceed=yes"
+        args = shlex.split(comm)
+        check_call(args, stderr=STDOUT)
+        comm = "fdelrow infile=" + simfile + "+1 firstrow=1 nrows=1 confirm=no proceed=yes"
+        args = shlex.split(comm)
+        check_call(args, stderr=STDOUT)
+        fsim = fits.open(simfile, mode='update')
+        nrows2 = fsim[1].header['NAXIS2']
+        assert nrows2 == nrows-2, "Failure removing initial & last rows in (%s): " % simfile
+        nettot = nrows2 * ppr  # new number of pulses (=nofrecords in LPA2; ==2*nofrecords in LPA1)
+
+        fsim[1].header['NETTOT'] = nettot
+        fsim.close()
+
+    except:
+        print("Error running FTOOLS to remove initial & last rows in ", simfile)
+        os.chdir(cwd)
+        shutil.rmtree(tmpDir)
+        raise
+
+
 def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamples, nSimPulses, acbias,
-                    tstartPulse1All, tstartPulse2All, tstartPulse3All, createLib):
+                    tstartPulse1All, tstartPulse2All, tstartPulse3All, createLib, noiseMat, weightMat):
     """
     :type pixName: str
     :param pixName: Extension name in FITS file pixel definition (SPA*, LPA1*, LPA2*, LPA3*)
@@ -58,7 +98,7 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
     :type nsamples: int
     :param nsamples: noise length samples
     :type libEnergies: str
-    :param libEnergies: list of calibration energies (keV). If empty, just simulate calibration files
+    :param libEnergies: list of calibration energies (keV)
     :type largeFilter: int
     :param largeFilter: size of the extra-large filter to avoid record -length effects (samples)
     :type nSimPulses: int
@@ -66,7 +106,7 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
     :type acbias: str
     :param acbias: Operating Current: AC (acbias=yes) or DC (acbias=no)
     :type tstartPulse1All: int
-    :param tstartPulse1All: list of initial sample for 1st pulses in each record
+    :param tstartPulse1All: list of initial sample for 1st pulses in each record. If empty, just simulate calib. files
                 **  0 if detection is to be performed
     :type tstartPulse2All: int
     :param tstartPulse2All: list of initial sample for 1st pulses in each record. Required if PAIRS are simulated
@@ -76,16 +116,18 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
     :param tstartPulse3All: list of initial sample for 1st pulses in each record. Required if TRIOS are simulated
                 **  0 if detection is to be performed
                 ** -1 if sample is to be calculated (tstartPulse2+ separation)
-
+    :type createLib: int
+    :param createLib: if library should be created (1) or script should just create simulated files (0)
+    :param noiseMat: should the Noise matrices HDU be created? (yes/no)
+    :param weightMat: should the Weight matrices HDU be created? (yes/no)
     :return: simulated calibration pairs of pulses && Global library from them
 
     """
 
-    global PreBufferSize, separation, Fil, cwd, simSIXTEdir, samprate
+    global PreBufferSize, separation, Fil, cwd, simSIXTEdir, samprate, triggerTH, pulsesPerRecord
     tessim = "tessim" + pixName
 
     # Calibration energies and Tstarts of pulses
-    print("tstart1=",tstartPulse1All,"\n")
     tstartPulse1 = dict(zip(libEnergies, tstartPulse1All))
     tstartPulse2 = dict(zip(libEnergies, tstartPulse2All))
     tstartPulse3 = dict(zip(libEnergies, tstartPulse3All))
@@ -106,9 +148,11 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
     scaleFactor = 0.  # no Filtering
     nSgms = dict(zip(libEnergies, nSgmsAll))
     samplesUp = dict(zip(libEnergies, samplesUpAll))
+    maxFilterLength = pulseLength
     lF = ""
     if largeFilter > 0:
         lF = " largeFilter= " + str(largeFilter)
+        maxFilterLength = largeFilter
 
     # Trigger sizes in tessim
     triggerSizeTS = PreBufferSize + maxFilterLength + 1000       # ___|\_______________ooo
@@ -129,8 +173,7 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
     libDir = libDirRoot + "/GLOBAL/" + space
     libFile = libDir + "/libraryMultiE_GLOBAL_PL" + str(pulseLength) + "_" + str(nSimPulses) + "p" + Fil + ".fits"
 
-    # libFile += "02-4"  # for library creation in steps
-    # libFile += "4-9"  # for library creation in steps
+    # libFile += "5-9"  # for library creation in steps
 
     # if os.path.isfile(libFile):
     #    os.remove(libFile)
@@ -153,15 +196,11 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
     # --- Simulate and Process calibration data files -------
     for monoEkeV in libEnergies:  # keV
         monoEeV = float(monoEkeV) * 1.E3  # eV
-        if pixName == "LPA2shunt" and monoEkeV == "0.2":
-            triggerTH = 50
-        else:
-            triggerTH = 100
 
         print("=============================================")
         print("Adding monochromatic energy", monoEkeV, "keV")
         print("=============================================")
-
+        print("simTIme=", simTime, "\n")
         print("Temporary event file in: ", evttmpFile.name)
         # simulate SIXTE file with tesconstpileup + tessim
         root0 = "mono" + monoEkeV + "_sep" + str(separation) + "_pix" + str(pixel) + "_" + str(nSimPulses) + "p"
@@ -174,55 +213,59 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
         # -- TESSIM: simulate well separated pulses --
         if not os.path.isfile(simFile):
             print("Simulating & triggering pulses with TESSIM to ", simFile)
-            if not os.path.isfile(pixFile):
-                comm = ("tesgenimpacts PixImpList=" + pixFile + " mode=const tstart=0 tstop=" + simTime + 
-                        " EConst=" + monoEkeV + " dtau=" + str(dtaums) + " clobber=yes")
-                print("Generating PIXIMPACT ", pixFile, " running:\n", comm)
-                try:
-                    args = shlex.split(comm)
-                    check_call(args, stderr=STDOUT)
-                except:
-                    print("Error running task for piximpact list generation")
-                    os.chdir(cwd)
-                    shutil.rmtree(tmpDir)
-                    raise
+            comm = ("tesgenimpacts PixImpList=" + pixFile + " mode=const tstart=0 tstop=" + simTime + 
+                    " EConst=" + monoEkeV + " dtau=" + str(dtaums) + " clobber=yes")
+            print("Generating PIXIMPACT ", pixFile, " running:\n", comm)
+            try:
+                args = shlex.split(comm)
+                check_call(args, stderr=STDOUT)
+            except:
+                print("Error running task for piximpact list generation")
+                os.chdir(cwd)
+                shutil.rmtree(tmpDir)
+                raise
+
             if float(simTime) > 50000:
+                minTime = 2500.
                 # Do the simulation in several files and collate them afterwards (tessim FITS limits reached)
                 simTimeLeft = float(simTime)
                 tstart = 0.
-                tstop = min(5000., simTimeLeft)
+                tstop = min(minTime, simTimeLeft)
                 ii = 0
                 while simTimeLeft > 0:
-                    simTimeLeft -= tstop
+                    simTimeLeft = float(simTime) - tstop
                     ii += 1
                     simFile_i = "sim" + monoEkeV + ".fits." + str(ii)
+                    # print("Simulating ",simFile_i," from ", tstart, " to ", tstop," simTimeLeft=",simTimeLeft,"\n")
+                    if not os.path.isfile(simFile_i):
+                        comm = ("tessim PixID=" + str(pixel) + " PixImpList=" + pixFile + " Streamfile=" + simFile_i +
+                                " tstart=" + str(tstart) + " tstop=" + str(tstop) + " triggerSize=" +
+                                str(triggerSizeTS) + " preBuffer=" + str(PreBufferSize) + " acbias=" + acbias +
+                                " triggertype='diff:3:" + str(triggerTH[pixName]) + ":" + str(triggerTS3val) + "'" +
+                                " sample_rate=" + samprate + " PixType=" + PixTypeFile)
 
-                    comm = ("tessim PixID=" + str(pixel) + " PixImpList=" + pixFile + " Streamfile=" + simFile_i +
-                            " tstart=" + str(tstart) + " tstop=" + str(tstop) + " triggerSize=" + str(triggerSizeTS) +
-                            " preBuffer=" + str(PreBufferSize) + " acbias=" + acbias + " triggertype='diff:3:" +
-                            str(triggerTH) + ":" + str(triggerTS3val) + "'" + " sample_rate=" + samprate +
-                            " PixType=" + PixTypeFile)
-
-                    print("Running tessim for simulation:", str(ii), "\n", comm)
-                    try:
-                        args = shlex.split(comm)
-                        check_call(args, stderr=STDOUT)
-                    except:
-                        print("Error running TESSIM for simulation: ", str(i))
-                        os.chdir(cwd)
-                        shutil.rmtree(tmpDir)
-                        raise
-                    tstart = tstop
-                    tstop = tstart + min(5000., simTimeLeft)
-                    if ii == 1:
-                        shutil.copyfile(simFile_i, simFile)
-                    else:
-                        comm = ("/home/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE/tabmerge " +
-                                simFile_i + "  " + simFile)
+                        print("Running tessim for simulation:", str(ii), "\n", comm)
                         try:
                             args = shlex.split(comm)
                             check_call(args, stderr=STDOUT)
-                            os.remove(simFile_i)
+                        except:
+                            print("Error running TESSIM for simulation: ", str(ii))
+                            os.chdir(cwd)
+                            shutil.rmtree(tmpDir)
+                            raise
+                        rmLastAndFirst(simFile_i, pulsesPerRecord[pixName])
+                    tstart = tstop
+                    tstop = tstart + min(minTime, simTimeLeft)
+                    if ii == 1:
+                        shutil.copyfile(simFile_i, simFile)
+                    else:
+                        # Be careful, tabmergeADC is only written to merge tables where ADC column is 4096
+                        comm = ("/home/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE/tabmergeADC " +
+                                simFile_i + "+1" + "  " + simFile + "+1")
+                        try:
+                            args = shlex.split(comm)
+                            check_call(args, stderr=STDOUT)
+                            # os.remove(simFile_i)
                         except:
                             print("Error merging simulations with tabmerge:", comm, "\n")
                             os.chdir(cwd)
@@ -232,7 +275,7 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
                 comm = ("tessim PixID=" + str(pixel) + " PixImpList=" + pixFile + " Streamfile=" + simFile +
                         " tstart=0 tstop=" + str(simTime) + " triggerSize=" + str(triggerSizeTS) +
                         " preBuffer=" + str(PreBufferSize) + " acbias=" + acbias + " triggertype='diff:3:" +
-                        str(triggerTH) + ":" + str(triggerTS3val) + "'" + " sample_rate=" + samprate +
+                        str(triggerTH[pixName]) + ":" + str(triggerTS3val) + "'" + " sample_rate=" + samprate +
                         " PixType=" + PixTypeFile)
 
                 print("Running tessim for simulation\n", comm)
@@ -244,33 +287,8 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
                     os.chdir(cwd)
                     shutil.rmtree(tmpDir)
                     raise
-                
-            # -- rm first (and LAST) record and update NETTOT (first starts high and last can be cut)
-            fsim = fits.open(simFile)
-            nrows = fsim[1].header["NAXIS2"]
-            fsim.close()
-            assert nrows > 1, "Tessim failed for (%s): just one row present " % simFile
+                rmLastAndFirst(simFile, pulsesPerRecord[pixName])
 
-            try:
-                comm = "fdelrow infile=" + simFile + "+1 firstrow=" + str(nrows) + " nrows=1 confirm=no proceed=yes"
-                args = shlex.split(comm)
-                check_call(args, stderr=STDOUT)
-                comm = "fdelrow infile=" + simFile + "+1 firstrow=1 nrows=1 confirm=no proceed=yes"
-                args = shlex.split(comm)
-                check_call(args, stderr=STDOUT)
-                fsim = fits.open(simFile, mode='update')
-                nrows2 = fsim[1].header['NAXIS2']
-                assert nrows2 == nrows-2, "Failure removing initial & last rows in (%s): " % simFile
-                nettot = nrows2  # new number of pulses
-                if "LPA1" in pixName:
-                    nettot = nrows2 * 2  # pairs of pulses in simulations
-                fsim[1].header['NETTOT'] = nettot
-                fsim.close()
-            except:
-                print("Error running FTOOLS to remove initial & last rows in ", simFile)
-                os.chdir(cwd)
-                shutil.rmtree(tmpDir)
-                raise
         if not createLib:
             continue  # (to just simulate pulses files)
 
@@ -281,7 +299,7 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
                 " mode=0 clobber=yes intermediate=0" + " monoenergy=" + str(monoEeV) + " EventListSize=1000" +
                 " tstartPulse1=" + str(tstartPulse1[monoEkeV]) + " tstartPulse2=" + str(tstartPulse2[monoEkeV]) +
                 " tstartPulse3=" + str(tstartPulse3[monoEkeV]) + lF + " NoiseFile=" + noiseFile +
-                " XMLFile=" + XMLfile + energyMethod)
+                " XMLFile=" + XMLfile + energyMethod + " hduPRECALWN=" + weightMat + " hduPRCLOFWM=" + noiseMat)
         args = shlex.split(comm)
         print("SIRENA reconstruction to add a line to the library, running command:\n", comm)
         try:
@@ -332,6 +350,10 @@ if __name__ == "__main__":
     parser.add_argument('--largeFilter', type=int, help='Size of extra-large filter', default=0)
     parser.add_argument('--acbias', default='yes', choices=['yes', 'no'],
                         help='Operating Current (AC )(acbias=yes) or DC (acbias=no)) [default %(default)s]')
+    parser.add_argument('--noiseMat', default='no', choices=['yes', 'no'],
+                        help='Should the Noise Matrices HDU be created? [default %(default)s]')
+    parser.add_argument('--weightMat', default='no', choices=['yes', 'no'],
+                        help='Should the Weight Matrices HDU be created? [default %(default)s]')
 
     inargs = parser.parse_args()
     len1 = 0
@@ -365,4 +387,5 @@ if __name__ == "__main__":
                     largeFilter=inargs.largeFilter, libEnergies=inargs.calibEnergies,
                     tstartPulse1All=inargs.tstartPulse1All, tstartPulse2All=inargs.tstartPulse2All,
                     tstartPulse3All=inargs.tstartPulse3All, nsamples=inargs.nsamples,
-                    nSimPulses=inargs.nSimPulses, acbias=inargs.acbias, createLib=cLib)
+                    nSimPulses=inargs.nSimPulses, acbias=inargs.acbias, createLib=cLib,
+                    noiseMat=inargs.noiseMat, weightMat=inargs.weightMat)
