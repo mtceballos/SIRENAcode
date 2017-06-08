@@ -146,8 +146,9 @@ for (s12 in 1:length(seps12)){
         idxSep23 <- which(sapply(jsondata,function(x) x$separation23)==as.numeric(sepsStr[s23]))
         idxSep <- intersect(idxSep12,idxSep23)
         stopifnot(idxSep>0)
-        fwhmSecGAINCORRE[s12,s23] <- as.numeric(jsondata[[idxSep]]$fwhmEreal$secondaries)
-        biasErealSec[s12,s23]     <- as.numeric(jsondata[[idxSep]]$biasEreal$secondaries)
+        # s23 are rows & s12 are columns for later matrix
+        fwhmSecGAINCORRE[s23,s12] <- as.numeric(jsondata[[idxSep]]$fwhmEreal$secondaries)
+        biasErealSec[s23,s12]     <- as.numeric(jsondata[[idxSep]]$biasEreal$secondaries)
     }
 }
 
@@ -171,8 +172,16 @@ maxzFWHM<-maxFWHM
 ticks<-10**(seq(from=log10(minzFWHM),to=log10(maxzFWHM),length.out=10))
 ticksLabels<-sprintf("%2.1f",ticks)
 
-mat_data_eresol <- matrix(data=fwhmSecGAINCORRE, nrow=nseps12, ncol=nseps23,byrow=T)
-mat_data_ebias  <- matrix(data=biasErealSec, nrow=nseps12, ncol=nseps23,byrow=T)
+# MATRIX
+#   x1y1  x2y1  x3y1 ... xny1           x1=sep12_1   x2=sep12_2
+#   x1y2  x2y2  x3y2 ... xny2           y1=sep23_1   y2=sep23_2
+#   .........................
+#   x1yn  x2yn  x3yn ... xnyn  
+#
+# s12 are columns & s23 are rows
+
+mat_data_eresol <- matrix(data=fwhmSecGAINCORRE, nrow=nseps23, ncol=nseps12,byrow=T)
+mat_data_ebias  <- matrix(data=biasErealSec, nrow=nseps23, ncol=nseps12,byrow=T)
 
 pdf(pdfName,width=7.,height=7.)
 colorRamp = blue2green2red(900)

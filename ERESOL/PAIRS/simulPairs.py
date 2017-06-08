@@ -10,7 +10,8 @@
 #
 #  Input parameters:
 #          array (SPA|LPA1|LPA2|LPA3)
-#          monoEkeV: monochromatic energy (in keV)
+#          monoEkeV1: monochromatic energy of pulses 1(in keV)
+#          monoEkeV2: monochromatic energy of pulses 2(in keV)
 #          ACDC: AC or DC
 #
 """
@@ -50,6 +51,8 @@ XMLroot = XMLtree.getroot()
 for samplefreq in XMLroot.findall('samplefreq'):
     samprate = samplefreq.get('value')
 
+tstart = 0.5/float(samprate) # added to solve floating point inaccuracies due to sampling rate (Christian's mail 31/03/2017)
+
 triggerTH = {'LPA1shunt': 50, 'LPA2shunt': 20}
 
 
@@ -61,7 +64,9 @@ def simulPairs(pixName, monoEkeV, acbias):
     :return: files with simulated PAIRS
     """
 
-    global cwd, nSimPulses, XMLfile, pixel, PreBufferSize, simSIXTEdir, samprate, triggerTH
+    global cwd, nSimPulses, XMLfile, pixel, PreBufferSize, simSIXTEdir, samprate, triggerTH, tstart
+    if monoEkeV == "0.5":
+            triggerTH["LPA2shunt"] = 50
 
     tessim = "tessim" + pixName
     SIMFILESdir = PAIRSdir + "/" + tessim
@@ -109,9 +114,9 @@ def simulPairs(pixName, monoEkeV, acbias):
         print("-------------------------------------------\n")
 
         if not os.path.isfile(pixFile):
-            comm = ("tesconstpileup PixImpList=" + pixFile + " XMLFile=" + XMLfile + " tstop=" + str(simTime) +
-                    " energy=" + monoEkeV + " pulseDistance=" + str(sep12) + " TriggerSize=" +
-                    str(triggerSizeTC) + " clobber=yes")
+            comm = ("tesconstpileup PixImpList=" + pixFile + " XMLFile=" + XMLfile +
+                    " tstop=" + str(simTime) + " energy=" + monoEkeV + " pulseDistance=" + str(sep12) +
+                    " TriggerSize=" + str(triggerSizeTC) + " clobber=yes")
             print("\n##### Runing tesconstpileup #########")
             print(comm, "\n")
             try:
@@ -125,8 +130,8 @@ def simulPairs(pixName, monoEkeV, acbias):
             # continue  # to simulate only piximpact files
 
         if not os.path.isfile(fitsFile):
-            comm = ("tessim PixID=" + str(pixel) + " PixImpList=" + pixFile + " Streamfile=" + fitsFile +
-                    " tstart=0. tstop=" + simTime + " triggerSize=" + str(triggerSizeTS) + " preBuffer=" +
+            comm = ("tessim PixID=" + str(pixel) + " PixImpList=" + pixFile + " Streamfile=" + fitsFile + " tstart=0." +
+                    " tstop=" + simTime + " triggerSize=" + str(triggerSizeTS) + " preBuffer=" +
                     str(PreBufferSize) + " triggertype='diff:3:" + str(triggerTH[pixName]) + ":" + str(triggerTS3val) +
                     "'" + " acbias=" + acbias + " sample_rate=" + samprate + " PixType=" + PixTypeFile)
 

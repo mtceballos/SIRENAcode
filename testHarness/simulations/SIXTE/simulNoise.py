@@ -497,20 +497,20 @@ def simulNoise(pixName, pulseLength, space, acbias, scaleFactor, samplesUp, nSgm
         shutil.rmtree(tmpDir)
         raise
     print("TESSIM: ................................END")
-    #sys.exit()
+    sys.exit()
 
     print("\nMAKINGUP (remove tricky first records + fixed-lenghtify) trigger file for NOISE...")
     try:
-        # save fitsFileN header (will be modified by stilts)
-        shutil.copyfile(fitsFileN, tmpFile.name)
+        ## save fitsFileN header (will be modified by stilts)
+        #shutil.copyfile(fitsFileN, tmpFile.name)
         # astropy & ftools & stilts does not work with variable-length arrays, so a previous
         # conversion to fixed-format is required)
-        comm = "stilts tpipe cmd='addcol TIME2 \"(TIME*2)\"' cmd='delcols TIME2' in=" + fitsFileN + " out=" + fitsFileN
-        args = shlex.split(comm)
-        check_call(args, stderr=STDOUT)
-        comm = "cphead " + tmpFile.name + "+1 " + fitsFileN + "+1"
-        args = shlex.split(comm)
-        check_call(args, stderr=STDOUT)
+        #comm = "stilts tpipe cmd='addcol TIME2 \"(TIME*2)\"' cmd='delcols TIME2' in=" + fitsFileN + " out=" + fitsFileN
+        #args = shlex.split(comm)
+        #check_call(args, stderr=STDOUT)
+        #comm = "cphead " + tmpFile.name + "+1 " + fitsFileN + "+1"
+        #args = shlex.split(comm)
+        #check_call(args, stderr=STDOUT)
         # rm first record in fits file (noisy)
         comm = ("fdelrow infile=" + fitsFileN + "+1 firstrow=1 nrows=1 confirm=no proceed=yes")
         args = shlex.split(comm)

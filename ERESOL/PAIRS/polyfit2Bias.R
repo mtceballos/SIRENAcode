@@ -73,7 +73,8 @@ save(multi, multi_I2R, multi_I2RALL, multi_I2RNOL, multi_I2RFITTED,
 methods<- list(multi, fixed1, multi_I2R, fixed1_I2R,  multi_I2RALL, fixed1_I2RALL, 
                multi_I2RNOL, fixed1_I2RNOL, multi_I2RFITTED, fixed1_I2RFITTED,
                weight, weightn)
-methods <- list(fixed1OF, fixed1OFNM, fixed1OF_I2R,fixed1OF_I2RNOL, fixed1OF_I2RFITTED, weight,weightnOF)
+methods <- list(fixed1OF, fixed1OFNM, fixed1OF_I2R,fixed1OF_I2RNOL, fixed1OF_I2RFITTED, 
+                weight,weightnOF, weightn)
 #methods <- list(fixed1OF, fixed1OF_I2R,fixed1OF_I2RNOL, fixed1OF_I2RFITTED, weight,weightnOF)
 nmethods <- length(methods)
 
@@ -91,11 +92,12 @@ triggEners <- c(0.2,0.5,1,2) # energies where manual triggering has to be done; 
 triggEners <- c()
 nSimPulses <- "20000"
 nSamples <- "4096"
+nIntervals <- "150000"
 pulseLength <- "4096"
 separation <- 40000
 setwd(paste("/home/ceballos/INSTRUMEN/EURECA/ERESOL/PAIRS/eresol",array,sep=""))
-pdf(paste("./PDFs/polyfit2Bias_",nSamples,"s_",nSimPulses,"p.pdf",sep=""),width=10, height=7)
-EkeV <- c(0.2,0.5,1,2,3,4,5,6,7)
+pdf(paste("./PDFs/polyfit2Bias_",nSamples,"s_",nSimPulses,"p_",nIntervals,"i.pdf",sep=""),width=10, height=7)
+EkeV <- c(0.2,0.5,1,2,3,4,5,6,7,8)
 
 fwhmUNCORR  <- array(data=NA,dim=c(length(EkeV),nmethods,length(pulsesCateg))) # FWHM of Erecons
 ebiasUNCORR <- array(data=NA,dim=c(length(EkeV),nmethods,length(pulsesCateg)))
@@ -139,7 +141,7 @@ for (ie in 1:length(EkeV)){
 } # foreach energy
 
 for (ip in 1:length(pulsesCateg)){ # only for LPA1; LPA2 simulates only single pulses
-    coeffsFile <- paste("coeffs_polyfit_",nSamples,"_",pulsesCateg[ip],".dat",sep="")
+    coeffsFile <- paste("coeffs_polyfit_",nSamples,"_",pulsesCateg[ip],"_noiseMat",nIntervals,".dat",sep="")
     cat("Writing coeffs:",coeffsFile,"\n")
     fwhm  <- fwhmUNCORR
     ebias <- ebiasUNCORR

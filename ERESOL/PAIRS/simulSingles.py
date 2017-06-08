@@ -52,7 +52,11 @@ XMLroot = XMLtree.getroot()
 for samplefreq in XMLroot.findall('samplefreq'):
     samprate = samplefreq.get('value')
 dtaums = int(singleSeparation) / float(samprate) * 1000.  # separation time (ms) between pulses
+tstart = 0.5/float(samprate) # added to solve floating point inaccuracies due to sampling rate (Christian's mail 31/03/2017)
 
+# With triggerTH=20, 0.2 keV pulses trigger 1 sample late (1001 instead of 1000), but ALL of them
+#                    0.5 keV : some pulses trigger 1 sample late and some pulses trigger ok (1000)
+#                    >= 1 keV:  ALL trigger OK
 triggerTH = {'LPA1shunt': 50, 'LPA2shunt': 20}
 
 
@@ -64,7 +68,9 @@ def simulSingles(pixName, monoEkeV, acbias):
     :return: files with simulated PULSES
     """
 
-    global cwd, nSimPulses, XMLfile, pixel, PreBufferSize, simSIXTEdir, samprate, triggerTH
+    global cwd, nSimPulses, XMLfile, pixel, PreBufferSize, simSIXTEdir, samprate, triggerTH, tstart
+    if monoEkeV == "0.5":
+            triggerTH["LPA2shunt"] = 50
 
     tessim = "tessim" + pixName
     SIMFILESdir = PAIRSdir + "/" + tessim
@@ -86,7 +92,7 @@ def simulSingles(pixName, monoEkeV, acbias):
     print("-------------------------------------------\n")
 
     if not os.path.isfile(pixFile):
-        comm = ("tesgenimpacts PixImpList=" + pixFile + " mode=const tstart=0 tstop=" + simTime +
+        comm = ("tesgenimpacts PixImpList=" + pixFile + " mode=const tstart=" + str(tstart) + " tstop=" + simTime +
                 " EConst=" + monoEkeV + " dtau=" + str(dtaums) + " clobber=yes")
         print("\n##### Runing tesgenimpacts #########")
         print(comm, "\n")
@@ -102,7 +108,7 @@ def simulSingles(pixName, monoEkeV, acbias):
 
     if not os.path.isfile(fitsFile):
         comm = ("tessim PixID=" + str(pixel) + " PixImpList=" + pixFile + " Streamfile=" + fitsFile +
-                " tstart=0. tstop=" + simTime + " triggerSize=" + str(triggerSizeTS) + " preBuffer=" +
+                " tstart=0 tstop=" + simTime + " triggerSize=" + str(triggerSizeTS) + " preBuffer=" +
                 str(PreBufferSize) + " triggertype='diff:3:" + str(triggerTH[pixName]) + ":" +
                 str(triggerTS3val) + "'" + " acbias=" + acbias + " sample_rate=" + samprate +
                 " PixType=" + PixTypeFile)
@@ -117,6 +123,9 @@ def simulSingles(pixName, monoEkeV, acbias):
             os.chdir(cwd)
             shutil.rmtree(tmpDir)
             raise
+        fsim = fits.open(fitsFile, mode='update')
+        fsim[1].header["HISTORY"] = comm
+        fsim.close()
         # continue
         # rm first (and LAST) record and update NETTOT
         fsim = fits.open(fitsFile)

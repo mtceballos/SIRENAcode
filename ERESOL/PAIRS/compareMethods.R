@@ -24,7 +24,7 @@ if(plotFWHM_GAINCORRS || plotFWHM_GAINCORRE){
 }
 subtitle <- "ALL"
 subtitle <- "FIXEDLIB"
-#subtitle <- "FIXEDLIBOF"
+subtitle <- "FIXEDLIBOF"
 #subtitle <- "WEIGHTS"
 #subtitle <- "MULTILIB"
 #subtitle <- "PERF"
@@ -40,11 +40,12 @@ separation <- "40000"
 
 array <- "LPA2shunt"
 nSimPulses <- "20000"
+nIntervals <- "150000"
 nSamples <- "4096" # samples for the noise (also pulseLength in library)
 pulseLength <- "4096" # pulse(record) length
 invalids <- 700
 
-outPDF <- paste("./PDFs/",pdfName,"_",subtitle,".pdf",sep="")
+outPDF <- paste("./PDFs/",pdfName,"_",subtitle,"_noiseMat",nIntervals,".pdf",sep="")
 setwd(paste("/home/ceballos/INSTRUMEN/EURECA/ERESOL/PAIRS/eresol",array,sep=""))
 pdf(outPDF,width=7, height=7)
 
@@ -68,7 +69,8 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                         weight,weightnOF)
     }else if(subtitle == "FIXEDLIB"){
         methods <- list(fixed1OF, fixed1OF_I2R, fixed1OF_I2RNOL, fixed1OF_I2RFITTED,fixed1OFNM,
-                        fixed1, fixed1_I2R, fixed1_I2RNOL, fixed1_I2RFITTED, weightnOF, weightn, weight)        
+                        fixed1, fixed1_I2R, fixed1_I2RNOL, fixed1_I2RFITTED, weightnOF,  weight)        
+        #methods <- list(fixed1, fixed1OFNM, fixed1_I2R, fixed1_I2RNOL, fixed1_I2RFITTED)        
     }else if(subtitle == "OPTFILT"){
         methods <- list(fixed1,fixed1OF,multi)
     }else if(subtitle == "RSPACE"){
@@ -141,9 +143,8 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                 
             plot(seq(Emin,Emax,length.out=20),seq(FWmin,FWmax,length.out=20),type="n",cex=2,
                  xlab="Input Energy (keV)", ylab="Energy Resolution FWHM (eV)",
-                 main=paste("ENERGY RESOLUTION (", use,
-                            " pulses): GAINCORRS (with ",useGainCorr," pulses) \n",
-                            array," - ",nSamples," - ",use,sep=""),
+                 main=paste("ENERGY RESOLUTION: GAINCORRS (with ",useGainCorr," pulses) \n",
+                            array," - ",nSamples,sep=""),
                  sub="(Calibration Points marked)",pty="s")
             axis(4,labels=FALSE)
             minor.tick(nx=5,ny=5,tick.ratio=0.5)
@@ -224,8 +225,8 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
             
             plot(seq(Emin,Emax,length.out=20),seq(FWmin,FWmax,length.out=20),type="n",cex=2,
                  xlab="Input Energy (keV)", ylab="Energy Resolution FWHM (eV)",
-                 main=paste("ENERGY RESOLUTION (", use," pulses): GAINCORRE (with ",
-                            useGainCorr," pulses) \n",array," - ",nSamples," - ",use,sep=""),
+                 main=paste("ENERGY RESOLUTION: GAINCORRE (with ",
+                            useGainCorr," pulses) \n",array," - ",nSamples,sep=""),
                  sub="(Calibration Points marked)")
             minor.tick(nx=5,ny=5,tick.ratio=0.5)
             axis(4,label=FALSE)
@@ -272,6 +273,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
         cat("#\n#Plotting FWHM vs. Record length \n#\n")
         rlens <- c(4096, 2048, 1024, 750, 512, 400, 256, 200, 128, 90, 64, 45, 32)
         EkeV_rl <- 7
+        EkeV_rl <- 1
         TRIGG <- "_NTRIG"
             
         # INITIALIZE MATRICES #
@@ -280,20 +282,19 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
         fwhmGAINCORRE    <- matrix(NA,nrow=length(rlens), ncol=nmethods) 
         fwhmGAINCORREErr <- matrix(NA,nrow=length(rlens), ncol=nmethods) 
         ebiasCorr        <- matrix(NA,nrow=length(rlens), ncol=nmethods)
-            
+        ebiasRecons      <- matrix(NA,nrow=length(rlens), ncol=nmethods)
+        
         # READ recordlength and resolution from DATA
         # ===========================================
         for (il in 1:length(rlens)){
             for (im in 1:nmethods){
                 eresolFile <- paste("eresol_",nSimPulses,"p_SIRENA",pulseLength,"_pL",rlens[il],
                                 "_",EkeV_rl,"keV_F0F_", methods[[im]]$name,TRIGG,".json",sep="")
-                isWEIGHT <- length(i<-grep("WEIGHT",methods[[im]]$name))
-                isOPTFILTNM <- length(i<-grep("OPTFILTNM",methods[[im]]$name))
-                if(isWEIGHT){
+                isWEIGHTN <- length(i<-grep("WEIGHTN",methods[[im]]$name))
+                isWEIGHT <- ("multilib_WEIGHT"==methods[[im]]$name)
+                if(isWEIGHT) next
+                if(isWEIGHTN){
                     eresolFile <- paste("eresol_","5000","p_SIRENA",pulseLength,"_pL",rlens[il],
-                                        "_",EkeV_rl,"keV_F0F_", methods[[im]]$name,TRIGG,".json",sep="")
-                }else if (isOPTFILTNM) {
-                    eresolFile <- paste("eresol_","5000","p_SIRENA1024","_pL",rlens[il],
                                         "_",EkeV_rl,"keV_F0F_", methods[[im]]$name,TRIGG,".json",sep="")
                 }
                     
@@ -304,6 +305,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                     fwhmGAINCORRE[il,im] <- as.numeric(jsondata[[idxSep]]$fwhmEreal$all)
                     fwhmGAINCORREErr[il,im] <- as.numeric(jsondata[[idxSep]]$fwhmEreal_err$all)
                     ebiasCorr[il,im] <- as.numeric(jsondata[[idxSep]]$biasEreal$all)
+                    ebiasRecons[il,im] <- as.numeric(jsondata[[idxSep]]$biasErecons$all)
                 }else{
                     warning("Non-existing file:", eresolFile,"\n")
                     fwhmGAINCORRE[il,im] <- NaN
@@ -319,7 +321,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                        logxy="x", xlabel="Record length (samples)", 
                        ylabel="Energy Resolution FWHM (eV)",
                        naxes=c(T,T,T,T))
-        title(main=paste("AC simulations - 7 keV - ", separation," samples separation (All)\n",
+        title(main=paste("AC simulations - ",EkeV_rl," keV - ", separation," samples separation (All)\n",
                          array,sep=""))
         grid(nx=NA,ny=NULL)
         abline(v=2^(5:12),lty=3,col="grey50") # where pre-calc filters are
@@ -327,10 +329,13 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
         text(80,2.5,"Invalid Events",col="cyan")
         
         for (im in 1:nmethods){
+            isWEIGHT <- ("multilib_WEIGHT"==methods[[im]]$name)
+            if(isWEIGHT) next
             points(rlens,fwhmGAINCORRE[,im],pch=methods[[im]]$point,col=methods[[im]]$color,
                    type=plttype,lty=methods[[im]]$ltype)
-            errbar(rlens,fwhmGAINCORRE[,im], yplus=fwhmGAINCORRE[,im]+fwhmGAINCORREErr[,im],type="n",cap=0,
-                   yminus=fwhmGAINCORRE[,im]-fwhmGAINCORREErr[,im],add=TRUE,errbar.col=methods[[im]]$color)
+            errbar(rlens,fwhmGAINCORRE[,im], yplus=fwhmGAINCORRE[,im]+fwhmGAINCORREErr[,im],
+                   type="n",cap=0, yminus=fwhmGAINCORRE[,im]-fwhmGAINCORREErr[,im],
+                   add=TRUE,errbar.col=methods[[im]]$color)
             
         }
         legend("topright", legend=labs, col=colors, pch=points, cex=0.5,
@@ -339,8 +344,8 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
         # Plot also Erecons vs Rlength for OPTFILT and OPTFILTNM and WEIGHTNOF
         # ======================================================================
         cat("#\n#Plotting FWHM vs. Record length \n#\n")
-        drawLogPlotBox(xlimits=c(min(rlens),max(rlens)),ylimits=c(5,8),
-                       x2limits=c(min(rlens),max(rlens)),y2limits=c(5,8),
+        drawLogPlotBox(xlimits=c(min(rlens),max(rlens)),ylimits=c(EkeV_rl-0.5,EkeV_rl+0.5),
+                       x2limits=c(min(rlens),max(rlens)),y2limits=c(EkeV_rl-0.5,EkeV_rl+0.5),
                        logxy="x", xlabel="Record length (samples)", 
                        ylabel="Gain scale-corrected Energy (keV)",
                        naxes=c(T,T,T,T))
@@ -359,6 +364,8 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
             ims <- append(ims,im)
             points(rlens,ebiasCorr[,im]/1000.+EkeV_rl,pch=methods[[im]]$point,col=methods[[im]]$color,
                    type=plttype,lty=methods[[im]]$ltype)
+            #points(rlens,ebiasRecons[,im]/1000.+EkeV_rl,pch=methods[[im]]$point,col=methods[[im]]$color,
+            #       type=plttype,lty=methods[[im]]$ltype)
         }
         legend("topright", legend=labs[ims], col=colors[ims], pch=points[ims], cex=0.6,
                text.col=colors[ims], bty="n",y.intersp=2, lty=ltys[ims])
