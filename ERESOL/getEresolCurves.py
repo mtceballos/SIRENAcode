@@ -1,5 +1,5 @@
 """
-RESOLUTION CURVES for pairs of pulses
+RESOLUTION CURVES for single pulses
 
 python getEresolCurves.py
 
@@ -100,9 +100,10 @@ def getEresolCurves(pixName, labelLib, monoEkeV, lags, reconMethod, filterMeth, 
     eresolFile = "eresol_" + root + ".json"
 
     ofnoise = "NSD"
+    energyMethod = reconMethod
     if 'OPTFILTNM' in reconMethod:
         ofnoise = "WEIGHTM"
-        reconMethod = "OPTFILT"
+        energyMethod = "OPTFILT"
 
     # locate coefficients in table
     # -----------------------------
@@ -187,6 +188,7 @@ def getEresolCurves(pixName, labelLib, monoEkeV, lags, reconMethod, filterMeth, 
             raise
     else:
         sigmasMax = 20
+        sigmasMin = 0
         ite = 0
         nTrigPulses = nSimPulses  # to initialize
         ndetpulses = 0
@@ -198,7 +200,7 @@ def getEresolCurves(pixName, labelLib, monoEkeV, lags, reconMethod, filterMeth, 
                     str(scaleFactor) + " samplesUp=" + str(samplesUp) + " nSgms=" + str(nSgms) + " lags=" + str(lags)
                     + " mode=1 NoiseFile=" + noiseFile + " OFLib=" + OFLib + " FilterDomain=" + fdomain +
                     " FilterMethod=" + filterMeth + " clobber=yes intermediate=0 " + "EventListSize=1000" +
-                    " EnergyMethod=" + reconMethod + " tstartPulse1=" + str(tstartPulse1) + " tstartPulse2=" +
+                    " EnergyMethod=" + energyMethod + " tstartPulse1=" + str(tstartPulse1) + " tstartPulse2=" +
                     str(tstartPulse2) + " OFNoise=" + ofnoise + " XMLFile=" + XMLfile)
             try:
                 print(comm)

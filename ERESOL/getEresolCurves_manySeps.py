@@ -94,11 +94,14 @@ def getEresolCurves(pixName, labelLib, monoEkeV, mono2EkeV, reconMethod, filterM
     libDir = libDirRoot + "/GLOBAL/" + space + "/"
     if 'multilib' in labelLib:
         libFile = libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) + "_" + str(nSimPulsesLib) + "p.fits"
+        filtEeV = 1000.  # eV
     elif 'fixedlib' in labelLib:  # fixedlib1,...
         fixedEkeV = labelLib.replace("OF", "")[8:]
-        #libFile = libDir + "/library" + fixedEkeV + "keV_PL" + str(nsamples) + "_" + str(nSimPulsesLib) + "p.fits"
-        libFile = libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) + "_" + str(nSimPulsesLib) + "p.fits"
-        filtEeV = float(fixedEkeV) * 1E3 #eV
+        filtEeV = float(fixedEkeV) * 1E3  # eV
+        if tstartPulse1 == 0: #detection to be performed -> require different models
+            libFile = libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) + "_" + str(nSimPulsesLib) + "p.fits"
+        else:
+            libFile = libDir + "/library" + fixedEkeV + "keV_PL" + str(nsamples) + "_" + str(nSimPulsesLib) + "p.fits"
     if mono2EkeV == 'None':
         root = ''.join([str(nSimPulses), 'p_SIRENA', str(nsamples), '_pL', str(pulseLength), '_', monoEkeV, 'keV_',
                         str(filterMeth), str(fdomain), '_', str(labelLib), '_', str(reconMethod)])
@@ -440,9 +443,10 @@ if __name__ == "__main__":
     parser.add_argument('--monoEnergy', help='Monochromatic energy (keV) of input simulated pulses', required=True)
     parser.add_argument('--monoEnergy2', help='Monochromatic energy (keV) of input secondary simulated pulse',
                         default='None')
-    parser.add_argument('--reconMethod', choices=['OPTFILT', 'WEIGHT', 'WEIGHTN', 'I2R', 'I2RALL', 'I2RNOL', 'I2RFITTED'],
-                        default='OPTFILT',
-                        help='Energy reconstruction Method (OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED)')
+    parser.add_argument('--reconMethod', default='OPTFILT',
+                        choices=['OPTFILT', 'OPTFILTNM', 'WEIGHT', 'WEIGHTN', 'I2R', 'I2RALL', 'I2RNOL', 'I2RFITTED'],
+                        help='Energy reconstruction Method (OPTFILT, OPTFILTNM, WEIGHT, WEIGHTN, I2R, I2RALL, '
+                             'I2RNOL, I2RFITTED)')
     parser.add_argument('--filter', choices=['F0', 'B0'], default='F0',
                         help='Optimal Filtering Method (F0, B0) [default %(default)s]')
     parser.add_argument('--nsamples', type=int, help='noise length samples', required=True)
