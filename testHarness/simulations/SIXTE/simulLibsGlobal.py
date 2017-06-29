@@ -32,6 +32,12 @@ PreBufferSize = 1000
 # separation = 20000  # LPA1shunt
 separation = 40000    # LPA2shunt
 dtaums = separation / float(samprate) * 1000.  # separation time (ms) between pulses
+tstart = 0.5/float(samprate)  # added to solve floating point inaccuracies due to sampling rate (Christian's mail 31/03/2017)
+
+# With triggerTH=20, 0.2 keV pulses trigger 1 sample late (1001 instead of 1000), but ALL of them
+#                    0.5 keV : some pulses trigger 1 sample late and some pulses trigger ok (1000) => set to 50
+#                    >= 1 keV:  ALL trigger OK
+
 triggerTH = {'LPA1shunt': 50, 'LPA2shunt': 20}
 pulsesPerRecord = {'LPA1shunt': 2, 'LPA2shunt': 1}
 noise = ""
@@ -196,6 +202,8 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
     # --- Simulate and Process calibration data files -------
     for monoEkeV in libEnergies:  # keV
         monoEeV = float(monoEkeV) * 1.E3  # eV
+        if monoEkeV == "0.5":
+            triggerTH["LPA2shunt"] = 50
 
         print("=============================================")
         print("Adding monochromatic energy", monoEkeV, "keV")
@@ -213,7 +221,7 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
         # -- TESSIM: simulate well separated pulses --
         if not os.path.isfile(simFile):
             print("Simulating & triggering pulses with TESSIM to ", simFile)
-            comm = ("tesgenimpacts PixImpList=" + pixFile + " mode=const tstart=0 tstop=" + simTime + 
+            comm = ("tesgenimpacts PixImpList=" + pixFile + " mode=const tstart=" + str(tstart) + " tstop=" + simTime +
                     " EConst=" + monoEkeV + " dtau=" + str(dtaums) + " clobber=yes")
             print("Generating PIXIMPACT ", pixFile, " running:\n", comm)
             try:
@@ -225,69 +233,22 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
                 shutil.rmtree(tmpDir)
                 raise
 
-            if float(simTime) > 50000:
-                minTime = 2500.
-                # Do the simulation in several files and collate them afterwards (tessim FITS limits reached)
-                simTimeLeft = float(simTime)
-                tstart = 0.
-                tstop = min(minTime, simTimeLeft)
-                ii = 0
-                while simTimeLeft > 0:
-                    simTimeLeft = float(simTime) - tstop
-                    ii += 1
-                    simFile_i = "sim" + monoEkeV + ".fits." + str(ii)
-                    # print("Simulating ",simFile_i," from ", tstart, " to ", tstop," simTimeLeft=",simTimeLeft,"\n")
-                    if not os.path.isfile(simFile_i):
-                        comm = ("tessim PixID=" + str(pixel) + " PixImpList=" + pixFile + " Streamfile=" + simFile_i +
-                                " tstart=" + str(tstart) + " tstop=" + str(tstop) + " triggerSize=" +
-                                str(triggerSizeTS) + " preBuffer=" + str(PreBufferSize) + " acbias=" + acbias +
-                                " triggertype='diff:3:" + str(triggerTH[pixName]) + ":" + str(triggerTS3val) + "'" +
-                                " sample_rate=" + samprate + " PixType=" + PixTypeFile)
+            comm = ("tessim PixID=" + str(pixel) + " PixImpList=" + pixFile + " Streamfile=" + simFile +
+                    " tstart=0 tstop=" + str(simTime) + " triggerSize=" + str(triggerSizeTS) +
+                    " preBuffer=" + str(PreBufferSize) + " acbias=" + acbias + " triggertype='diff:3:" +
+                    str(triggerTH[pixName]) + ":" + str(triggerTS3val) + "'" + " sample_rate=" + samprate +
+                    " PixType=" + PixTypeFile)
 
-                        print("Running tessim for simulation:", str(ii), "\n", comm)
-                        try:
-                            args = shlex.split(comm)
-                            check_call(args, stderr=STDOUT)
-                        except:
-                            print("Error running TESSIM for simulation: ", str(ii))
-                            os.chdir(cwd)
-                            shutil.rmtree(tmpDir)
-                            raise
-                        rmLastAndFirst(simFile_i, pulsesPerRecord[pixName])
-                    tstart = tstop
-                    tstop = tstart + min(minTime, simTimeLeft)
-                    if ii == 1:
-                        shutil.copyfile(simFile_i, simFile)
-                    else:
-                        # Be careful, tabmergeADC is only written to merge tables where ADC column is 4096
-                        comm = ("/home/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE/tabmergeADC " +
-                                simFile_i + "+1" + "  " + simFile + "+1")
-                        try:
-                            args = shlex.split(comm)
-                            check_call(args, stderr=STDOUT)
-                            # os.remove(simFile_i)
-                        except:
-                            print("Error merging simulations with tabmerge:", comm, "\n")
-                            os.chdir(cwd)
-                            shutil.rmtree(tmpDir)
-                            raise
-            else:
-                comm = ("tessim PixID=" + str(pixel) + " PixImpList=" + pixFile + " Streamfile=" + simFile +
-                        " tstart=0 tstop=" + str(simTime) + " triggerSize=" + str(triggerSizeTS) +
-                        " preBuffer=" + str(PreBufferSize) + " acbias=" + acbias + " triggertype='diff:3:" +
-                        str(triggerTH[pixName]) + ":" + str(triggerTS3val) + "'" + " sample_rate=" + samprate +
-                        " PixType=" + PixTypeFile)
-
-                print("Running tessim for simulation\n", comm)
-                try:
-                    args = shlex.split(comm)
-                    check_call(args, stderr=STDOUT)
-                except:
-                    print("Error running TESSIM for simulation\n")
-                    os.chdir(cwd)
-                    shutil.rmtree(tmpDir)
-                    raise
-                rmLastAndFirst(simFile, pulsesPerRecord[pixName])
+            print("Running tessim for simulation\n", comm)
+            try:
+                args = shlex.split(comm)
+                check_call(args, stderr=STDOUT)
+            except:
+                print("Error running TESSIM for simulation\n")
+                os.chdir(cwd)
+                shutil.rmtree(tmpDir)
+                raise
+            rmLastAndFirst(simFile, pulsesPerRecord[pixName])
 
         if not createLib:
             continue  # (to just simulate pulses files)
