@@ -21,15 +21,15 @@ else if ($instrument == "LPA2shunt") then
 endif
 
 set fixedlib1_OPTFILT=0
-set fixedlib1OF_OPTFILT=1
+set fixedlib1OF_OPTFILT=0
 set fixedlib1OF_OPTFILTNM=0
 set fixedlib1_I2R=0
 set fixedlib1OF_I2R=0
-set fixedlib1_I2RNOL=0 
+set fixedlib1_I2RNOL=0
 set fixedlib1OF_I2RNOL=0
 set fixedlib1_I2RFITTED=0
 set fixedlib1OF_I2RFITTED=0
-set multilibOF_WEIGHTN=0
+set multilibOF_WEIGHTN=1
 set multilib_WEIGHTN=0
 set multilib_WEIGHT=0
 
@@ -582,29 +582,20 @@ if ($option == 3) then
     
 endif
 
-if ($option == 4) then
+if($option == 4) then
     #  Option 4: With the Erecons vs. Ecalc coeffs, calculate FWHM/Ebias corrected curves for different separations @ 7keV
-        set samplesUp=0 # does not mind in production mode (it will be removed afterwards)
-        set scaleFactor=0.
-        set nSimPulses=20000
-        set nSimPulsesLib=20000
-	set use="all"
-        set monoEkeV=7
-        set tstartPulse1=1000
-        set tstartPulse2=-1 
-        set nSgms=0
-        set separations=('00023'  '00031'  '00042'  '00056'  '00075'  '00101'  '00136'  '00182'  '00244'  '00328'  '00439'  '00589'  '00791'  '01061'  '01423'  '01908'  '02560'  '03433'  '04605'  '40000')
-        
-	# Global OPTFILT AC multilib DAB
-	# --------------------------------
-	#set lib="multilib"
-	#set meth="OPTFILT"
-	#set logf="$meth${lib}_${monoEkeV}_coeffs.log"
-    	#set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat  --separations $separations"
-    	#echo "Launching $meth $lib for $monoEkeV with:\n $comma"
-	#nohup $comma >&$logf &
-		
-        if ($fixedlib1_OPTFILT == 1) then
+    set samplesUp=0 # does not mind in production mode (it will be removed afterwards)
+    set scaleFactor=0.
+    set nSimPulses=20000
+    set nSimPulsesLib=20000
+    set use="all"
+    set monoEkeV=7
+    set tstartPulse1=1000
+    set tstartPulse2=-1 
+    set nSgms=0
+    set separations=('00023'  '00031'  '00042'  '00056'  '00075'  '00101'  '00136'  '00182'  '00244'  '00328'  '00439'  '00589'  '00791'  '01061'  '01423'  '01908'  '02560'  '03433'  '04605'  '40000')
+    
+    if ($fixedlib1_OPTFILT == 1) then
             # Global OPTFILT AC fixedlib1 
             # --------------------------------
             set lib="fixedlib1"
@@ -613,8 +604,8 @@ if ($option == 4) then
             set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat --separations $separations"
             echo "Launching $meth $lib for $monoEkeV with:\n $comma"
             nohup $comma >&$logf &
-        endif
-        if ($fixedlib1OF_OPTFILT == 1) then
+    endif
+    if ($fixedlib1OF_OPTFILT == 1) then
             # Global OPTFILT AC fixedlib1OF
             # --------------------------------
             set lib="fixedlib1OF"
@@ -623,16 +614,18 @@ if ($option == 4) then
             set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat --separations $separations"
             echo "Launching $meth $lib for $monoEkeV with:\n $comma"
             nohup $comma >&$logf &
-	endif	
-        # Global OPTFILT I2R multilib DAB
-	# --------------------------------
-	#set lib="multilib"
-	#set meth="I2R"
-	#set logf="$meth${lib}_${monoEkeV}_coeffs.log"
-	#set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat --separations $separations"
-	#echo "Launching $meth $lib for $monoEkeV with:\n $comma"
-	#nohup $comma >&$logf &
- 	if ($fixedlib1_I2R == 1) then
+    endif	
+    if ($fixedlib1OF_OPTFILTNM == 1) then
+            # Global OPTFILTNM AC fixedlib1OF
+            # --------------------------------
+            set lib="fixedlib1OF"
+            set meth="OPTFILTNM"
+            set logf="$meth${lib}_${monoEkeV}_coeffs.log"
+            set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat --separations $separations"
+            echo "Launching $meth $lib for $monoEkeV with:\n $comma"
+            nohup $comma >&$logf &
+    endif	
+    if ($fixedlib1_I2R == 1) then
             # Global OPTFILT I2R fixedlib1 
             # --------------------------------
             set lib="fixedlib1"
@@ -641,8 +634,8 @@ if ($option == 4) then
             set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat --separations $separations"
             echo "Launching $meth $lib for $monoEkeV with:\n $comma"
             nohup $comma >&$logf &
-        endif
-        if ($fixedlib1OF_I2R == 1) then
+    endif
+    if ($fixedlib1OF_I2R == 1) then
             # Global OPTFILT I2R fixedlib1OF
             # --------------------------------
             set lib="fixedlib1OF"
@@ -651,42 +644,8 @@ if ($option == 4) then
             set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat --separations $separations"
             echo "Launching $meth $lib for $monoEkeV with:\n $comma"
             nohup $comma >&$logf &
-	endif
-	#if ( $monoEkeV != 0.2) then
-            # Global OPTFILT I2RALL multilib DAB
-            # ------------------------------------
-            #set lib="multilib"
-            #set meth="I2RALL"
-            #set logf="$meth${lib}_${monoEkeV}_coeffs.log"
-            #set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat --separations $separations"
-            #echo "Launching $meth $lib for $monoEkeV with:\n $comma"
-            #nohup $comma >&$logf &
-            # Global OPTFILT I2RALL fixedlib1 
-            # --------------------------------
-            #set lib="fixedlib1"
-            #set meth="I2RALL"
-            #set logf="$meth${lib}_${monoEkeV}_coeffs.log"
-            #set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat --separations $separations"
-            #echo "Launching $meth $lib for $monoEkeV with:\n $comma"
-            #nohup $comma >&$logf &
-            # Global OPTFILT I2RALL fixedlib1OF 
-            # --------------------------------
-            #set lib="fixedlib1OF"
-            #set meth="I2RALL"
-            #set logf="$meth${lib}_${monoEkeV}_coeffs.log"
-            #set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat --separations $separations"
-            #echo "Launching $meth $lib for $monoEkeV with:\n $comma"
-            #nohup $comma >&$logf &
-        #endif
- 	# Global OPTFILT I2RNOL multilib DAB
- 	# ------------------------------------
- 	#set lib="multilib"
-	#set meth="I2RNOL"
-	#set logf="$meth${lib}_${monoEkeV}_coeffs.log"
-	#set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat --separations $separations"
-        #echo "Launching $meth $lib for $monoEkeV with:\n $comma"
-	#nohup $comma >&$logf &
-	if ($fixedlib1_I2RNOL == 1) then
+    endif
+    if ($fixedlib1_I2RNOL == 1) then
             # Global OPTFILT I2RNOL fixedlib1
             # ------------------------------------
             set lib="fixedlib1"
@@ -695,8 +654,8 @@ if ($option == 4) then
             set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat --separations $separations"
             echo "Launching $meth $lib for $monoEkeV with:\n $comma"
             nohup $comma >&$logf &
-        endif
-        if ($fixedlib1OF_I2RNOL == 1) then
+    endif
+    if ($fixedlib1OF_I2RNOL == 1) then
             # Global OPTFILT I2RNOL fixedlib1OF
             # ------------------------------------
             set lib="fixedlib1OF"
@@ -705,16 +664,8 @@ if ($option == 4) then
             set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat --separations $separations"
             echo "Launching $meth $lib for $monoEkeV with:\n $comma"
             nohup $comma >&$logf &
-        endif
-	# Global OPTFILT I2RFITTED multilib 
- 	# ------------------------------------
- 	#set lib="multilib"
-	#set meth="I2RFITTED"
-	#set logf="$meth${lib}_${monoEkeV}_coeffs.log"
-	#set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat --separations $separations"
-        #echo "Launching $meth $lib for $monoEkeV with:\n $comma"
-	#nohup $comma >&$logf &
-	if ($fixedlib1_I2RFITTED == 1) then
+    endif
+    if ($fixedlib1_I2RFITTED == 1) then
             # Global OPTFILT I2RFITTED fixedlib1
             # ------------------------------------
             set lib="fixedlib1"
@@ -723,8 +674,8 @@ if ($option == 4) then
             set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat --separations $separations"
             echo "Launching $meth $lib for $monoEkeV with:\n $comma"
             nohup $comma >&$logf &
-        endif
-        if ($fixedlib1OF_I2RFITTED == 1) then
+    endif
+    if ($fixedlib1OF_I2RFITTED == 1) then
             # Global OPTFILT I2RFITTED fixedlib1OF
             # ------------------------------------
             set lib="fixedlib1OF"
@@ -733,8 +684,8 @@ if ($option == 4) then
             set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat --separations $separations"
             echo "Launching $meth $lib for $monoEkeV with:\n $comma"
             nohup $comma >&$logf &
-        endif
-        if ($multilib_WEIGHT == 1) then
+    endif
+    if ($multilib_WEIGHT == 1) then
             # WEIGHT AC multilib
             #---------------------
             set lib="multilib"
@@ -744,8 +695,8 @@ if ($option == 4) then
             set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat --separations $separations"
             echo "Launching $meth $lib for $monoEkeV with:\n $comma"
             nohup $comma >&$logf 
-        endif
-        if ($multilib_WEIGHTN == 1) then
+    endif
+    if ($multilib_WEIGHTN == 1) then
             # WEIGHTN AC multilib
             #---------------------
             set lib="multilib"
@@ -755,8 +706,8 @@ if ($option == 4) then
             set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat --separations $separations"
             echo "Launching $meth $lib for $monoEkeV with:\n $comma"
             nohup $comma >&$logf 
-        endif
-        if ($multilibOF_WEIGHTN == 1) then
+    endif
+    if ($multilibOF_WEIGHTN == 1) then
             # WEIGHTN AC multilib OF
             #---------------------
             set lib="multilibOF"
@@ -766,7 +717,7 @@ if ($option == 4) then
             set comma="python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --coeffsFile coeffs_polyfit_${nSamples}_${use}.dat --separations $separations"
             echo "Launching $meth $lib for $monoEkeV with:\n $comma"
             nohup $comma >&$logf 
-        endif
+    endif
 endif
 
 if ($option == 5) then
@@ -774,7 +725,7 @@ if ($option == 5) then
         set samplesUp=0 # does not mind in production mode (it will be removed afterwards)
         set scaleFactor=0.
         set nSimPulses=2000
-        set nSimPulsesLib=20000
+        set nSimPulsesLib=200000 
 	set use="all"
         set monoEkeV=6
         set energies=(0.2 0.5 1 2 3 4 5 6 7)
