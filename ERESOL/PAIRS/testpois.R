@@ -1,7 +1,9 @@
-# By NCL, MTC 2014
+# By NCL, MTC 2014,2017
 #
 
 instrument<-"XIFU" #or ASTROH
+pixel <- "LPA2"
+pdf(paste("BranchingRatios_",instrument,"_",pixel,".pdf",sep=""))
 
 if(instrument == "ASTROH"){
     #
@@ -162,7 +164,7 @@ if(instrument == "ASTROH"){
     #
     #######################################################################################
     
-    pixelFracs <- function(ctrate, deltat, t0, t1, t2, tolsep){
+    XIFUpixelFracs <- function(ctrate, deltat, t0, t1, t2, tolsep){
         #
         # Calculate (Quality) Fractions of photons for XIFU pixels, using photon simulation AND
         # Poisson statistics
@@ -287,7 +289,6 @@ if(instrument == "ASTROH"){
     
     deltat <- 1000.         # interval time (seconds)
     samprate <- 156250.
-    pixel <- "LPA1"
     mCrab <- 94. # ct/s
     timeConst <- list("LPA1" = list("t0"=2.56E-3,"t1"=1.64e-3,"t2"=6.55e-3,"tolsep"=1./samprate),
                       "LPA2" = list("t0"=2.56E-3,"t1"=1.64e-3,"t2"=6.55e-3,"tolsep"=1./samprate))
@@ -336,7 +337,7 @@ if(instrument == "ASTROH"){
             lambda <- ctr * psf # PSF (if source is centred on a pixel, it receives psf*100% of incident flux)
             
             # calculate fractions for each pixel in the array (different psf)
-            listPixelFracs <- pixelFracs(lambda,deltat, t0,t1,t2,tolsep)
+            listPixelFracs <- XIFUpixelFracs(lambda,deltat, t0,t1,t2,tolsep)
             Frac.HQ.photons.psf <- listPixelFracs[["HQ_ph"]]
             Frac.MQ.photons.psf <- listPixelFracs[["MQ_ph"]]
             Frac.LQ.photons.psf <- listPixelFracs[["LQ_ph"]]
@@ -383,7 +384,7 @@ if(instrument == "ASTROH"){
     #
     drawLogPlotBox(xlimits=c(0.01,1000.),ylimits=c(0,1), x2limits=c(0.01,1000.),y2limits=c(0,1),
                    logxy="x", naxes=c(T,T,F,T), xlabel="Intensity (mCrab)", ylabel="Fraction of photons")
-    title(main="Quality Grading of photons")
+    title(main=paste("Quality Grading of photons (",instrument,", ",pixel,")",sep=""))
     points(ctrates/mCrab,FracHQ,col="red")
     points(ctrates/mCrab,FracMQ,col="blue")
     points(ctrates/mCrab,FracLQ,col="green")
@@ -401,3 +402,4 @@ if(instrument == "ASTROH"){
     lines(ctrates/mCrab,pI,col="gray")
     lines(ctrates/mCrab,pP,col="violet")
 }
+dev.off()
