@@ -1,8 +1,9 @@
 # By NCL, MTC 2014,2017
 #
 setwd("/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/PAIRS")
-instrument<-"XIFU" #or ASTROH
+instrument<-"XIFU4Q" #or ASTROH or XIFU3Q (3 qualities)
 pixel<- "LPA2 in focus"
+pixel<- "LPA2 35mmBe"
 pixelShort <- gsub("^([A-Z]*[1-9]*) .*", "\\1", pixel)
 pdf(paste("BranchingRatios_",instrument,"_",pixel,".pdf",sep=""))
 
@@ -157,7 +158,7 @@ if(instrument == "ASTROH"){
     lines(ctrates,pM,col="blue")
     lines(ctrates,pL,col="green")
     
-} else if(instrument == "XIFU"){
+} else if(instrument == "XIFU4Q"){
 
     #######################################################################################
     #
@@ -168,8 +169,176 @@ if(instrument == "ASTROH"){
     deltat <- 1000.         # interval time (seconds)
     samprate <- 156250.
     mCrab <- 94. # ct/s
+    ctrmax <-1000.*mCrab
     timeConst <- list("LPA1" = list("t0"=2.56E-3,"t1"=1.64e-3,"t2"=6.55e-3,"tolsep"=1./samprate),
-                      "LPA2" = list("t0"=4.48E-3,"t1"=3.28e-3,"t2"=104.85e-3,"tolsep"=1./samprate))
+                      "LPA2" = list("t0"=7.9E-3, "t1"=0.03e-3, "t2"=0.93e-3,"t3"=45.3e-3,"tolsep"=4./samprate))
+    timeConst <- list("LPA1" = list("t0"=2.56E-3,"t1"=1.64e-3,"t2"=6.55e-3,"tolsep"=1./samprate),
+                      "LPA2" = list("t0"=1234./samprate, "t1"=146./samprate, "t2"=354./samprate,"t3"=7080./samprate,"tolsep"=4./samprate))
+    t0 <- timeConst[[pixelShort]][["t0"]]
+    t1 <- timeConst[[pixelShort]][["t1"]]
+    t2 <- timeConst[[pixelShort]][["t2"]]
+    t3 <- timeConst[[pixelShort]][["t3"]]
+    tolsep <- timeConst[[pixelShort]][["tolsep"]]
+    psffracs <- list("LPA1"=sort(c(1e-3, 3e-3, 6e-3, 3e-3, 3e-3,0.032, 0.091, 0.033, 3e-3, 6e-3, 0.091, 0.441, 
+                                   0.091, 6e-3, 3e-3, 0.032, 0.090, 0.032, 3e-3, 3e-3, 6e-3, 3e-3), decreasing = TRUE),
+                     "LPA2 in focus"=sort(c(0.002, 0.005, 0.003, 0.002, 0.030, 0.089, 0.031, 0.002, 0.005, 0.089, 0.463, 
+                                   0.090, 0.005, 0.002, 0.030, 0.089, 0.030, 0.003, 0.003, 0.005, 0.003 ), decreasing = TRUE))
+    LPA2Ppsf <- read.csv(file="/home/ceballos/INSTRUMEN/ATHENA/XIFU/psf_35mm_Be_ratios.txt", header=TRUE,sep = ",")
+    psffracs[["LPA2 35mmBe"]] <- LPA2Ppsf$Ratio
+    
+    #psffracs <- list("LPA2 in focus"=c(1.0))
+    sumPSF <- sum(psffracs[[pixel]])
+    npsfs <- length(psffracs[[pixel]])
+    
+    # initialize count rates values
+    ctrates <- 10**(seq(0, log10(ctrmax),length.out=10))
+    
+    # initalize vector to store fractions of events
+    FracHQ <- c()
+    FracMQ <- c()
+    FracTQ <- c()
+    FracLQ <- c()
+    FracIQ <- c()
+    FracPL <- c()
+    FracP1L <- c()
+    FracP2L <- c()
+    pL <- c()
+    pH <- c()
+    pM <- c()
+    pT <- c()
+    pI <- c()
+    pP <- c()
+    pP1 <- c()
+    pP2 <- c()
+    # run over list of count rates
+    for (ctr in ctrates){
+        cat("Calculating for ctr=",ctr/mCrab," mCrab\n")
+        Frac.HQ.photons <- 0.
+        Frac.MQ.photons <- 0.
+        Frac.TQ.photons <- 0.
+        Frac.LQ.photons <- 0.
+        Frac.IQ.photons <- 0.
+        Frac.PL.photons <- 0.
+        Frac.P1L.photons <- 0.
+        Frac.P2L.photons <- 0.
+        
+        pH.pois <- 0.
+        pM.pois <- 0.
+        pT.pois <- 0.
+        pL.pois <- 0.
+        pI.pois <- 0.
+        pP.pois <- 0.
+        pP1.pois <- 0.
+        pP2.pois <- 0.
+        
+        for (psf in psffracs[[pixel]]){ # foreach pixel with incident photons
+            if(psf == 0.) next
+            # Correct count rate for PSF distribution
+            lambda <- ctr * psf # PSF (if source is centred on a pixel, it receives psf*100% of incident flux)
+            
+            # calculate fractions for each pixel in the array (different psf)
+            listPixelFracs <- XIFUpixelFracsHMTL(lambda,deltat, t0,t1,t2,t3,tolsep)
+            Frac.HQ.photons.psf <- listPixelFracs[["HQ_ph"]]
+            Frac.MQ.photons.psf <- listPixelFracs[["MQ_ph"]]
+            Frac.TQ.photons.psf <- listPixelFracs[["TQ_ph"]]
+            Frac.LQ.photons.psf <- listPixelFracs[["LQ_ph"]]
+            Frac.IQ.photons.psf <- listPixelFracs[["IQ_ph"]]
+            Frac.PL.photons.psf <- listPixelFracs[["PL_ph"]]
+            Frac.P1L.photons.psf <- listPixelFracs[["P1L_ph"]]
+            Frac.P2L.photons.psf <- listPixelFracs[["P2L_ph"]]
+            
+            pH.psf <- listPixelFracs[["HQ_Ps"]]
+            pM.psf <- listPixelFracs[["MQ_Ps"]]
+            pT.psf <- listPixelFracs[["TQ_Ps"]]
+            pL.psf <- listPixelFracs[["LQ_Ps"]]
+            pI.psf <- listPixelFracs[["IQ_Ps"]]
+            pP.psf <- listPixelFracs[["PL_Ps"]]
+            pP1.psf <- listPixelFracs[["P1L_Ps"]]
+            pP2.psf <- listPixelFracs[["P2L_Ps"]]
+            
+            # add fractions for given pixel taking into account contribution to total gathering of photons
+            Frac.HQ.photons <- Frac.HQ.photons + Frac.HQ.photons.psf*psf/sumPSF
+            Frac.MQ.photons <- Frac.MQ.photons + Frac.MQ.photons.psf*psf/sumPSF
+            Frac.TQ.photons <- Frac.TQ.photons + Frac.TQ.photons.psf*psf/sumPSF
+            Frac.LQ.photons <- Frac.LQ.photons + Frac.LQ.photons.psf*psf/sumPSF
+            Frac.IQ.photons <- Frac.IQ.photons + Frac.IQ.photons.psf*psf/sumPSF
+            Frac.PL.photons <- Frac.PL.photons + Frac.PL.photons.psf*psf/sumPSF
+            Frac.P1L.photons <- Frac.P1L.photons + Frac.P1L.photons.psf*psf/sumPSF
+            Frac.P2L.photons <- Frac.P2L.photons + Frac.P2L.photons.psf*psf/sumPSF
+            
+            pH.pois <- pH.pois + pH.psf*psf/sumPSF
+            pM.pois <- pM.pois + pM.psf*psf/sumPSF
+            pT.pois <- pT.pois + pT.psf*psf/sumPSF
+            pL.pois <- pL.pois + pL.psf*psf/sumPSF
+            pI.pois <- pI.pois + pI.psf*psf/sumPSF
+            pP.pois <- pP.pois + pP.psf*psf/sumPSF
+            pP1.pois <- pP1.pois + pP1.psf*psf/sumPSF
+            pP2.pois <- pP2.pois + pP2.psf*psf/sumPSF
+            
+        } # foreach psffrac
+        
+        FracHQ <- append(FracHQ,Frac.HQ.photons)
+        FracMQ <- append(FracMQ,Frac.MQ.photons)
+        FracTQ <- append(FracTQ,Frac.TQ.photons)
+        FracLQ <- append(FracLQ,Frac.LQ.photons)
+        FracIQ <- append(FracIQ,Frac.IQ.photons)
+        FracPL <- append(FracPL,Frac.PL.photons)
+        FracP1L <- append(FracP1L,Frac.P1L.photons)
+        FracP2L <- append(FracP2L,Frac.P2L.photons)
+        
+        pH <- append(pH,pH.pois)
+        pM <- append(pM,pM.pois)
+        pT <- append(pT,pT.pois)
+        pL <- append(pL,pL.pois)
+        pI <- append(pI,pI.pois)
+        pP <- append(pP,pP.pois)
+        pP1 <- append(pP1,pP1.pois)
+        pP2 <- append(pP2,pP2.pois)
+    
+    } #foreach ctrate
+    
+    #
+    # PLOT photons simulations and Poisson statistics
+    #
+    drawLogPlotBox(xlimits=c(0.01,1000.),ylimits=c(0,1), x2limits=c(0.01,1000.),y2limits=c(0,1),
+                   logxy="x", naxes=c(T,T,F,T), xlabel="Intensity (mCrab)", ylabel="Fraction of photons")
+    title(main=paste("Quality Grading of photons (",instrument,", ",pixel,")",sep=""))
+    points(ctrates/mCrab,FracHQ,col="red")
+    points(ctrates/mCrab,FracMQ,col="blue")
+    points(ctrates/mCrab,FracTQ,col="orange")
+    points(ctrates/mCrab,FracLQ,col="green")
+    points(ctrates/mCrab,FracIQ,col="gray")
+    points(ctrates/mCrab,FracPL,col="violet")
+    points(ctrates/mCrab,FracP1L,col="violet",pch=8)
+    points(ctrates/mCrab,FracP2L,col="violet",pch=20)
+    abline(h=0.8, lty=2, col="gray")
+    abline(v=1, lty=2, col="gray") # 1mCrab
+    legend("left",c("High Quality","Medium Quality","Limited Quality","Low Quality","Invalid","Pile-Up(<1sample)", "Pile-Up (prim)", "Pile-Up (sec)"),
+           cex=1., bty="n", pch=c(21,21,21,21,21,21,8,20),
+           col=c("red","blue","orange","green","gray","violet","violet","violet"),
+           lty=c(1,1,1,1,1,1,0))
+    lines(ctrates/mCrab,pH,col="red")
+    lines(ctrates/mCrab,pM,col="blue")
+    lines(ctrates/mCrab,pT,col="orange")
+    lines(ctrates/mCrab,pL,col="green")
+    lines(ctrates/mCrab,pI,col="gray")
+    lines(ctrates/mCrab,pP,col="violet")
+    lines(ctrates/mCrab,pP1,col="violet")
+    lines(ctrates/mCrab,pP2,col="violet")
+} else if(instrument == "XIFU3Q"){
+    
+    #######################################################################################
+    #
+    #     FOR X-IFU
+    #
+    #######################################################################################
+    
+    deltat <- 1000.         # interval time (seconds)
+    samprate <- 156250.
+    mCrab <- 94. # ct/s
+    ctrmax <-1000.*mCrab
+    timeConst <- list("LPA1" = list("t0"=2.56E-3,"t1"=1.64e-3,"t2"=6.55e-3,"tolsep"=1./samprate),
+                      "LPA2" = list("t0"=700./samprate, "t1"=512./samprate, "t2"=7080./samprate,"tolsep"=4./samprate))
     t0 <- timeConst[[pixelShort]][["t0"]]
     t1 <- timeConst[[pixelShort]][["t1"]]
     t2 <- timeConst[[pixelShort]][["t2"]]
@@ -177,12 +346,15 @@ if(instrument == "ASTROH"){
     psffracs <- list("LPA1"=sort(c(1e-3, 3e-3, 6e-3, 3e-3, 3e-3,0.032, 0.091, 0.033, 3e-3, 6e-3, 0.091, 0.441, 
                                    0.091, 6e-3, 3e-3, 0.032, 0.090, 0.032, 3e-3, 3e-3, 6e-3, 3e-3), decreasing = TRUE),
                      "LPA2 in focus"=sort(c(0.002, 0.005, 0.003, 0.002, 0.030, 0.089, 0.031, 0.002, 0.005, 0.089, 0.463, 
-                                   0.090, 0.005, 0.002, 0.030, 0.089, 0.030, 0.003, 0.003, 0.005, 0.003 ), decreasing = TRUE))
+                                            0.090, 0.005, 0.002, 0.030, 0.089, 0.030, 0.003, 0.003, 0.005, 0.003 ), decreasing = TRUE))
+    #psffracs <- list("LPA2 in focus"=c(1.0))
+    LPA2Ppsf <- read.csv(file="/home/ceballos/INSTRUMEN/ATHENA/XIFU/psf_35mm_Be_ratios.txt", header=TRUE,sep = ",")
+    psffracs[["LPA2 35mmBe"]] <- LPA2Ppsf$Ratio
     sumPSF <- sum(psffracs[[pixel]])
     npsfs <- length(psffracs[[pixel]])
     
     # initialize count rates values
-    ctrates <- 10**(seq(0, log10(1000*mCrab),length.out=25))
+    ctrates <- 10**(seq(0, log10(ctrmax),length.out=10))
     
     # initalize vector to store fractions of events
     FracHQ <- c()
@@ -219,6 +391,7 @@ if(instrument == "ASTROH"){
         pP2.pois <- 0.
         
         for (psf in psffracs[[pixel]]){ # foreach pixel with incident photons
+            if(psf == 0.) next
             # Correct count rate for PSF distribution
             lambda <- ctr * psf # PSF (if source is centred on a pixel, it receives psf*100% of incident flux)
             
@@ -274,7 +447,7 @@ if(instrument == "ASTROH"){
         pP <- append(pP,pP.pois)
         pP1 <- append(pP1,pP1.pois)
         pP2 <- append(pP2,pP2.pois)
-    
+        
     } #foreach ctrate
     
     #
