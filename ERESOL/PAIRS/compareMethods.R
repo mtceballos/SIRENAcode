@@ -12,9 +12,9 @@ library(Hmisc)
 load("/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat")
 
 plotFWHM_GAINCORRS <- 0   # FWHM vs. Energy
-plotFWHM_GAINCORRE <- 1   # FWHM vs. Energy
+plotFWHM_GAINCORRE <- 0   # FWHM vs. Energy
 plotBiasCorrFit    <- 0   # Bias-gainScaleCorrected vs. separation
-plotFWHM_rlength   <- 0   # FWHM vs. Record Length     
+plotFWHM_rlength   <- 1   # FWHM vs. Record Length     
 if(plotFWHM_GAINCORRS || plotFWHM_GAINCORRE){
     pdfName <- "fwhmVSenergy_methods"
 }else if (plotBiasCorrFit){
@@ -66,7 +66,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                         weight, weightn)
     }else if(subtitle == "FIXEDLIBOF"){
         methods <- list(fixed1OF, fixed1OFNM, fixed1OF_I2R, fixed1OF_I2RNOL, fixed1OF_I2RFITTED, 
-                        weight,weightnOF)
+                        weightnOF)
     }else if(subtitle == "FIXEDLIB"){
         methods <- list(fixed1OF, fixed1OF_I2R, fixed1OF_I2RNOL, fixed1OF_I2RFITTED,fixed1OFNM,
                         fixed1, fixed1_I2R, fixed1_I2RNOL, fixed1_I2RFITTED, weightnOF,  weight)        
@@ -273,7 +273,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
         cat("#\n#Plotting FWHM vs. Record length \n#\n")
         rlens <- c(4096, 2048, 1024, 750, 512, 400, 256, 200, 128, 90, 64, 45, 32)
         EkeV_rl <- 7
-        EkeV_rl <- 1
+        #EkeV_rl <- 1
         TRIGG <- "_NTRIG"
             
         # INITIALIZE MATRICES #
@@ -316,8 +316,8 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
         
         # PLOT ENERGY RESOLUTION CORRECTED vs. record length
         #===================================================
-        drawLogPlotBox(xlimits=c(min(rlens),max(rlens)),ylimits=c(2,7),
-                       x2limits=c(min(rlens),max(rlens)),y2limits=c(2,7),
+        drawLogPlotBox(xlimits=c(min(rlens),max(rlens)),ylimits=c(1.5,7),
+                       x2limits=c(min(rlens),max(rlens)),y2limits=c(1.5,7),
                        logxy="x", xlabel="Record length (samples)", 
                        ylabel="Energy Resolution FWHM (eV)",
                        naxes=c(T,T,T,T))
