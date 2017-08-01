@@ -86,7 +86,7 @@ for (sep in c(5, 10, 20, 45)){
                 }
                 toStilt <- paste("/home/ceballos/sw/topcat/stilts tpipe cmd='addcol TIME2 \"(TIME*2)\"' cmd='delcols TIME2' in=", 
                                  fitsFile, " out=pp_novar.fits", sep="")
-                system(toStilt)
+                system(toStilt)  
                 #comm <- paste(headas," && ", src," && cphead ", fitsFile, "+1 ", filenamePAIR, "+1",sep="")
                 #system(comm)
                 comm <- paste(headas," && ", src," && fdump infile=pp_novar.fits", "+1 outfile=", filenamePAIR, 
