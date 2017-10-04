@@ -51,6 +51,8 @@ XMLtree = ET.parse(XMLfile)
 XMLroot = XMLtree.getroot()
 for samplefreq in XMLroot.findall('samplefreq'):
     samprate = samplefreq.get('value')
+samprate /= 2.  # !!!! CAUTION !!!!!!!
+
 dtaums = int(singleSeparation) / float(samprate) * 1000.  # separation time (ms) between pulses
 tstart = 0.5/float(samprate) # added to solve floating point inaccuracies due to sampling rate (Christian's mail 31/03/2017)
 
