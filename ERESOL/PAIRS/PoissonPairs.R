@@ -4,6 +4,7 @@
 #  
 #  Using simulations and poisson statistics (based on testpois.R script)
 #
+rm(list=ls())
 setwd("/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/PAIRS/baselineLPA2")
 pixel<- "LPA2 35mmBe"
 pixelShort <- gsub("^([A-Z]*[1-9]*) .*", "\\1", pixel)
