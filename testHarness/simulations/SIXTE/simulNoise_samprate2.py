@@ -9,8 +9,6 @@
 *          nsamples: samples for the noise
 #          space: ADC (current space) or R or RALL or RNOL or RFITTED(resistance space)
 #          simTimeN: simulation time (s)
-#          samprate2: samprate from the XML file (samprate2=no) or samprate/2 (samprate=yes)
-#
 #
 # 1) Simulate 10s stream with no events to calculate Baseline (pixdetillum + tessim) --> not requiered anymore
 # 2) Simulate 100s stream with no events as input for gennoisespec (tesconstpileup + tessim)
@@ -31,17 +29,12 @@ from astropy.io import fits
 
 # ----GLOBAL VARIABLES -------------
 XMLdir = os.environ["SIXTE"] + "/" + "share/sixte/instruments/athena/1469mm_xifu"
-XMLfile = XMLdir + "/" + "xifu_detector_hex_baseline.xml"
+XMLfile = XMLdir + "/" + "xifu_detector_hex_baseline_samprate2.xml"
 
 XMLtree = ET.parse(XMLfile)
 XMLroot = XMLtree.getroot()
 for samplefreq in XMLroot.findall('samplefreq'):
     samprate = samplefreq.get('value')
-
-#if samprate2 == 'yes':
-#    samprate = str(float(samprate)/2.)
-#print("0")
-#print(samprate)
 
 cpsN = "pairs"  # counts per second or pairs of pulses
 preBuffer = 1000
@@ -423,7 +416,7 @@ def RfromIstream(infile, Icol, current, Rcol, Rmethod):
 
 # ----MAIN routine definition ------
 
-def simulNoise(pixName, pulseLength, space, acbias, scaleFactor, samplesUp, nSgms, nintervals, simTimeN, pixel, samprate2):
+def simulNoise(pixName, pulseLength, space, acbias, scaleFactor, samplesUp, nSgms, nintervals, simTimeN, pixel):
     """ simulate data in input parameter space, calculate the data baseline and 
           create Noise file to be ingested in SIRENA processing tasks
 
@@ -437,15 +430,11 @@ def simulNoise(pixName, pulseLength, space, acbias, scaleFactor, samplesUp, nSgm
           :param nintervals : Number of intervals for gennoisespec noise calculation
           :param simTimeN : Simulation time (s) for noise spectra calculation
           :param pixel : Pixel number
-          :param samprate2 : samprate from XML file (no) or samprate/2 (yes)
           :return fits file with Noise spectra in specified space and sampling
 
     """
 
     global samprate, preBuffer
-
-    if samprate2 == 'yes':
-        samprate = str(float(samprate)/2.)
 
     #print("4")
     #print(samprate)
@@ -467,14 +456,9 @@ def simulNoise(pixName, pulseLength, space, acbias, scaleFactor, samplesUp, nSgm
     # noiseFile = "noise" + str(pulseLength) + "samples_" + tessim + "_B0_" + str(simTimeN) + "s_" + cpsN + "cps_" +
     # space + ".fits"
     
-    if samprate2 == 'no':
-	noiseFile = "noise" + str(pulseLength) + "samples_" + tessim + "_B0_" + space + ".fits"
-    	pixFileN = rootN + ".piximpact"
-	fitsFileN = rootN + ".fits"
-    else:
-	noiseFile = "noise" + str(pulseLength) + "samples_" + tessim + "_B0_" + space + "_samprate2.fits"
-	pixFileN = rootN + "_samprate2.piximpact"
-	fitsFileN = rootN + "_samprate2.fits"
+    noiseFile = "noise" + str(pulseLength) + "samples_" + tessim + "_B0_" + space + "_samprate2.fits"
+    pixFileN = rootN + "_samprate2.piximpact"
+    fitsFileN = rootN + "_samprate2.fits"
 
     # -------------------------------------------------------------------------
     # get baseline
@@ -649,8 +633,6 @@ if __name__ == "__main__":
                       help='Number of intervals in gennoisespec for pectra calculation [default %default]', default=1000)
     parser.add_option('--pixel', action='store', dest='pixel', type='int', help='Pixel [default %default]',
                       default=1)
-    parser.add_option('--samprate2', action='store', dest='samprate2', type='string',
-                      help='sampr from XML (samprate2=no) or samprate/2 (samprate2=yes)  [default %default]', default='no')
 
     (opts, inargs) = parser.parse_args()
 
@@ -674,15 +656,10 @@ if __name__ == "__main__":
         message = "ERROR:  AC (acbias=yes) or DC (acbias=no) must be provided."
         sys.exit(message)
 
-    elif not opts.samprate2:
-
-        message = "ERROR:  samprate2 (yes or no) must be provided."
-        sys.exit(message)
-
     else:
 
         simulNoise(pixName=opts.pixName, pulseLength=opts.pulseLength,
                    space=opts.space, acbias=opts.acbias,
                    scaleFactor=opts.scaleFactor, samplesUp=opts.samplesUp,
                    nSgms=opts.nSgms, nintervals=opts.nintervals,
-                   simTimeN=opts.simTimeN, pixel=opts.pixel, samprate2=opts.samprate2)
+                   simTimeN=opts.simTimeN, pixel=opts.pixel)

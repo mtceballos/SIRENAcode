@@ -22,8 +22,7 @@ import xml.etree.ElementTree as ET
 #simSIXTEdir = "/home/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE"
 simSIXTEdir = "/disco07/dataj6/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE"
 XMLdir = os.environ["SIXTE"] + "/" + "share/sixte/instruments/athena/1469mm_xifu"
-# XMLfile = XMLdir + "/" + "xifu_baseline.xml"
-XMLfile = XMLdir + "/" + "xifu_detector_hex_baseline.xml"
+XMLfile = XMLdir + "/" + "xifu_detector_hex_baseline_samprate2.xml"
 PIXIMPACTdir = simSIXTEdir + "/LIBRARIES/PIXIMPACT"
 XMLtree = ET.parse(XMLfile)
 XMLroot = XMLtree.getroot()
@@ -51,6 +50,8 @@ os.environ["PFILES"] = tmpDir + ":" + os.environ["PFILES"]
 os.environ["HEADASNOQUERY"] = ""
 os.environ["HEADASPROMPT"] = "/dev/null/"
 
+LrsT = 3e-5*2
+LbT = 1e-3*2
 
 def rmLastAndFirst(simfile, ppr):
 
@@ -94,7 +95,7 @@ def rmLastAndFirst(simfile, ppr):
 
 
 def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamples, nSimPulses, acbias,
-                    tstartPulse1All, tstartPulse2All, tstartPulse3All, createLib, noiseMat, weightMat, samprate2):
+                    tstartPulse1All, tstartPulse2All, tstartPulse3All, createLib, noiseMat, weightMat):
     """
     :type pixName: str
     :param pixName: Extension name in FITS file pixel definition (SPA*, LPA1*, LPA2*, LPA3*)
@@ -127,7 +128,6 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
     :param createLib: if library should be created (1) or script should just create simulated files (0)
     :param noiseMat: should the Noise matrices HDU be created? (yes/no)
     :param weightMat: should the Weight matrices HDU be created? (yes/no)
-    :param samprate2 : samprate from XML file (no) or samprate/2 (yes)
     :return: simulated calibration pairs of pulses && Global library from them
 
     """
@@ -135,12 +135,8 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
     global PreBufferSize, separation, Fil, cwd, simSIXTEdir, samprate, triggerTH, pulsesPerRecord
     tessim = "tessim" + pixName
 
-    if samprate2 == 'yes':
-        samprate = str(float(samprate)/2.)
-
     dtaums = separation / float(samprate) * 1000.  # separation time (ms) between pulses
     tstart = 0.5/float(samprate)  # added to solve floating point inaccuracies due to sampling rate (Christian's mail 31/03/2017)
-
 
     # Calibration energies and Tstarts of pulses
     tstartPulse1 = dict(zip(libEnergies, tstartPulse1All))
@@ -178,10 +174,7 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
 
     # -- LIB & NOISE dirs and files ----------
     noiseDir = simSIXTEdir + "/NOISE/" + tessim
-    if samprate2 == 'no':
-	noiseFile = noiseDir + "/noise" + str(nsamples) + "samples_" + tessim + "_B0_" + space + ".fits"
-    else:
-	noiseFile = noiseDir + "/noise" + str(nsamples) + "samples_" + tessim + "_B0_" + space + "_samprate2.fits"
+    noiseFile = noiseDir + "/noise" + str(nsamples) + "samples_" + tessim + "_B0_" + space + "_samprate2.fits"
     PixTypeFile = "'file:" + simSIXTEdir + "/newpixels.fits[" + pixName + "]'"
 
     #
@@ -226,12 +219,8 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
         root0 = "mono" + monoEkeV + "_sep" + str(separation) + "_pix" + str(pixel) + "_" + str(nSimPulses) + "p"
         root = root0 + "_" + str(pulseLength) + noise
         # pixFile = PIXIMPACTdir + "/" + root0 + "_trSz" + str(triggerSizeTC) + ".piximpact"
-	if samprate == 'no':        
-	    pixFile = PIXIMPACTdir + "/" + root0 + ".piximpact"
-	    simFile = SIMFILESdir + "/" + root + ".fits"
-        else:
-	    pixFile = PIXIMPACTdir + "/" + root0 + "_samprate2.piximpact"
-	    simFile = SIMFILESdir + "/" + root + "_samprate2.fits"
+	pixFile = PIXIMPACTdir + "/" + root0 + "_samprate2.piximpact"
+	simFile = SIMFILESdir + "/" + root + "_samprate2.fits"
 
         # -- TESGENIMPACTS: generate impacts for well separated single pulses --
         # -- TESSIM: simulate well separated pulses --
@@ -276,7 +265,8 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
                 " mode=0 clobber=yes intermediate=0" + " monoenergy=" + str(monoEeV) + " EventListSize=1000" +
                 " tstartPulse1=" + str(tstartPulse1[monoEkeV]) + " tstartPulse2=" + str(tstartPulse2[monoEkeV]) +
                 " tstartPulse3=" + str(tstartPulse3[monoEkeV]) + lF + " NoiseFile=" + noiseFile +
-                " XMLFile=" + XMLfile + energyMethod + " hduPRECALWN=" + weightMat + " hduPRCLOFWM=" + noiseMat)
+                " XMLFile=" + XMLfile + energyMethod + " hduPRECALWN=" + weightMat + " hduPRCLOFWM=" + noiseMat +
+                " LrsT=" + str(LrsT) + " LbT=" + str(LbT))
         args = shlex.split(comm)
         print("SIRENA reconstruction to add a line to the library, running command:\n", comm)
         try:
@@ -331,9 +321,7 @@ if __name__ == "__main__":
                         help='Should the Noise Matrices HDU be created? [default %(default)s]')
     parser.add_argument('--weightMat', default='no', choices=['yes', 'no'],
                         help='Should the Weight Matrices HDU be created? [default %(default)s]')
-    parser.add_argument('--samprate2', default='no', choices=['yes', 'no'],
-                        help='Sampling rate (samprate2=no for samprate from XML or samprate2=yes for samprate/2')
-
+   
     inargs = parser.parse_args()
     len1 = 0
     len2 = 0
@@ -367,4 +355,4 @@ if __name__ == "__main__":
                     tstartPulse1All=inargs.tstartPulse1All, tstartPulse2All=inargs.tstartPulse2All,
                     tstartPulse3All=inargs.tstartPulse3All, nsamples=inargs.nsamples,
                     nSimPulses=inargs.nSimPulses, acbias=inargs.acbias, createLib=cLib,
-                    noiseMat=inargs.noiseMat, weightMat=inargs.weightMat, samprate2=inargs.samprate2)
+                    noiseMat=inargs.noiseMat, weightMat=inargs.weightMat)
