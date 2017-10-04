@@ -36,16 +36,14 @@ os.environ["HEADASNOQUERY"] = ""
 os.environ["HEADASPROMPT"] = "/dev/null/"
 
 nSimPulses = 20000  # 10000 records = 10000 secondary pulses
-nSimPulses = 2000  # 10000 records = 10000 secondary pulses
+nSimPulses = 2000  # 10000 records = 1000 secondary pulses
 recordSeparation = 40000  # separation from secondary --> primary for next record
+print(recordSeparation)
 
-#simSIXTEdir = "/home/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE"
-simSIXTEdir = "/disco07/dataj6/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE"
-#PAIRSdir = "/home/ceballos/INSTRUMEN/EURECA/ERESOL/PAIRS"
-PAIRSdir = "/disco07/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/PAIRS"
+simSIXTEdir = "/dataj6/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE"
+PAIRSdir = "/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/PAIRS"
 XMLdir = os.environ["SIXTE"] + "/" + "share/sixte/instruments/athena/1469mm_xifu"
-# XMLfile = XMLdir + "/" + "xifu_baseline.xml"
-XMLfile = XMLdir + "/" + "xifu_detector_hex_baseline.xml"
+XMLfile = XMLdir + "/" + "xifu_detector_hex_baseline_samprate2.xml"
 pixel = 1
 PreBufferSize = 1000
 
@@ -56,25 +54,24 @@ for samplefreq in XMLroot.findall('samplefreq'):
 
 tstart = 0.5/float(samprate)  # added to solve floating point inaccu. due to sampling rate (Christian's mail 31/03/2017)
 
-triggerTH = {'LPA1shunt': 50, 'LPA2shunt': 20}
+print(samprate)
+
+# Threshold for tessim
+triggerTH = {'LPA1shunt': 50, 'LPA2shunt': 30}
 
 
-def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias,samprate2):
+def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias):
     """
     :param pixName: Extension name in the FITS pixel definition file (SPA*, LPA1*, LPA2*, LPA3*)
     :param monoEkeV1: Monochromatic energy (keV) of input first simulated pulses
     :param monoEkeV2: Monochromatic energy (keV) of input second simulated pulses
     :param acbias: Operating Current (AC if acbias=yes or DC if acbias=no)
-    :param samprate2: If samprate2=yes, the samprate will be the (samprate from the XML file)/2
     :return: files with simulated PAIRS
     """
 
     global cwd, nSimPulses, XMLfile, pixel, PreBufferSize, simSIXTEdir, samprate, triggerTH, tstart
     if monoEkeV1 == "0.5" or monoEkeV2 == "0.5":
-            triggerTH["LPA2shunt"] = 50
-    if samprate2 == 'yes':
-	    samprate = str(float(samprate)/2.)  # !!!! CAUTION !!!!!!!
-            #print(samprate)
+            triggerTH["LPA2shunt"] = 60
 
     tessim = "tessim" + pixName
     SIMFILESdir = PAIRSdir + "/" + tessim
@@ -99,8 +96,10 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias,samprate2):
         # sepsStr = ['00001', '00002', '00005', '00010', '00013', '00017', '00023', '00031', '00042', '00056', '00075',
         #           '00101', '00136', '00182', '00244', '00328', '00439', '00589', '00791', '01061', '01423', '01908',
         #           '02560', '03433', '04605']
-        sepsStr = ['00005', '00010', '00020', '00045', '00060', '00100', '00200', '00250', '00300', '00400', '00800', '01000']
-        pulseLength = 4096  # only to calculate triggerSize
+
+        sepsStr = ['00002', '00005', '00010', '00020', '00022', '00030', '00045','00050', '00060', '00100',
+                   '00125', '00150', '00200','00250','00300', '00400','00500','00800', '01000']
+        pulseLength = 2048
 
     for sepA in sepsStr:
         sep12 = int(sepA)
@@ -114,12 +113,9 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias,samprate2):
         simTime = nSimPulses/2. * triggerSizeTC/float(samprate)
         simTime = '{0:0.0f}'.format(simTime)
 
-	if samprate == 'no':
-        	root0 = "sep" + sepA + "sam_" + simTime + "s_" + monoEkeV1 + "keV_" + monoEkeV2 + "keV"  # for piximpact
-        	root = "sep" + sepA + "sam_" + str(nSimPulses) + "p_" + monoEkeV1 + "keV_" + monoEkeV2 + "keV"  # for fits
-	else:
-		root0 = "sep" + sepA + "sam_" + simTime + "s_" + monoEkeV1 + "keV_" + monoEkeV2 + "keV_samprate2"  # for piximpact
-        	root = "sep" + sepA + "sam_" + str(nSimPulses) + "p_" + monoEkeV1 + "keV_" + monoEkeV2 + "keV_samprate2"  # for fits
+        root0 = "sep" + sepA + "sam_" + simTime + "s_" + monoEkeV1 + "keV_" + monoEkeV2 + "keV_samprate2"  # for piximpact
+        root = "sep" + sepA + "sam_" + str(nSimPulses) + "p_" + monoEkeV1 + "keV_" + monoEkeV2 + "keV_samprate2"  # for fits
+
         pixFile = cwd + "/PIXIMPACT/" + root0 + "_trSz" + str(triggerSizeTC) + ".piximpact"
         fitsFile = SIMFILESdir + "/" + root + ".fits"
         print("-------------------------------------------\n")
@@ -200,9 +196,7 @@ if __name__ == "__main__":
     parser.add_argument('--monoEnergy2', help='Monochromatic energy (keV) of input simulated second pulse')
     parser.add_argument('--acbias', choices=['yes', 'no'],
                         help='Operating Current (acbias=yes for AC or acbias=no for DC)')
-    parser.add_argument('--samprate2', choices=['yes', 'no'],
-                        help='Sampling rate (samprate2=no for samprate from XML or samprate2=yes for samprate/2')
-
+    
     inargs = parser.parse_args()
     simulPairs(pixName=inargs.pixName, monoEkeV1=inargs.monoEnergy1,
-               monoEkeV2=inargs.monoEnergy2, acbias=inargs.acbias, samprate2=inargs.samprate2)
+               monoEkeV2=inargs.monoEnergy2, acbias=inargs.acbias)
