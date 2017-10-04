@@ -1,7 +1,7 @@
 """
 RESOLUTION CURVES for pairs of pulses
 
-python getEresolCurves_manySeps.py
+python getEresolCurves_manySeps.py    !!!!! Check output dir (nodetSP in case secondaries are not detected)!!!!
 
 """
 
@@ -34,12 +34,13 @@ XMLfile = XMLdir + "/" + "xifu_detector_hex_baseline.xml"
 calibLibs = (0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)  # only for searching for libray intervals
 
 
-def getEresolCurves(pixName, labelLib, mono1EkeV, mono2EkeV, reconMethod, filterMeth, nsamples, pulseLength, nSimPulses,
+def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMethod, filterMeth, nsamples, pulseLength, nSimPulses,
                     fdomain, scaleFactor, samplesUp0, nSgms0, tstartPulse1, tstartPulse2Init, nSimPulsesLib, coeffsFile,
                     detectSP, sepsStr):
     """
     :param pixName: Extension name for FITS pixel definition file (SPA*, LPA1*, LPA2*, LPA3*)
     :param labelLib: Label identifying the library ( multilib, multilibOF, fixedlib1 )
+    :param samprate: Samprate value with respect to baseline of 156250 Hz (base, half)
     :param mono1EkeV: Monochromatic energy (keV) of input primary simulated pulse
     :param mono2EkeV: Monochromatic energy (keV) of input secondary simulated pulse
     :param reconMethod: Energy reconstruction Method (OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL)
@@ -63,7 +64,10 @@ def getEresolCurves(pixName, labelLib, mono1EkeV, mono2EkeV, reconMethod, filter
 
     TRIGG = ""
     global XMLfile, PreBufferSize, separation
-
+    smprtStr = ""
+    if samprate == 'half':
+        XMLfile = XMLdir + "/" + "xifu_detector_hex_baseline_samprate2.xml"
+        smprtStr = "samprate2"
     # --- Define some initial values and conversions ----
     if tstartPulse1 > 0:
         TRIGG = "_NTRIG"
@@ -85,24 +89,28 @@ def getEresolCurves(pixName, labelLib, mono1EkeV, mono2EkeV, reconMethod, filter
 
     # -- LIB & NOISE & SIMS & RESULTS dirs and files ----------
     simDir = cwd + "/PAIRS/" + tessim
-    resultsDir = cwd + "/PAIRS/eresol" + pixName  # + "/nodetSP"
+    resultsDir = cwd + "/PAIRS/eresol" + pixName + "/nodetSP"
     simSIXTEdir = "/home/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE"
     noiseDir = simSIXTEdir + "/NOISE/" + tessim
-    noiseFile = noiseDir + "/noise" + str(nsamples) + "samples_" + tessim + "_B0_" + space + ".fits"
+    noiseFile = noiseDir + "/noise" + str(nsamples) + "samples_" + tessim + "_B0_" + space + "_" + smprtStr +".fits"
     libDirRoot = simSIXTEdir + "/LIBRARIES/" + tessim
     libDir = libDirRoot + "/GLOBAL/" + space + "/"
     if 'multilib' in labelLib:
-        libFile = libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) + "_" + str(nSimPulsesLib) + "p.fits"
+        libFile = libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) + "_" + str(nSimPulsesLib) + "p_" + smprtStr
+        + ".fits"
         filtEeV = 1000.  # eV
     elif 'fixedlib' in labelLib:  # fixedlib1,...
         fixedEkeV = labelLib.replace("OF", "")[8:]
         filtEeV = float(fixedEkeV) * 1E3  # eV
         if tstartPulse1 == 0: #detection to be performed -> require different models
-            libFile = libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) + "_" + str(nSimPulsesLib) + "p.fits"
+            libFile = libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) + "_" + str(nSimPulsesLib) + "p_" + smprtStr \
+                      + ".fits"
         else:
-            libFile = libDir + "/library" + fixedEkeV + "keV_PL" + str(nsamples) + "_" + str(nSimPulsesLib) + "p.fits"
+            libFile = libDir + "/library" + fixedEkeV + "keV_PL" + str(nsamples) + "_" + str(nSimPulsesLib) + "p_" + \
+                      smprtStr + ".fits"
     root = ''.join([str(nSimPulses), 'p_SIRENA', str(nsamples), '_pL', str(pulseLength), '_', mono1EkeV, 'keV_',
-                    mono2EkeV, 'keV_', str(filterMeth), str(fdomain), '_', str(labelLib), '_', str(reconMethod)])
+                    mono2EkeV, 'keV_', str(filterMeth), str(fdomain), '_', str(labelLib), '_', str(reconMethod),
+                    '_', smprtStr])
     if tstartPulse1 > 0:
         root += TRIGG
     eresolFile = "eresol_" + root + ".json"
@@ -152,7 +160,7 @@ def getEresolCurves(pixName, labelLib, mono1EkeV, mono2EkeV, reconMethod, filter
         if tstartPulse1 > 0 and tstartPulse2Init == -1:  # calculate tstartPulse2 using separation
             tstartPulse2 = tstartPulse1 + int(sep)
         inFile = simDir + "/sep" + sep12 + "sam_" + str(nSimPulses) + "p_" + mono1EkeV + "keV_" \
-            + mono2EkeV + "keV.fits"
+            + mono2EkeV + "keV_" + smprtStr + ".fits"
 
         evtFile = "events_sep" + sep12 + "sam_" + root + ".fits"
 
@@ -203,6 +211,8 @@ def getEresolCurves(pixName, labelLib, mono1EkeV, mono2EkeV, reconMethod, filter
                                 (nTrigPulses != ndetpulses and tstartPulse1 == 0 and detectSP == 1) or
                                 (nTrigPulses != 2*ndetpulses and tstartPulse1 == 0 and detectSP == 0)):
                 ite += 1
+                print("filtEev=",filtEeV)
+                print("XMLFile=", XMLfile)
                 comm = ("tesreconstruction Recordfile=" + inFile + " TesEventFile=" + evtFile + " Rcmethod='SIRENA'" +
                         " PulseLength=" + str(pulseLength) + " LibraryFile=" + libFile + " scaleFactor=" +
                         str(scaleFactor) + " samplesUp=" + str(samplesUp) + " nSgms=" + str(nSgms) +
@@ -210,7 +220,8 @@ def getEresolCurves(pixName, labelLib, mono1EkeV, mono2EkeV, reconMethod, filter
                         " FilterMethod=" + filterMeth + " clobber=yes intermediate=0 " + "EventListSize=1000" +
                         " EnergyMethod=" + reconMethod + " tstartPulse1=" + str(tstartPulse1) + " tstartPulse2=" +
                         str(tstartPulse2) + " OFNoise=" + ofnoise + " detectSP=" + str(detectSP) +
-                        " XMLFile=" + XMLfile) + " filtEeV=" + str(filtEeV)
+                        " XMLFile=" + XMLfile + " filtEeV=" + str(filtEeV))
+                # sys.exit()
                 try:
                     print(comm)
                     args = shlex.split(comm)
@@ -247,8 +258,11 @@ def getEresolCurves(pixName, labelLib, mono1EkeV, mono2EkeV, reconMethod, filter
                         os.chdir(cwd)
                         shutil.rmtree(tmpDir)
                         raise
-
                 print("   With nSgms=", nSgms, " => sim/det: ", nTrigPulses, "/", ndetpulses)
+                # reset for pairs where secondary pulse has not been detected and primary is given
+                if tstartPulse1 > 0 and detectSP == 0 and nTrigPulses == 2 * ndetpulses:
+                    ndetpulses *= 2.
+                    print("No secondary detection: ok")
                 if (nTrigPulses != ndetpulses and tstartPulse1 == 0 and detectSP == 1) or \
                         (nTrigPulses != 2*ndetpulses and tstartPulse1 == 0 and detectSP == 0):
                     print("   Repeating detection process...")
@@ -421,6 +435,7 @@ if __name__ == "__main__":
                         help='Extension name in the FITS pixel definition file (SPA*, LPA1*, LPA2*, LPA3*)')
     parser.add_argument('--lib', required=True,
                         help='Label identifying the library (monolib, multilib, multilibOF, fixedlib, fixedlib2,...)')
+    parser.add_argument('--samprate', required=True, choices=['base','half'], help="Samprate with respect to baseline")
     parser.add_argument('--monoEnergy1', help='Monochromatic energy (keV) of input primary simulated pulses',
                         required=True)
     parser.add_argument('--monoEnergy2', help='Monochromatic energy (keV) of input secondary simulated pulse',
@@ -459,7 +474,7 @@ if __name__ == "__main__":
         print("Start sample of pulses or detection parameters must be provided")
         sys.exit()
 
-    getEresolCurves(pixName=inargs.pixName, labelLib=inargs.lib, mono1EkeV=inargs.monoEnergy1,
+    getEresolCurves(pixName=inargs.pixName, labelLib=inargs.lib, samprate=inargs.samprate, mono1EkeV=inargs.monoEnergy1,
                     mono2EkeV=inargs.monoEnergy2, reconMethod=inargs.reconMethod, filterMeth=inargs.filter,
                     nsamples=inargs.nsamples, pulseLength=inargs.pulseLength, fdomain=inargs.fdomain,
                     scaleFactor=inargs.scaleFactor, samplesUp0=inargs.samplesUp, nSgms0=inargs.nSgms,
