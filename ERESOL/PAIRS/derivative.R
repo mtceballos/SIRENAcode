@@ -1,32 +1,52 @@
 #
-# PACKAGE Documented on derivative.ipynb (also GitHub)
+# BAGPLOTS: PACKAGE Documented on derivative.ipynb (also GitHub)
 #
+rm(list=ls())
 library(FITSio)
 library(aplpack)
-#source("~/R/Rfunctions/derivPulseFits.r")
+source("~/R/Rfunctions/derivPulseFits.r")
 #source("~/.Rprofile")
 setwd("/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/PAIRS/")
-pdf("baselineLPA2/derivativePairsStudy.pdf",width=10, height=7,version="1.4")
 # --------------------------------------------------------------------------------------
 #  For input: 
 #
 npulses <- 1000      # Number of pulses at each energy
 nPairs <- 500    
-pulseLength<- 4096   # pulse length
+samprate <- 156250
+#samprateStr="" # to name files with full samprate
+#pulseLength<- 4096   # pulse length
+samprate <- samprate/2.
+samprateStr="_samprate2" # to name files with 1/2 samprate
+pulseLength<- 2048   # pulse length
+
 energies <- c("0.2", "0.5", "1", "2", "3", "4", "5", "6", "7", "8") # pulses energies
 nenergies <- length(energies)
+Esec <- "0.2" # keV : energy of secondary pulses
+
+pdf(paste("baselineLPA2/derivativePairsStudy_Esec",Esec,"keV",samprateStr,".pdf",sep=""),width=10, height=7,version="1.4")
 #energies <- c("0.2", "0.5")
-separations <-c("00005", "00010", "00020", "00045", "00060", "00100", "00200", "00250","00300","00400", "00800")
+#separations <-c("00005", "00010", "00020", "00045", "00060", "00100", "00200", "00250","00300","00400", "00800")
+separations <- c("00002","00005","00010","00020","00022","00030","00045","00050","00060",
+                 "00100","00125","00150","00200","00250","00300","00400","00500","00800","01000")
+nseps <- length(separations)
 separationsToPlot <-c("00200","00250","00300")
-saveFileFull <- "derivateCalibPulsesFull.dat"  # File with the array with the derivatives (R object )
-saveFileMean4 <- "derivateCalibPulsesMean4.dat"  # File with the array with the mean 4 derivatives (R object )
-pairFileFull <- "derivatePairPulsesFull.dat"  # File with the array with the derivatives (R object ) for pairs
-pairFileMean4 <- "derivatePairPulsesMean4.dat"  # File with the array with the mean 4 derivatives (R object ) for pairs
+separationsToPlot <-c("00100","00125","00200")
+seps.ms <- as.numeric(separations)/samprate*1E3 #separations in ms
+saveFileFull <- paste("derivateCalibPulsesFull",samprateStr,".dat",sep="")  # File with the array with the derivatives (R object )
+saveFileMean4 <- paste("derivateCalibPulsesMean4",samprateStr,".dat",sep="")  # File with the array with the mean 4 derivatives (R object )
+pairFileFull <- paste("derivatePairPulsesFull_sec",Esec,"keV",samprateStr,".dat",sep="")  # File with the array with the derivatives (R object ) for pairs
+pairFileMean4 <- paste("derivatePairPulsesMean4_sec",Esec,"keV",samprateStr,".dat",sep="")  # File with the array with the mean 4 derivatives (R object ) for pairs
 headas <- "/home/ceballos/sw/heasoft/x86_64-unknown-linux-gnu-libc2.24"
 repeatCal <- FALSE
 # --------------------------------------------------------------------------------------
+derivArray <- array(NA,dim=c(npulses,length(energies),pulseLength-1))
+derivArrayPair <- array(NA,dim=c(nPairs,length(energies),length(separations),pulseLength-1))
+derivArrayMean4samples <- matrix(NA,nrow=npulses, ncol=length(energies))
+derivArrayMean4samplesPair <- array(NA, dim=c(nPairs, length(energies), length(separations)))
 
+# Calculate or read DERIVATIVE of SINGLE pulses
 if(file.exists(saveFileFull)){
+    cat("Looking for data in ",saveFileFull,"\n")
     repeatCal <- FALSE
     load(saveFileFull)
     load(saveFileMean4)
@@ -40,15 +60,13 @@ if(file.exists(saveFileFull)){
 if(!file.exists(saveFileFull) || repeatCal){
     cat("Repeating file ", saveFileFull, " calculation\n")
     
-    derivArray <- array(NA,dim=c(npulses,length(energies),pulseLength-1))
     # save also the mean of the first 4 samples of the derivative
-    derivArrayMean4samples <- matrix(NA,nrow=npulses, ncol=length(energies))
     colnames(derivArray) <- energies
     rownames(derivArray) <- paste("pulse",1:npulses,sep="")
     for (ie in 1:length(energies)){
         cat("Working with energy=",energies[ie],"\n")
-        fitsFileLarge <- paste("tessimLPA2shunt/sep40000sam_20000p_",energies[ie],"keV.fits",sep="")
-        fitsFile <- paste("tessimLPA2shunt/sep40000sam_1000p_",energies[ie],"keV.fits",sep="")
+        fitsFileLarge <- paste("tessimLPA2shunt/sep40000sam_20000p_",energies[ie],"keV",samprateStr,".fits",sep="")
+        fitsFile <- paste("tessimLPA2shunt/sep40000sam_1000p_",energies[ie],"keV",samprateStr,".fits",sep="")
         if(!file.exists(fitsFile)){
             # use larger one
             stopifnot((file.exists(fitsFileLarge) || file.exists(fitsFile)))
@@ -68,14 +86,16 @@ if(!file.exists(saveFileFull) || repeatCal){
     save(derivArrayMean4samples, file=saveFileMean4) 
 }
 
+# Get reconstructed energies of SINGLE pulses ---- TAKE CARE of SAMPRATE ----
 EkeVrecons <- matrix(NA,nrow=npulses, ncol=length(energies))
+BiasEkeVrecons <- matrix(NA,nrow=npulses, ncol=length(energies))
 minErecons <- numeric()
 maxErecons <- numeric()
 for (ie in 1:length(energies)){
     cat("Working with energy=",energies[ie],"\n")
     # get reconstructed energies
-    eventsFile <- paste("eresolLPA2shunt/events_sep40000sam_20000p_SIRENA4096_pL4096_",energies[ie],
-                        "keV_F0F_fixedlib1OF_OPTFILT_NTRIG.fits",sep="")
+    eventsFile <- paste("eresolLPA2shunt/events_sep40000sam_20000p_SIRENA",pulseLength,"_pL",pulseLength,"_",energies[ie],
+                        "keV_F0F_fixedlib1OF_OPTFILT",samprateStr,"_NTRIG.fits",sep="")
     zz <- file(description = eventsFile, open = "rb")
     header0 <- readFITSheader(zz, fixHdr = 'remove') # read primary header
     header <- readFITSheader(zz, fixHdr = 'remove') # read extension header
@@ -84,11 +104,14 @@ for (ie in 1:length(energies)){
     idcol <- which(evtTable$colNames == "SIGNAL")
     pulse <- list()
     EkeVrecons[,ie] <- evtTable$col[[idcol]][1:npulses]
+    BiasEkeVrecons[,ie] <- EkeVrecons[,ie] - as.numeric(energies[ie])
     minErecons[ie] <- min(EkeVrecons[,ie])
     maxErecons[ie] <- max(EkeVrecons[,ie])
 } # foreach calib energy
 
+# Calculate or read DERIVATIVE of PAIRS of pulses
 if(file.exists(pairFileFull)){
+    cat("Looking for data in ",pairFileFull,"\n")
     repeatcal <- FALSE
     load(pairFileFull)
     load(pairFileMean4)
@@ -104,16 +127,15 @@ if(file.exists(pairFileFull)){
 if(!file.exists(pairFileFull) || repeatCal){
     cat("Repeating file ", pairFileFull, " calculation\n")
     
-    derivArrayPair <- array(NA,dim=c(nPairs,length(energies),length(separations),pulseLength-1))
     # save also the mean of the first 4 samples of the derivative
-    derivArrayMean4samplesPair <- array(NA, dim=c(nPairs, length(energies), length(separations)))
     colnames(derivArrayPair) <- energies
     rownames(derivArrayPair) <- paste("pulse",1:nPairs,sep="")
     dimnames(derivArrayPair)[[3]] <- separations
     for (ie in 1:length(energies)){
         for (is in 1:length(separations)){
             cat("Working with Primary energy in Pair=",energies[ie]," at separation ",separations[is],"\n")
-            fitsFile <- paste("tessimLPA2shunt/sep",separations[is],"sam_2000p_",energies[ie],"keV_0.2keV.fits",sep="")
+            fitsFile <- paste("tessimLPA2shunt/sep",separations[is],"sam_2000p_",
+                              energies[ie],"keV_",Esec,"keV",samprateStr,".fits",sep="")
             istart <- 1000 # Start pulses at sample=istart
             if (energies == "0.2" || energies == "0.5") istart = 999
             derivateListForE <- derivPulseFits(fitsFile,fitsExt = 1, fitsCol = "ADC", npulses = nPairs, 
@@ -129,11 +151,19 @@ if(!file.exists(pairFileFull) || repeatCal){
     save(derivArrayMean4samplesPair, file=pairFileMean4) 
 }
 EkeVreconsPairs <- array(NA, dim=c(nPairs, length(energies), length(separations)))
+BiasEkeVreconsPairs <- array(NA, dim=c(nPairs, length(energies), length(separations)))
+# Get reconstructed energies of PAIRS of pulses
 for (ie in 1:length(energies)){
     for (is in 1:length(separations)){
+        if(separations[is] == "00002"){ # too short filter: cannot calculate energy
+            EkeVreconsPairs[,ie,is] <- rep(NaN,nPairs)
+            BiasEkeVreconsPairs[,ie,is] <- rep(NaN,nPairs)
+            next
+        }
         # get reconstructed energies
-        eventsFile <- paste("eresolLPA2shunt/nodetSP/events_sep",separations[is],"sam_2000p_SIRENA4096_pL4096_",energies[ie],
-                            "keV_0.2keV_F0F_fixedlib1OF_OPTFILT_NTRIG.fits",sep="")
+        eventsFile <- paste("eresolLPA2shunt/nodetSP/events_sep",separations[is],"sam_2000p_SIRENA",pulseLength,"_pL",
+                            pulseLength,"_",energies[ie],"keV_",Esec,"keV_F0F_fixedlib1OF_OPTFILT",
+                            samprateStr,"_NTRIG.fits",sep="")
         zz <- file(description = eventsFile, open = "rb")
         header0 <- readFITSheader(zz, fixHdr = 'remove') # read primary header
         header <- readFITSheader(zz, fixHdr = 'remove') # read extension header
@@ -142,34 +172,45 @@ for (ie in 1:length(energies)){
         idcol <- which(evtTable$colNames == "SIGNAL")
         pulse <- list()
         EkeVreconsPairs[,ie,is] <- evtTable$col[[idcol]][1:nPairs]
+        BiasEkeVreconsPairs[,ie,is] <- EkeVreconsPairs[,ie,is] - as.numeric(energies[ie])
     } # foreach separation    
 } # foreach calib energy
 
 #
 # Draw Bagplots
 #
-par(mfrow=c(2,2))
+par(mfrow=c(2,3))
 for (ie in 1:length(energies)){
     cat("Plotting figure for Eprim=",energies[ie],"keV\n")
-    xmin<-min(derivArrayMean4samples[,ie],derivArrayMean4samplesPair[,ie,])
-    xmax<- max(derivArrayMean4samples[,ie],derivArrayMean4samplesPair[,ie,])
+    xmin<-min(derivArrayMean4samples[,ie],derivArrayMean4samplesPair[,ie,2:nseps])
+    xmax<- max(derivArrayMean4samples[,ie],derivArrayMean4samplesPair[,ie,2:nseps])
     ymin <- min(EkeVrecons[,ie],EkeVreconsPairs[,ie,which(separations %in% separationsToPlot)])
     ymax <- max(EkeVrecons[,ie],EkeVreconsPairs[,ie,which(separations %in% separationsToPlot)])
+    #ymin <- min(1E3*BiasEkeVrecons[,ie],1E3*BiasEkeVreconsPairs[,ie,which(separations %in% separationsToPlot)])
+    #ymax <- max(1E3*BiasEkeVrecons[,ie],1E3*BiasEkeVreconsPairs[,ie,which(separations %in% separationsToPlot)])
+    
+    # Yellow-ish bagplot (single pulses)
     bagplot(derivArrayMean4samples[,ie],EkeVrecons[,ie],xlab="<4 derivative samples>", ylab="Reconstructed Energy (keV)",
-            main=paste("Primary pulses E=",energies[ie]," keV",sep=""), 
+            main=(bquote(paste(E[prim],"=",.(energies[ie])," keV  ",E[sec],"=",.(Esec)," keV",sep=""))), 
             xlim=c(floor(xmin),ceiling(xmax*1.005)), ylim=c(ymin,ymax),
             col.loophull="cornsilk",col.looppoints="peachpuff",col.baghull="orange",show.outlier = FALSE)
+    #bagplot(derivArrayMean4samples[,ie],1E3*BiasEkeVrecons[,ie],xlab="<4 derivative samples>", 
+    #        ylab="Bias in Reconstructed Energy (eV)",
+    #        main=(bquote(paste(E[prim],"=",.(energies[ie])," keV  ",E[sec],"=",.(Esec)," keV",sep=""))), 
+    #        xlim=c(floor(xmin),ceiling(xmax*1.005)), ylim=c(ymin,ymax),
+    #        col.loophull="cornsilk",col.looppoints="peachpuff",col.baghull="orange",show.outlier = FALSE)
+    # blue-ish bagplots (pairs of pulses)
     for(is in 1:length(separations)){
         if(!separations[is] %in% separationsToPlot) next
         cat("............Plotting bagplot for sep=",separations[is],"samples\n")
-        #bagplot(derivArrayMean4samplesPair[,ie,is],EkeVreconsPairs[,ie,is],xlab="<4 derivative samples>", ylab="Reconstructed Energy (keV)",
-        #        main=paste("Pairs of pulses Eprim=",energies[ie]," keV",sep=""),add=TRUE,
-        #        col.loophull="magenta",  col.looppoints="cyan", col.baghull="green",  col.bagpoints="orange")
         bag <- try(compute.bagplot(derivArrayMean4samplesPair[,ie,is],EkeVreconsPairs[,ie,is]))
+        #bag <- try(compute.bagplot(derivArrayMean4samplesPair[,ie,is],1E3*BiasEkeVreconsPairs[,ie,is]))
         if(class(bag) == "try-error") next
         plot.bagplot(bag,add=TRUE, transparency=TRUE)
-        text(xmax*1.001,ymax,"Sep(sam)", cex=0.8 )
-        text(xmax*1.001,bag$center[2],separations[is], cex=0.7)
+        #text(xmax*1.001,ymax,"Sep(sam)", cex=0.8 )
+        text(xmax*1.001,ymax,"Separation", cex=0.8 )
+        #text(xmax*1.001,bag$center[2],separations[is], cex=0.7)
+        text(xmax*1.001,bag$center[2],paste(separations[is],"sam/",seps.ms[is],"ms",sep=""), cex=0.7)
     }
 }
 #lines(colMeans(derivArrayMean4samples), minErecons, col="green")
