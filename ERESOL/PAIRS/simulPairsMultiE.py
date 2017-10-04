@@ -56,6 +56,8 @@ tstart = 0.5/float(samprate)  # added to solve floating point inaccu. due to sam
 
 triggerTH = {'LPA1shunt': 50, 'LPA2shunt': 20}
 
+print("hola!")
+
 
 def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias):
     """
@@ -93,7 +95,7 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias):
         # sepsStr = ['00001', '00002', '00005', '00010', '00013', '00017', '00023', '00031', '00042', '00056', '00075',
         #           '00101', '00136', '00182', '00244', '00328', '00439', '00589', '00791', '01061', '01423', '01908',
         #           '02560', '03433', '04605']
-        sepsStr = ['00005', '00010', '00020', '00045', '00060', '00100', '00200', '00250', '00300', '00400', '00800', '01000']
+        sepsStr = ['00005', '00010', '00020', '00045', '00060']
         pulseLength = 4096  # only to calculate triggerSize
 
     for sepA in sepsStr:
