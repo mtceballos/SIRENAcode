@@ -20,10 +20,13 @@ nen <- length(calibEnergies)
 #srcFluxes <- c("1E-11", "2.15E-11", "4.64E-11", "1E-10", "2.15E-10", "4.64E-10", 
 #                "1E-9", "2.15E-9", "4.64E-9", "1E-8", "2.15E-8")
 #ctr.mcrab<-numeric(length(srcFluxes))
-fluxes.mcrab <- c(0.01, 0.036, 0.13, 0.46, 1.67, 6., 21.54, 77.43, 278.26, 1000.) # flux in mCrab
+fluxes.mcrab <- c("0.0001","0.0005","0.001","0.005","0.01", "0.036", "0.13", "0.46", 
+                  "0.80", "1.67", "6.", "21.54", "77.43", "278.26", "1000.") # flux in mCrab
 nFluxes <- length(fluxes.mcrab)
 filters <- c("_filter_", "_") # Be Filter & w/o filter
 legendTitles<-c("Be Filter","NO Be Filter")
+legendPos <- c("topright","right")
+legendPch <- c(4,1)
 nfilters <- length(filters)
 
 # Bagplots Failure areas (as a funtion of secondary energy)
@@ -43,15 +46,15 @@ minSampAD_ht_1 <- list("0.2"=60, "0.5"=20, "1"=5, "2"=5, "3"=5, "4"=5, "5"=5, "6
 minSampA1_lt_1 <- list("0.2"=45, "0.5"=45, "1"=45, "2"=45, "3"=45, "4"=45, "5"=45, "6"=45, "7"=45, "8"=45)
 minSampA1_ht_1 <- list("0.2"=5, "0.5"=10, "1"=20, "2"=20, "3"=20, "4"=20, "5"=20, "6"=20, "7"=20, "8"=200)
 
-percent.AD_lt <- matrix(nrow=nFluxes,ncol = nfilters, dimnames=list("BeFilter", "NoFilter"))
-percent.AD_ht <- matrix(nrow=nFluxes,ncol = nfilters, dimnames=list("BeFilter", "NoFilter"))
-percent.A1_lt <- matrix(nrow=nFluxes,ncol = nfilters, dimnames=list("BeFilter", "NoFilter"))
-percent.A1_ht <- matrix(nrow=nFluxes,ncol = nfilters, dimnames=list("BeFilter", "NoFilter"))
-percent.BPAD_lt <- matrix(nrow=nFluxes,ncol = nfilters, dimnames=list("BeFilter", "NoFilter"))
-percent.BPAD_ht <- matrix(nrow=nFluxes,ncol = nfilters, dimnames=list("BeFilter", "NoFilter"))
-percent.BPA1_lt <- matrix(nrow=nFluxes,ncol = nfilters, dimnames=list("BeFilter", "NoFilter"))
-percent.BPA1_ht <- matrix(nrow=nFluxes,ncol = nfilters, dimnames=list("BeFilter", "NoFilter"))
-percent.BPA1_ht_cnsrv <- matrix(nrow=nFluxes,ncol = nfilters, dimnames=list("BeFilter", "NoFilter"))
+percent.AD_lt <- matrix(nrow=nFluxes,ncol = nfilters, dimnames=list(rep("",nFluxes), c("BeFilter", "NoFilter")))
+percent.AD_ht <- matrix(nrow=nFluxes,ncol = nfilters, dimnames=list(rep("",nFluxes), c("BeFilter", "NoFilter")))
+percent.A1_lt <- matrix(nrow=nFluxes,ncol = nfilters, dimnames=list(rep("",nFluxes), c("BeFilter", "NoFilter")))
+percent.A1_ht <- matrix(nrow=nFluxes,ncol = nfilters, dimnames=list(rep("",nFluxes), c("BeFilter", "NoFilter")))
+percent.BPAD_lt <- matrix(nrow=nFluxes,ncol = nfilters, dimnames=list(rep("",nFluxes), c("BeFilter", "NoFilter")))
+percent.BPAD_ht <- matrix(nrow=nFluxes,ncol = nfilters, dimnames=list(rep("",nFluxes), c("BeFilter", "NoFilter")))
+percent.BPA1_lt <- matrix(nrow=nFluxes,ncol = nfilters, dimnames=list(rep("",nFluxes), c("BeFilter", "NoFilter")))
+percent.BPA1_ht <- matrix(nrow=nFluxes,ncol = nfilters, dimnames=list(rep("",nFluxes), c("BeFilter", "NoFilter")))
+percent.BPA1_ht_cnsrv <- matrix(nrow=nFluxes,ncol = nfilters, dimnames=list(rep("",nFluxes), c("BeFilter", "NoFilter")))
 
 for (ifi in 1:nfilters){
     filter <- filters[ifi]
@@ -59,7 +62,7 @@ for (ifi in 1:nfilters){
         if(fluxes.mcrab[i] < 0.5) {
             # read evt file
             evtFile <- paste("e2e/crabSpec",fluxes.mcrab[i],"mCrab",XT,".fits",sep="")
-            pixFile <- paste("e2e/crabSpec",fluxes.mcrab[i],XT,".piximpact",sep="")
+            pixFile <- paste("e2e/crabSpec",fluxes.mcrab[i],"mCrab",XT,".piximpact",sep="")
         }else{
             
             evtFile <- paste("e2e/crabSpec",fluxes.mcrab[i],"mCrab",filter,"35mm",XT,".fits",sep="")
@@ -124,7 +127,7 @@ for (ifi in 1:nfilters){
             idclosSec <- whichClosest(calibEnergies,EkeVrecons[ip])
             closestEnergySec <- calibEnergies[idclosSec]
         
-            # BPA1: Pulses not rejected by bagplots and not detected by A1/AD
+            # BPA1AD: Pulses not rejected by bagplots and not detected by A1/AD
             #===============================================================
             # if in same pixel than previous && in required temporal range &&
             #    energy prim/sec in range of interest && in same pixel:
@@ -203,33 +206,35 @@ par(mfrow=c(1,2))
 
 # PLOTTING (UN)DETECTION
 ##########################
-drawLogPlotBox(xlimits=c(1,1E3),ylimits=c(0,50), logxy="x",xlabel="Intensity (mCrab)", 
+drawLogPlotBox(xlimits=c(1E-4,1E3),ylimits=c(0,2.5), logxy="x",xlabel="Intensity (mCrab)", 
                ylabel=expression("Fraction of photons (%)"), naxes=c(T,T,F,F))
 title(main="Undetected Fraction of Photons")
 for (ifi in 1:nfilters){
-    points(fluxes.mcrab,percent.A1_lt[,ifi],col="red",type = "b",lty=2,pch=ifi,cex=0.8) 
-    points(fluxes.mcrab,percent.A1_ht[,ifi],col="red",type = "b",lty=1,pch=ifi,cex=0.8) 
-    points(fluxes.mcrab,percent.AD_lt[,ifi],col="blue",type = "b",lty=2,pch=ifi,cex=0.8)
-    points(fluxes.mcrab,percent.AD_ht[,ifi],col="blue",type = "b",lty=1,pch=ifi,cex=0.8) 
+    points(fluxes.mcrab,percent.A1_lt[,ifi],col="red",type = "b",lty=2,pch=legendPch[ifi],cex=0.8) 
+    points(fluxes.mcrab,percent.A1_ht[,ifi],col="red",type = "b",lty=1,pch=legendPch[ifi],cex=0.8) 
+    points(fluxes.mcrab,percent.AD_lt[,ifi],col="blue",type = "b",lty=2,pch=legendPch[ifi],cex=0.8)
+    points(fluxes.mcrab,percent.AD_ht[,ifi],col="blue",type = "b",lty=1,pch=legendPch[ifi],cex=0.8) 
 
-    legend("topleft",legend=c("A1, high threshold","A1, low threshold","AD, high threshold","AD, low threshold"), 
-           col=c("red","red","blue","blue"), lty=c(1,2,1,2), pch=c(ifi,ifi,ifi,ifi),cex=0.7,bty="n", title=legendTitles[ifi])
+    legend(legendPos[ifi],legend=c("A1, high threshold","A1, low threshold","AD, high threshold","AD, low threshold"), 
+           col=c("red","red","blue","blue"), lty=c(1,2,1,2), 
+           pch=c(legendPch[ifi],legendPch[ifi],legendPch[ifi],legendPch[ifi]),cex=0.7,bty="n", title=legendTitles[ifi])
     
 }
 # PLOTTING (UN)DETECTION * BAGPLTS flagging
 ##############################################
-drawLogPlotBox(xlimits=c(1,1E3),ylimits=c(0,3), logxy="x",xlabel="Intensity (mCrab)", 
+drawLogPlotBox(xlimits=c(1E-4,1E3),ylimits=c(0,0.5), logxy="x",xlabel="Intensity (mCrab)", 
                ylabel=expression("Fraction of photons (%)"), naxes=c(T,T,F,F))
 title(main="Undetected Fraction of Photons \n(not spotted by derivative)",cex=0.8)
 for (ifi in 1:nfilters){
-    points(fluxes.mcrab,percent.BPA1_ht[,ifi],col="red",lty=1,type = "b",pch=ifi,cex=0.8)
-    points(fluxes.mcrab,percent.BPA1_ht_cnsrv[,ifi],col="grey",lty=1,type = "b",pch=ifi,cex=0.8)
-    points(fluxes.mcrab,percent.BPA1_lt[,ifi],col="red",lty=2,type = "b",pch=ifi,cex=0.8)
-    points(fluxes.mcrab,percent.BPAD_ht[,ifi],col="blue",lty=1,type = "b",pch=ifi,cex=0.8)
-    points(fluxes.mcrab,percent.BPAD_lt[,ifi],col="blue",lty=2,type = "b",pch=ifi,cex=0.8)
-    legend("topright",legend=c("A1, high threshold","A1, high threshold\n(200-300samples)",
+    points(fluxes.mcrab,percent.BPA1_ht[,ifi],col="red",lty=1,type = "b",pch=legendPch[ifi],cex=0.8)
+    points(fluxes.mcrab,percent.BPA1_ht_cnsrv[,ifi],col="grey",lty=1,type = "b",pch=legendPch[ifi],cex=0.8)
+    points(fluxes.mcrab,percent.BPA1_lt[,ifi],col="red",lty=2,type = "b",pch=legendPch[ifi],cex=0.8)
+    points(fluxes.mcrab,percent.BPAD_ht[,ifi],col="blue",lty=1,type = "b",pch=legendPch[ifi],cex=0.8)
+    points(fluxes.mcrab,percent.BPAD_lt[,ifi],col="blue",lty=2,type = "b",pch=legendPch[ifi],cex=0.8)
+    legend(legendPos[ifi],legend=c("A1, high threshold","A1, high threshold\n(200-300samples)",
                                "A1, low threshold","AD, high threshold","AD, low threshold"), 
-           col=c("red","grey","red","blue","blue"), lty=c(1,1,2,1,2), pch=c(ifi,ifi,ifi,ifi,ifi),cex=0.7,bty="n",
+           col=c("red","grey","red","blue","blue"), lty=c(1,1,2,1,2), 
+           pch=c(legendPch[ifi],legendPch[ifi],legendPch[ifi],legendPch[ifi],legendPch[ifi]),cex=0.7,bty="n",
            title=legendTitles[ifi])
 }
 dev.off()
