@@ -25,6 +25,7 @@ import shlex
 import shutil
 import sys
 import tempfile
+import numpy
 from subprocess import check_call, check_output, STDOUT
 from astropy.io import fits
 import xml.etree.ElementTree as ET
@@ -36,7 +37,7 @@ os.environ["HEADASNOQUERY"] = ""
 os.environ["HEADASPROMPT"] = "/dev/null/"
 
 nSimPulses = 20000  # 10000 records = 10000 secondary pulses
-nSimPulses = 2000  # 10000 records = 10000 secondary pulses
+nSimPulses = 2000  # 1000 records = 1000 secondary pulses
 recordSeparation = 40000  # separation from secondary --> primary for next record
 
 simSIXTEdir = "/home/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE"
@@ -55,8 +56,6 @@ for samplefreq in XMLroot.findall('samplefreq'):
 tstart = 0.5/float(samprate)  # added to solve floating point inaccu. due to sampling rate (Christian's mail 31/03/2017)
 
 triggerTH = {'LPA1shunt': 50, 'LPA2shunt': 20}
-
-print("hola!")
 
 
 def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias):
@@ -92,10 +91,12 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias):
 
     elif ("LPA2" in pixName) or ("LPA3" in pixName):
 
-        # sepsStr = ['00001', '00002', '00005', '00010', '00013', '00017', '00023', '00031', '00042', '00056', '00075',
-        #           '00101', '00136', '00182', '00244', '00328', '00439', '00589', '00791', '01061', '01423', '01908',
-        #           '02560', '03433', '04605']
-        sepsStr = ['00005', '00010', '00020', '00045', '00060']
+        #sepsStr = ['00004', '00006', '00008', '00011', '00044', '00060', '00090', '00100', '00120', '00200',
+        #           '00250', '00300', '00400', '00500', '00600', '00800', '01000', '01600', '02000']
+
+        sepsStr = ['{0:05d}'.format(member) for member
+                   in list(map(int, numpy.ndarray.tolist(numpy.logspace(numpy.log10(4), numpy.log10(2000), num=20))))]
+
         pulseLength = 4096  # only to calculate triggerSize
 
     for sepA in sepsStr:

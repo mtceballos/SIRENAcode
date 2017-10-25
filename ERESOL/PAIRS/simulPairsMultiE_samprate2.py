@@ -25,6 +25,7 @@ import shlex
 import shutil
 import sys
 import tempfile
+import numpy
 from subprocess import check_call, check_output, STDOUT
 from astropy.io import fits
 import xml.etree.ElementTree as ET
@@ -96,13 +97,18 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias):
         # sepsStr = ['00001', '00002', '00005', '00010', '00013', '00017', '00023', '00031', '00042', '00056', '00075',
         #           '00101', '00136', '00182', '00244', '00328', '00439', '00589', '00791', '01061', '01423', '01908',
         #           '02560', '03433', '04605']
-
-        sepsStr = ['00002', '00005', '00010', '00020', '00022', '00030', '00045','00050', '00060', '00100',
-                   '00125', '00150', '00200','00250','00300', '00400','00500','00800', '01000']
+        #sepsStr = ['00002', '00005', '00010', '00020', '00022', '00030', '00045','00050', '00060', '00100', '00125', '00150', '00200','00250','00300', '00400','00500','00800', '01000']
+        sepsStr = ['{0:05d}'.format(member) for member
+                   in list(map(int, numpy.ndarray.tolist(numpy.logspace(numpy.log10(2), numpy.log10(1000), num=20))))]
+	#sepsStr = ['{0:05d}'.format(member) for member
+        #           in list(map(int, numpy.ndarray.tolist(numpy.logspace(numpy.log10(4), numpy.log10(2000), num=20))))]
+        seps = numpy.logspace(numpy.log10(2), numpy.log10(1000), num=20)
+        sepsInt = seps.astype(int)
         pulseLength = 2048
 
-    for sepA in sepsStr:
-        sep12 = int(sepA)
+    #for sepA in sepsStr:
+    for sep12 in sepsInt:
+        sepA = '{0:05d}'.format(sep12)
         triggerSizeTC = PreBufferSize + sep12 + recordSeparation + 1000
         triggerSizeTS = PreBufferSize + sep12 + pulseLength + 1000
         triggerTS3val = triggerSizeTS - PreBufferSize
