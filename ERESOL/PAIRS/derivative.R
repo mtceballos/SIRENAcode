@@ -21,7 +21,7 @@ pulseLength<- 2048   # pulse length
 
 energies <- c("0.2", "0.5", "1", "2", "3", "4", "5", "6", "7", "8") # pulses energies
 nenergies <- length(energies)
-Esec <- "0.2" # keV : energy of secondary pulses
+Esec <- "1" # keV : energy of secondary pulses
 
 pdf(paste("baselineLPA2/derivativePairsStudy_Esec",Esec,"keV",samprateStr,".pdf",sep=""),width=10, height=7,version="1.4")
 #energies <- c("0.2", "0.5")
