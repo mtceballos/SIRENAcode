@@ -19,9 +19,11 @@ else if ($instrument == "LPA2shunt") then
     set nSamples=4096
     set largeFilter=32768
 endif
+set smpStr = "" # samprate = 156.25kHz 
+#set smpStr = "samprate2" # samprate = 156.25/2kHz 
 
 set fixedlib1_OPTFILT=0
-set fixedlib1OF_OPTFILT=0
+set fixedlib1OF_OPTFILT=1
 set fixedlib1OF_OPTFILTNM=0
 set fixedlib1_I2R=0
 set fixedlib1OF_I2R=0
@@ -29,7 +31,7 @@ set fixedlib1_I2RNOL=0
 set fixedlib1OF_I2RNOL=0
 set fixedlib1_I2RFITTED=0
 set fixedlib1OF_I2RFITTED=0
-set multilibOF_WEIGHTN=1
+set multilibOF_WEIGHTN=0
 set multilib_WEIGHTN=0
 set multilib_WEIGHT=0
 
@@ -40,7 +42,7 @@ if ($option == 1) then
 	# All methods can be run OFLib=yes because length to be used is maximum (pulseLength=largeFilter)
 	
 	set energies=(0.2 0.5 1 2 3 4 5 6 7 8)
-        #set energies=(0.2 0.5 1 2)
+        set energies=(0.2)
 	set nenergies=$#energies
 	#set nSamples=$largeFilter
 	#set pulseLength=$largeFilter
@@ -48,18 +50,20 @@ if ($option == 1) then
 	set nSimPulses=20000
 	# For LPA2: do detection for 0.2, 0.5, 1 and 2 (problem with threshold for these energies in simulated files; 
 	# only in libraries; corrected in singles/pairs simulations)
-	set lags=(1 1 0 0 0 0 0 0 0 0) # 0.2 and 0.5 keV still difficult to locate
+	set lags=(1 1 1 1 1 1 1 1 1 1) # 0.2 and 0.5 keV still difficult to locate
 	set tstartPulse1All=(999 999 1000 1000 1000 1000 1000 1000 1000 1000) # default 0 in getEresolCurves
+        set tstartPulse1All=(0 0 0 0 0 0 0 0 0 0) # default 0 in getEresolCurves
 	# if LPA1, calibration files are pairs (in LPA2 are single pulses: no tstartPulse2All nor tstartPulse3All)
 	#set nSgmsAll=(4.6 4.6 12 12 0 0 0 0 0 0)
-        set nSgmsAll=(0 0 0 0 0 0 0 0 0 0)
+        #set nSgmsAll=(0 0 0 0 0 0 0 0 0 0)
+        #set nSgmsAll=(11.3 11.3 11.3 11.3 11.3 11.3 11.3 11.3 11.3 11.3)
         
 	foreach ie (`seq 1 $nenergies`)
-		set monoEkeV=${energies[$ie]}
-		echo "Runing method comparison (FWHM vs Energy) for energy=$monoEkeV"
+		set mono1EkeV=${energies[$ie]}
+		set mono2EkeV=0
+		echo "Runing method comparison (FWHM vs Energy) for energy=$mono1EkeV"
 		set tstartPulse1=${tstartPulse1All[$ie]}
 		set tstartPulse2=0
-		set nSgms=${nSgmsAll[$ie]}
 		set lgs=${lags[$ie]}
 		
 		################ ON-THE-FLY ##########################################
@@ -73,11 +77,27 @@ if ($option == 1) then
                     # -------------------------------------------
                     set lib="fixedlib1OF"
                     set meth="OPTFILT"
-                    echo "Launching $meth $lib for $monoEkeV"
+                    echo "Launching $meth $lib for $mono1EkeV"
                     set nSimPulsesLib=20000
-                    set logf="${instrument}_$meth${lib}_${monoEkeV}.log"
-                    nohup python getEresolCurves.py --pixName ${instrument} --lib $lib --monoEnergy $monoEkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --lags $lgs --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 >& $logf &
-		endif
+                    foreach detMethod ("AD" "A1")
+                        if($detMethod == "AD") then
+                            set nSgms=11.3 # samprate=156.25 kHz
+                            set nSamplesUp=0
+                            set nSamplesDown=0
+                            if($smpStr == "samprate2")   set nSgms=23.5 # samprate=78.125 kHz
+                        endif
+                        if($detMethod == "A1") then
+                            set nSgms=5 # samprate=156.25 kHz
+                            set nSamplesUp=3
+                            set nSamplesDown=3
+                            if($smpStr == "samprate2") then
+                                set nSgms=6 # samprate=78.125 kHz
+                                set nSamplesUp=2
+                                set nSamplesDown=3
+                            endif       
+                        endif
+                        nohup python getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --scaleFactor $scaleFactor --nSgms $nSgms --tstartPulse1 $tstartPulse1 --tstartPulse2 $tstartPulse2 --detMethod=$detMethod --samplesUp=$nSamplesUp --samplesDown=$nSamplesDown  --libTmpl="LONG" --samprate=$smpStr --resultsDir="gainScale">& $logf &
+                endif
 		if ($fixedlib1OF_OPTFILTNM == 1) then
                     # Global OPTFILT AC fixedlib1 OFLib=yes NoiseMAT
                     # -------------------------------------------------------
