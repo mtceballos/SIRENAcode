@@ -14,6 +14,7 @@
 #          monoEkeV: monochromatic energy (in keV)
 #          ACDC: AC or DC
 #
+#   CAREFUL: use of "JITTER?"
 """
 
 #
@@ -51,7 +52,6 @@ XMLtree = ET.parse(XMLfile)
 XMLroot = XMLtree.getroot()
 for samplefreq in XMLroot.findall('samplefreq'):
     samprate = samplefreq.get('value')
-samprate /= 2.  # !!!! CAUTION !!!!!!!
 
 dtaums = int(singleSeparation) / float(samprate) * 1000.  # separation time (ms) between pulses
 tstart = 0.5/float(samprate) # added to solve floating point inaccuracies due to sampling rate (Christian's mail 31/03/2017)
@@ -88,7 +88,7 @@ def simulSingles(pixName, monoEkeV, acbias):
     root0 = "sep" + singleSeparation + "sam_" + simTime + "s_" + monoEkeV + "keV"  # for piximpact
     root = "sep" + singleSeparation + "sam_" + str(nSimPulses) + "p_" + monoEkeV + "keV"  # for fits
     pixFile = cwd + "/PIXIMPACT/" + root0 + ".piximpact"
-    fitsFile = SIMFILESdir + "/" + root + ".fits"
+    fitsFile = SIMFILESdir + "/" + root + "_jitter.fits"
     print("-------------------------------------------\n")
     print("Simulating ", fitsFile, "\n")
     print("-------------------------------------------\n")
@@ -163,7 +163,7 @@ def simulSingles(pixName, monoEkeV, acbias):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='Simulate pairs of pulses', prog='simulPairs')
+    parser = argparse.ArgumentParser(description='Simulate pairs of pulses', prog='simulSingles')
 
     parser.add_argument('--pixName', help='Extension name in pixel definition FITS file (SPA*, LPA1*, LPA2*, LPA3*)')
     parser.add_argument('--monoEnergy', help='Monochromatic energy (keV) of input simulated pulses')
