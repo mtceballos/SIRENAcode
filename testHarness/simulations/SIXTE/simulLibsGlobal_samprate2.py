@@ -20,7 +20,8 @@ import xml.etree.ElementTree as ET
 # ----GLOBAL VARIABLES -------------
 # -- CALIB dirs & files --
 #simSIXTEdir = "/home/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE"
-simSIXTEdir = "/disco07/dataj6/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE"
+#simSIXTEdir = "/disco07/dataj6/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE"
+simSIXTEdir = "/dataj6/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE"
 XMLdir = os.environ["SIXTE"] + "/" + "share/sixte/instruments/athena/1469mm_xifu"
 XMLfile = XMLdir + "/" + "xifu_detector_hex_baseline_samprate2.xml"
 PIXIMPACTdir = simSIXTEdir + "/LIBRARIES/PIXIMPACT"
@@ -38,7 +39,7 @@ separation = 40000    # LPA2shunt
 #                    0.5 keV : some pulses trigger 1 sample late and some pulses trigger ok (1000) => set to 50
 #                    >= 1 keV:  ALL trigger OK
 
-triggerTH = {'LPA1shunt': 50, 'LPA2shunt': 20}
+triggerTH = {'LPA1shunt': 50, 'LPA2shunt': 30}
 pulsesPerRecord = {'LPA1shunt': 2, 'LPA2shunt': 1}
 noise = ""
 Fil = ""
@@ -208,7 +209,7 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
     for monoEkeV in libEnergies:  # keV
         monoEeV = float(monoEkeV) * 1.E3  # eV
         if monoEkeV == "0.5":
-            triggerTH["LPA2shunt"] = 50
+            triggerTH["LPA2shunt"] = 60
 
         print("=============================================")
         print("Adding monochromatic energy", monoEkeV, "keV")
