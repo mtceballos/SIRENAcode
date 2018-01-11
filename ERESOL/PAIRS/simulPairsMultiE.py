@@ -97,6 +97,7 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias):
         sepsStr = ['{0:05d}'.format(member) for member
                    in list(map(int, numpy.ndarray.tolist(numpy.logspace(numpy.log10(4), numpy.log10(2000), num=20))))]
 
+        sepsStr = ['00200', '00210', '00220', '00230', '00240', '00250', '00260', '00270', '00280', '00290', '00300']
         pulseLength = 4096  # only to calculate triggerSize
 
     for sepA in sepsStr:
@@ -120,7 +121,7 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias):
         print("-------------------------------------------\n")
 
         if not os.path.isfile(pixFile):
-            comm = ("tesconstpileup PixImpList=" + pixFile + " XMLFile=" + XMLfile +
+            comm = ("tesconstpileup PixImpList=" + pixFile + " XMLFile=" + XMLfile + " timezero=" + str(tstart) +
                     " tstop=" + str(simTime) + " energy=" + monoEkeV1 + " energy2=" + monoEkeV2 +
                     " pulseDistance=" + str(sep12) + " TriggerSize=" + str(triggerSizeTC) + " clobber=yes")
             print("\n##### Runing tesconstpileup #########")
@@ -191,7 +192,7 @@ if __name__ == "__main__":
     parser.add_argument('--pixName', help='Extension name in pixel definition FITS file (SPA*, LPA1*, LPA2*, LPA3*)')
     parser.add_argument('--monoEnergy1', help='Monochromatic energy (keV) of input simulated first pulse')
     parser.add_argument('--monoEnergy2', help='Monochromatic energy (keV) of input simulated second pulse')
-    parser.add_argument('--acbias', choices=['yes', 'no'],
+    parser.add_argument('--acbias', choices=['yes', 'no'], default="yes",
                         help='Operating Current (acbias=yes for AC or acbias=no for DC)')
 
     inargs = parser.parse_args()
