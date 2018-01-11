@@ -7,8 +7,9 @@ python getEresolCurves_manySeps.py
         =======================================================
         ** Check resultsDir (nodetSP in case secondaries are not detected)
                             (detSP in case secondaries are also detected
-                            gainScake in case results are for gain scale curves)
+                            gainScale in case results are for gain scale curves)
         ** Check library (LONG, SHORT) & filenames
+        ** Check jitter
 
 """
 
@@ -39,21 +40,24 @@ os.environ["HEADASPROMPT"] = "/dev/null/"
 
 XMLdir = os.environ["SIXTE"] + "/" + "share/sixte/instruments/athena/1469mm_xifu"
 XMLfile = XMLdir + "/" + "xifu_detector_hex_baseline.xml"
-#calibLibs = (0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)  # only for searching for libray intervals
+XMLfile = "/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/xifu_detector_hex_baselineNEWgrades.xml"
+# calibLibs = (0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)  # only for searching for libray intervals
+jitter = ""  # or '_jitter' to be added to filenames
 
 
-def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMethod, filterMeth,
+def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMethod, filterMeth, filterLength,
                     nsamples, pulseLength, nSimPulses, fdomain, scaleFactor, samplesUp,
                     samplesDown, nSgms, detMethod, tstartPulse1, tstartPulse2,
                     nSimPulsesLib, coeffsFile, libTmpl, resultsDir, sepsStr):
     """
     :param pixName: Extension name for FITS pixel definition file (SPA*, LPA1*, LPA2*, LPA3*)
     :param labelLib: Label identifying the library ( multilib, multilibOF, fixedlib1 )
-    :param samprate: Samprate value with respect to baseline of 156250 Hz (base, half)
+    :param samprate: Samprate value with respect to baseline of 156250 Hz: "" (baseline), "samprate2" (half_baseline)
     :param mono1EkeV: Monochromatic energy (keV) of input primary simulated pulse
     :param mono2EkeV: Monochromatic energy (keV) of input secondary simulated pulse
     :param reconMethod: Energy reconstruction Method (OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL)
     :param filterMeth: Optimal Filtering Method (F0 or B0)
+    :param filterLength: if set to 0 (default) filters are taken from library in BASE2, otherwise filterStartegy=FIXED
     :param nsamples: noise length samples
     :param pulseLength: pulse length in samples
     :param nSimPulses: number of simulated pulses (to locate filenames to be analysed)
@@ -87,12 +91,14 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
     smprtStr = ""
     if samprate == 'samprate2':
         smprtStr = "_samprate2"
-    XMLfile = XMLdir + "/" + "xifu_detector_hex_baseline" + smprtStr + ".xml"
-
+    # XMLfile = XMLdir + "/" + "xifu_detector_hex_baseline" + smprtStr + ".xml"
+    XMLfile = "/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/xifu_detector_hex_baselineNEWgrades" + smprtStr + ".xml"
 
     # pulses start
     if tstartPulse1 > 0:
-        TRIGG = "_NTRIG"
+        TRIGG = "NTRIG"
+    else:
+        TRIGG = detMethod
 
     # pulses energies
     mono1EeV = float(mono1EkeV) * 1000.
@@ -106,7 +112,7 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
 
     # separations
     if sepsStr == "":
-        sepsStr = separation
+        sepsStr = [separation]
 
     # data space and reconstruction method
     space = "ADC"
@@ -115,11 +121,15 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
 
     # libraries
     OFLib = "no"
+    OFstrategy = ""
     if "OF" in labelLib:
         OFLib = "yes"
+        OFstrategy = " OFStrategy=FIXED OFLength=" + str(filterLength)
 
     # -- LIB & NOISE & SIMS & RESULTS dirs and files ----------
     simDir = cwd + "/PAIRS/" + tessim
+    if resultsDir == "gainScale":
+        simDir += "/gainScale/"
 
     outDir = cwd + "/PAIRS/eresol" + pixName + "/" + resultsDir
     simSIXTEdir = "/dataj6/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE"
@@ -147,14 +157,15 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
     libFile = libFile.replace(".fits", libTmpl+".fits")
 
     root = ''.join([str(nSimPulses), 'p_SIRENA', str(nsamples), '_pL', str(pulseLength), '_',
-                    mono1EkeV, 'keV_', mono2EkeV, 'keV_', detMethod, "_", str(filterMeth),
+                    mono1EkeV, 'keV_', mono2EkeV, 'keV_', TRIGG, "_", str(filterMeth),
                     str(fdomain), '_', str(labelLib), '_', str(reconMethod), smprtStr])
-    if mono2EkeV == 0:
+    if mono2EkeV == "0":
         root = ''.join([str(nSimPulses), 'p_SIRENA', str(nsamples), '_pL', str(pulseLength), '_',
-                        mono1EkeV, 'keV_', detMethod, "_", str(filterMeth), str(fdomain), '_',
+                        mono1EkeV, 'keV_', TRIGG, "_", str(filterMeth), str(fdomain), '_',
                         str(labelLib), '_', str(reconMethod), smprtStr])
-    if tstartPulse1 > 0:
-        root += TRIGG
+
+    #if tstartPulse1 > 0:
+    #    root += TRIGG
     eresolFile = "eresol_" + root + ".json"
     eresolFile = eresolFile.replace(".json", libTmpl+".json")
 
@@ -165,9 +176,9 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
 
     # locate coefficients in table
     # -----------------------------
-    alias = labelLib + "_" + detMethod + "_" + reconMethod + smprtStr
+    alias = labelLib + "_" + TRIGG + "_" + reconMethod + smprtStr
     if 'fixedlib' in labelLib and 'OF' not in labelLib:
-        alias = labelLib + "OF_" + detMethod + "_" + reconMethod + smprtStr
+        alias = labelLib + "OF_" + TRIGG + "_" + reconMethod + smprtStr
     print("Using alias=", alias)
     os.chdir(outDir)
 
@@ -181,8 +192,6 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
         for i in range(0, len(codata)):
             #  METHOD   ALIAS  a0  a1  a2  a3  a4
             coeffsDict[codata[i][1]] = (codata[i][2], codata[i][3], codata[i][4], codata[i][5], codata[i][6])
-    else:
-        simDir += "/gainScale/"
 
     # ------------------------------------
     # --- Process input data files -------
@@ -201,10 +210,13 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
         if tstartPulse1 > 0 and tstartPulse2 == -1:  # calculate tstartPulse2 using separation
             tstartPulse2 = tstartPulse1 + int(sep)
         inFile = simDir + "/sep" + sep12 + "sam_" + str(nSimPulses) + "p_" + mono1EkeV + "keV_" \
-            + mono2EkeV + "keV" + smprtStr + "_jitter.fits"
+            + mono2EkeV + "keV" + smprtStr + jitter + ".fits"
+        if mono2EkeV == "0":  # for single Pulses
+            inFile = simDir + "/sep" + sep12 + "sam_" + str(nSimPulses) + "p_" + mono1EkeV + "keV" \
+                     + smprtStr + jitter + ".fits"
 
-        evtFile = "events_sep" + sep12 + "sam_" + root + "_jitter.fits"
-        evtFile = evtFile.replace("_jitter.fits", libTmpl + "_jitter.fits")
+        evtFile = "events_sep" + sep12 + "sam_" + root + jitter + ".fits"
+        evtFile = evtFile.replace(jitter + ".fits", libTmpl + jitter + ".fits")
         print("=============================================")
         print("Using file: ", inFile)
         print("Using library: ", libFile)
@@ -248,10 +260,10 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
                     " samplesDown=" + str(samplesDown) + " mode=1 NoiseFile=" + noiseFile +
                     " OFLib=" + OFLib + " FilterDomain=" + fdomain + " detectionMode=" + detMethod +
                     " FilterMethod=" + filterMeth + " clobber=yes intermediate=0 " +
-                    "EventListSize=1000" + " EnergyMethod=" + reconMethod +
+                    "EventListSize=1000" + " EnergyMethod=" + reconMethod + " LagsOrNot=1" +
                     " tstartPulse1=" + str(tstartPulse1) + " tstartPulse2=" +
                     str(tstartPulse2) + " OFNoise=" + ofnoise + " XMLFile=" + XMLfile +
-                    " filtEeV=" + str(filtEeV))
+                    " filtEeV=" + str(filtEeV)) + OFstrategy
                 # sys.exit()
             try:
                 print(comm)
@@ -286,7 +298,7 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
                 os.chdir(cwd)
                 shutil.rmtree(tmpDir)
                 raise
-            print('Reconstruction finished => sim/det: ", nTrigPulses, "/", ndetpulses')
+            print("Reconstruction finished => sim/det: ", nTrigPulses, "/", ndetpulses)
 
         # -----------------------------------------
         # EVENT file processing to calculate FWHM
@@ -296,7 +308,7 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
         for aries in classAries:  # PRIMARIES / SECONDARIES / ALL
             print("Working with:", aries, "\n")
             if "aries" in aries:  # PRIMARIES // SECONDARIES
-                evt = rootEvt + "_" + aries + "_jitter.fits"
+                evt = rootEvt + "_" + aries + jitter + ".fits"
                 if os.path.isfile(evt):
                     os.remove(evt)
             elif aries == "all":
@@ -339,9 +351,9 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
             # EBIAS = <Erecons> - monoEeV
             bias = SIGNALmean * 1000. - monoEeV
             biasErecons = '{0:0.5f}'.format(bias)
-            print("SIGNALmean=", SIGNALmean)
-            print("monoEeV=", monoEeV)
-            print("biasErecons=", biasErecons, "\n")
+            #print("SIGNALmean=", SIGNALmean)
+            #print("monoEeV=", monoEeV)
+            #print("biasErecons=", biasErecons, "\n")
 
             # calculate corrected energies if polyfit coeffs are provided and previous fwhm is not NaN (some NULL Eners)
             # if any(a != 0 for a in coeffs) and not math.isnan(fwhm):
@@ -428,9 +440,9 @@ if __name__ == "__main__":
                         help='Extension name in the FITS pixel definition file (SPA*, LPA1*, LPA2*, LPA3*)')
     parser.add_argument('--lib', required=True,
                         help='Label identifying the library (monolib, multilib, multilibOF, fixedlib, fixedlib2,...)')
-    parser.add_argument('--libTmpl', required=True, choices=['SHORT','LONG'],
+    parser.add_argument('--libTmpl', choices=['SHORT','LONG'], default='LONG',
                         help='Label identifying the library for the templates: SHORT or LONG')
-    parser.add_argument('--samprate', required=True, choices=['', 'samprate2'], help="baseline, half_baseline")
+    parser.add_argument('--samprate', default="", choices=['', 'samprate2'], help="baseline, half_baseline")
     parser.add_argument('--monoEnergy1', help='Monochromatic energy (keV) of input primary simulated pulses',
                         required=True)
     parser.add_argument('--monoEnergy2', help='Monochromatic energy (keV) of input secondary simulated pulse',
@@ -441,6 +453,7 @@ if __name__ == "__main__":
                              'I2RNOL, I2RFITTED)')
     parser.add_argument('--filter', choices=['F0', 'B0'], default='F0',
                         help='Optimal Filtering Method (F0, B0) [default %(default)s]')
+    parser.add_argument('--filterLength', type=int, help='filter length for reconstruction', default=0)
     parser.add_argument('--nsamples', type=int, help='noise length samples', required=True)
     parser.add_argument('--pulseLength', type=int, help='pulse length for reconstruction', required=True)
     parser.add_argument('--nSimPulses', type=int, help='pulses in simulations (to locate filenames)', required=True)
@@ -478,6 +491,7 @@ if __name__ == "__main__":
     getEresolCurves(pixName=inargs.pixName, labelLib=inargs.lib, samprate=inargs.samprate,
                     mono1EkeV=inargs.monoEnergy1, mono2EkeV=inargs.monoEnergy2,
                     reconMethod=inargs.reconMethod, filterMeth=inargs.filter,
+                    filterLength=inargs.filterLength,
                     nsamples=inargs.nsamples, pulseLength=inargs.pulseLength,
                     nSimPulses=inargs.nSimPulses, fdomain=inargs.fdomain,
                     scaleFactor=inargs.scaleFactor, samplesUp=inargs.samplesUp,
