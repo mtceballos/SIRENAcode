@@ -176,8 +176,8 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
     # Create simulated FILES for libraries and LIBRARY itself
     #
     libDirRoot = simSIXTEdir + "/LIBRARIES/" + tessim
-    libDir = libDirRoot + "/GLOBAL/" + space
-    libFile = libDir + "/libraryMultiE_GLOBAL_PL" + str(pulseLength) + "_" + str(nSimPulses) + "p" + Fil + ".fits"
+    libDir = libDirRoot + "NEW/GLOBAL/" + space
+    libFile = libDir + "/libraryMultiE_GLOBAL_PL" + str(pulseLength) + "_" + str(nSimPulses) + "p" + Fil + "_SHORT.fits"
 
     # libFile += "5-9"  # for library creation in steps
 
@@ -216,6 +216,7 @@ def simulGlobalLibs(pixName, space, pulseLength, libEnergies, largeFilter, nsamp
         # pixFile = PIXIMPACTdir + "/" + root0 + "_trSz" + str(triggerSizeTC) + ".piximpact"
         pixFile = PIXIMPACTdir + "/" + root0 + ".piximpact"
         simFile = SIMFILESdir + "/" + root + ".fits"
+	print(simFile)
 
         # -- TESGENIMPACTS: generate impacts for well separated single pulses --
         # -- TESSIM: simulate well separated pulses --
