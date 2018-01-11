@@ -129,7 +129,7 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias):
         print("-------------------------------------------\n")
 
         if not os.path.isfile(pixFile):
-            comm = ("tesconstpileup PixImpList=" + pixFile + " XMLFile=" + XMLfile +
+            comm = ("tesconstpileup PixImpList=" + pixFile + " XMLFile=" + XMLfile + " timezero=" + str(tstart) +
                     " tstop=" + str(simTime) + " energy=" + monoEkeV1 + " energy2=" + monoEkeV2 +
                     " pulseDistance=" + str(sep12) + " TriggerSize=" + str(triggerSizeTC) + " clobber=yes")
             print("\n##### Runing tesconstpileup #########")
