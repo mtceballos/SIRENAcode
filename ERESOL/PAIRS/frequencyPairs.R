@@ -152,7 +152,7 @@ for (ifi in 1:nfilters){
                     # look for the closest energy of photons Prim & Sec in energies list and closest separation in matrices
                     idclosPrim <- whichClosest(Eprims,EkeVrecons[[phNamePrev]])
                     closestEnergyPrim <- Eprims[idclosPrim]
-                    idclosBag <- whichClosest(as.numeric(names(BP.failRange)),EkeVrecons[[phNamePrev]])
+                    idclosBag <- whichClosest(as.numeric(names(BP.failRange)),EkeVrecons[[phName]])
                     closestBag <- names(BP.failRange)[idclosBag]
                     idclosSec <- whichClosest(Esecs,EkeVrecons[[phName]])
                     closestEnergySec <- Esecs[idclosSec]
