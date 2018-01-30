@@ -9,20 +9,148 @@ setwd("/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/PAIRS/baselineLPA2")
 #------------------------
 # THINGS THAT CAN CHANGE
 #------------------------
-samprate <- 156250 # Hz-1 - sampling rate
-XT <- "XT" #crosstalk for filenames
-separations <- c(4,5,7,10,14,20,28,39,54,75,105,146,202,281,389,540,749,1039,1442,2000) # log scale
-# Bagplots Failure areas (as a funtion of secondary energy)
-#BP.failRange <- list("0.2"=c(200,300),"0.5"=c(200,300),
-#                     "1"=c(240,260),"2"=c(240,260),"3"=c(240,260),
-#                     "4"=c(235,245),"5"=c(235,245),"6"=c(235,245),
-#                     "7"=c(235,245),"8"=c(235,245))
-BP.failRange <- list("0.2"=c(200,300), "1"=c(240,260),"4"=c(235,245))
+timeRes <- 1E-6 #s
 libTemplates <- "" # "" for full library or "_SHORT" for reduced library
-Esecs  <- c("0.2","0.5","1","1.3","1.6","2","2.3","2.6","3","3.3","3.6","4","4.3","4.6","5","5.3","5.6",
-            "6","6.3","6.6","7","7.3","7.6","8") 
-Eprims <- c("0.2","1","2","2.5","4","4.5","6","6.5","8") 
-pdf(paste("e2e/FrequencyPairsLogScale",XT,libTemplates,".pdf",sep=""),width=10, height=7,version="1.4")
+jitter <- "_jitter"
+#jitter=""
+# Energies where detection matrices are calculated
+EprimsMatrices <- c("0.2","1","2","2.5","4","4.5","6","6.5","8") 
+EsecsMatrices  <- c("0.2","0.5",
+                    "1","1.3","1.6","2","2.3","2.6",
+                    "3","3.3","3.6","4","4.3","4.6",
+                    "5","5.3","5.6","6","6.3","6.6",
+                    "7","7.3","7.6","8") 
+# Energies where baglots are calculated
+EprimsBPs <- c("0.2","0.5","1","2","3","4","5","6","7","8") 
+EsecsBPs  <- c("0.2","0.5","1","2","3","4","5","6","7","8") 
+filterLengths <- c("4096", "512", "256") # filters with which events should have been reconstructed (by GRADE)
+samprate <- 156250 # Hz-1 - sampling rate
+XT <- "XT" # "XT" crosstalk for filenames
+# separations for pairs in Detection Matrices
+separationsMatrices <- c(4,5,7,10,14,20,28,39,54,75,105,146,202,281,389,540,749,1039,1442,2000) # log scale
+# Bagplots Failure areas (as a funtion of secondary energy)
+BP.failRange <- array(data=NA, dim=c(length(EprimsBPs),length(EsecsBPs),length(filterLengths),2), 
+                      dimnames = list(EprimsBPs,EsecsBPs,filterLengths, c("min","max")))
+# Esec=0.2 keV
+BP.failRange[    ,1,1,1] <- "250"
+BP.failRange[1:6 ,1,1,2] <- "350"
+BP.failRange[7:10,1,1,2] <- "330"
+
+BP.failRange[    ,1,2,1] <- "510"
+BP.failRange[    ,1,2,2] <- "512"
+
+BP.failRange[    ,1,3,1] <- "225"
+BP.failRange[    ,1,3,2] <- "256"
+
+# Esec=0.5 keV
+BP.failRange[    ,2,1,1] <- "265"
+BP.failRange[1:6 ,2,1,2] <- "305"
+BP.failRange[7:10,2,1,2] <- "300"
+
+BP.failRange[    ,2,2,1] <- "510"
+BP.failRange[    ,2,2,2] <- "512"
+
+BP.failRange[    ,2,3,1] <- "225"   # but no problem with 00240 (?)
+BP.failRange[    ,2,3,2] <- "256"
+
+# Esec=1 keV
+BP.failRange[    ,3,1,1] <- "270"
+BP.failRange[1:6 ,3,1,2] <- "300"
+BP.failRange[7:10,3,1,2] <- "290"
+
+BP.failRange[    ,3,2,1] <- "510"
+BP.failRange[    ,3,2,2] <- "512"
+
+BP.failRange[    ,3,3,1] <- "225"   # but no problem with 00240 or 00250 (?)
+BP.failRange[    ,3,3,2] <- "256"
+
+# Esec=2 keV
+BP.failRange[    ,4,1,1] <- "275"
+BP.failRange[    ,4,1,2] <- "285"
+
+BP.failRange[    ,4,2,1] <- "510"
+BP.failRange[    ,4,2,2] <- "512"
+
+BP.failRange[1:2 ,4,3,1] <- "225"   # but no problem with 00240 or 00250 (?)
+BP.failRange[3:10,4,3,1] <- "255" 
+BP.failRange[    ,4,3,2] <- "256"
+
+# Esec=3 keV
+BP.failRange[    ,5,1,1] <- "275"
+BP.failRange[1:8 ,5,1,2] <- "285"
+BP.failRange[9:10,5,1,2] <- "280"
+
+BP.failRange[1:2 ,5,2,1] <- "510"
+BP.failRange[3:10,5,2,1] <- "512"
+BP.failRange[    ,5,2,2] <- "512"
+
+BP.failRange[    ,5,3,1] <- "256"
+BP.failRange[    ,5,3,2] <- "256"
+# Esec=4 keV
+BP.failRange[    ,6,1,1] <- "272"
+BP.failRange[1   ,6,1,2] <- "285"
+BP.failRange[2:10,6,1,2] <- "280"
+
+BP.failRange[1:2 ,6,2,1] <- "510"
+BP.failRange[3:10,6,2,1] <- "512"
+BP.failRange[    ,6,2,2] <- "512"
+
+BP.failRange[    ,6,3,1] <- "256"
+BP.failRange[    ,6,3,2] <- "256"
+# Esec=5 keV
+BP.failRange[    ,7,1,1] <- "272"
+BP.failRange[    ,7,1,2] <- "280"
+
+BP.failRange[1:2 ,7,2,1] <- "510"
+BP.failRange[3:10,7,2,1] <- "512"
+BP.failRange[    ,7,2,2] <- "512"
+
+BP.failRange[    ,7,3,1] <- "256"
+BP.failRange[    ,7,3,2] <- "256"
+# Esec=6 keV
+BP.failRange[    ,8,1,1] <- "270"
+BP.failRange[    ,8,1,2] <- "275"
+
+BP.failRange[1:2 ,8,2,1] <- "510"
+BP.failRange[3:10,8,2,1] <- "512"
+BP.failRange[    ,8,2,2] <- "512"
+
+BP.failRange[    ,8,3,1] <- "256"
+BP.failRange[    ,8,3,2] <- "256"
+
+# Esec=7 keV
+BP.failRange[1:7 ,9,1,1] <- "270"
+BP.failRange[8:10,9,1,1] <- "265"
+BP.failRange[    ,9,1,2] <- "275"
+
+BP.failRange[1:2 ,9,2,1] <- "510"
+BP.failRange[3:10,9,2,1] <- "512"
+BP.failRange[    ,9,2,2] <- "512"
+
+BP.failRange[    ,9,3,1] <- "256"
+BP.failRange[    ,9,3,2] <- "256"
+
+# Esec=8 keV
+BP.failRange[    ,10,1,1] <- "265"
+BP.failRange[1:9 ,10,1,2] <- "275"
+BP.failRange[  10,10,1,2] <- "270"
+
+BP.failRange[1:2 ,10,2,1] <- "510"
+BP.failRange[3:10,10,2,1] <- "512"
+BP.failRange[    ,10,2,2] <- "512"
+
+BP.failRange[    ,10,3,1] <- "256"
+BP.failRange[    ,10,3,2] <- "256"
+
+# BP.failRange <- list("0.2"=c(250,360),"0.5"=c(200,300),
+#                       "1"=c(240,260),"2"=c(240,260),"3"=c(240,260),
+#                       "4"=c(235,245),"5"=c(235,245),"6"=c(235,245),
+#                       "7"=c(235,245),"8"=c(235,245))
+
+#BP.failRange <- list("0.2"=c(200,300), "1"=c(240,260),"4"=c(235,245))
+#
+pdf(paste("e2e/FrequencyPairsLogScale",jitter,XT,libTemplates,".pdf",sep=""),width=10, height=7,version="1.4")
+#pdf(paste("e2e/FrequencyPairsLogScaleNOConserv02",XT,libTemplates,".pdf",sep=""),width=10, height=7,version="1.4")
 #------------------------
 # END THINGS THAT CAN CHANGE
 #------------------------
@@ -34,10 +162,10 @@ evt.pixids <- numeric()
 phs.in.pix <- numeric()
 pix.phids  <- numeric()
 
-nSec <- length(Esecs)
-nPrim <- length(Eprims)
+nSec <- length(EsecsMatrices)
+nPrim <- length(EprimsMatrices)
 #separations <- c(4,10,20,40,44,60,90,100,120,200,250,300,400,500,600,800,1000,1600,2000)
-nseps <- length(separations)
+nseps <- length(separationsMatrices)
 detectionModes <- c("AD","A1")
 #flux210_mCrab=0.000000000021147 = 2.1147E-11 erg/cm2/s 2-10kev   ---> 1 mCrab 
 fluxes.mcrab <- c("0.0001", "0.0005", "0.001", "0.005", "0.01", "0.036", "0.13", "0.46",
@@ -51,13 +179,27 @@ nfilters <- length(filters)
 nmodes <- length(detectionModes)
 percentMiss   <- array(data=NA, dim=c(nFluxes,nfilters,nmodes),dimnames = list(rep("",nFluxes), c("BeFilter", "NoFilter"), c("AD","A1")))
 percentBPfail <- array(data=NA, dim=c(nFluxes,nfilters,nmodes),dimnames = list(rep("",nFluxes), c("BeFilter", "NoFilter"), c("AD","A1")))
-probDetMatrix <- array(data=NA, dim=c(nSec,nseps,nmodes,nPrim), dimnames = list(Esecs, separations, detectionModes, Eprims))
-
+probDetMatrix <- array(data=NA, dim=c(nSec,nseps,nmodes,nPrim), dimnames = list(EsecsMatrices, separationsMatrices, 
+                                                                                detectionModes, EprimsMatrices))
+probDetMatrixOLD <- array(data=NA, dim=c(nSec,nseps,nmodes,nPrim), dimnames = list(EsecsMatrices, separationsMatrices, 
+                                                                                detectionModes, EprimsMatrices))
 # Read probability matrices
+
 for (i1 in 1:nPrim){
     for(idet in 1:nmodes){
-        #matrixFile <- paste("../imageMatrix_",detectionModes[idet],"_",Eprims[i1],"keV_old.mat",sep="")
-        matrixFile <- paste("imageMatrix_",detectionModes[idet],"_",Eprims[i1],"keV",libTemplates,".mat",sep="")
+        matrixFile <- paste("imageMatrix_",detectionModes[idet],"_",EprimsMatrices[i1],"keV",libTemplates,".mat",sep="")
+        load(matrixFile)
+        for(i2 in 1:nSec){
+            for(is in 1:nseps){
+                probDetMatrixOLD[i2,is,idet,i1] <- mat_detectedPulses[i2,is]                
+            }
+        }
+    }
+}
+for (i1 in 1:nPrim){
+    for(idet in 1:nmodes){
+        #matrixFile <- paste("imageMatrix_",detectionModes[idet],"_",EprimsMatrices[i1],"keV",libTemplates,".mat",sep="")
+        matrixFile <- paste("D_NewimageMatrix_",detectionModes[idet],"_",EprimsMatrices[i1],"keV",libTemplates,jitter,".mat",sep="")
         load(matrixFile)
         for(i2 in 1:nSec){
             for(is in 1:nseps){
@@ -143,61 +285,78 @@ for (ifi in 1:nfilters){
                 for (ip in 2:nphs){
                     phName <- phs.in.pix[ip]
                     phNamePrev <- phs.in.pix[ip-1]
-                    
+
                     # save simulated energy instead of 0.00 energy
                     if(EkeVrecons[[phName]] == 0.0) EkeVrecons[[phName]] <- EkeVsim[[phName]]
-                    BPfails <- FALSE
-                    diffSamples <- (evt.times[[phName]]-evt.times[[phNamePrev]])*samprate
+                    BPfailsDet <- FALSE
+                    BPfailsNoDet <- FALSE
                     
-                    # look for the closest energy of photons Prim & Sec in energies list and closest separation in matrices
-                    idclosPrim <- whichClosest(Eprims,EkeVrecons[[phNamePrev]])
-                    closestEnergyPrim <- Eprims[idclosPrim]
-                    idclosBag <- whichClosest(as.numeric(names(BP.failRange)),EkeVrecons[[phName]])
-                    closestBag <- names(BP.failRange)[idclosBag]
-                    idclosSec <- whichClosest(Esecs,EkeVrecons[[phName]])
-                    closestEnergySec <- Esecs[idclosSec]
-                    idclosSep <- whichClosest(separations,diffSamples)
-                    closestSep <- separations[idclosSep]
-                    probDet <- probDetMatrix[idclosSec,idclosSep,idet,idclosPrim] # 0-100% ip-1 <-> ip 
+                    diffSamplesPrev <- (evt.times[[phName]]-evt.times[[phNamePrev]])*samprate
+                    
+                    # look for the closest energy of photons Prim & Sec and closest separation 
+                    # in matrices 
+                    idclosPrimMat <- whichClosest(EprimsMatrices,EkeVrecons[[phNamePrev]])
+                    closestEnergyPrim <- EprimsMatrices[idclosPrimMat]
+                    idclosSecMat  <- whichClosest(EsecsMatrices,EkeVrecons[[phName]])
+                    closestEnergySec <- EsecsMatrices[idclosSecMat]
+                    idclosSepMat  <- whichClosest(separationsMatrices,diffSamplesPrev)
+                    closestSep <- separationsMatrices[idclosSepMat]
+                    
+                    
+                    probDet    <- probDetMatrix[idclosSecMat,idclosSepMat,idet,idclosPrimMat] # 0-100% ip-1 <-> ip 
+                    probDetOLD <- probDetMatrixOLD[idclosSecMat,idclosSepMat,idet,idclosPrimMat] # 0-100% ip-1 <-> ip 
+                    
+                    # if(probDetOLD != probDet){
+                    #     cat("ProbDetOLD=",probDetOLD," ProbDet=",probDet,
+                    #         "diffsamplesPrev=",diffSamplesPrev,"[",idclosSepMat,"]",
+                    #         "CloseEprimMat=",closestEnergyPrim,"[",idclosPrimMat,"]",
+                    #         "CloseEsecMat=",closestEnergySec,"[",idclosSecMat,"]","\n")
+                    # }
                     probDet2 <- 0.
+                    probDet2OLD <- 0.
                     
                     # same but with ip-2 (just in case it has to be taken into account)
                     
                     if(ip>2){
                         phNamePrevPrev <- phs.in.pix[ip-2]
-                        diffSamples2 <- (evt.times[[phName]]-evt.times[[phNamePrevPrev]])*samprate
-                        idclosPrim2 <- whichClosest(Eprims,EkeVrecons[ip-2])
-                        closestEnergyPrim2 <- Eprims[idclosPrim2]
-                        idclosSep2 <- whichClosest(separations,diffSamples2)
-                        closestSep2 <- separations[idclosSep2]
-                        probDet2 <- probDetMatrix[idclosSec,idclosSep2,idet,idclosPrim2] # 0-100% ip-2 <->ip
+                        diffSamplesPrevPrev <- (evt.times[[phName]]-evt.times[[phNamePrevPrev]])*samprate
+                        diffSamplesPrevPrevPrev <- (evt.times[[phNamePrev]]-evt.times[[phNamePrevPrev]])*samprate
+                        idclosPrim2Mat <- whichClosest(EprimsMatrices,EkeVrecons[ip-2])
+                        closestEnergyPrim2 <- EprimsMatrices[idclosPrim2Mat]
+                        idclosSep2Mat <- whichClosest(separationsMatrices,diffSamplesPrevPrev)
+                        closestSep2 <- separationsMatrices[idclosSep2Mat]
+                        probDet2    <- probDetMatrix[idclosSecMat,idclosSep2Mat,idet,idclosPrim2Mat] # 0-100% ip-2 <->ip
+                        probDet2OLD <- probDetMatrixOLD[idclosSecMat,idclosSep2Mat,idet,idclosPrim2Mat] # 0-100% ip-2 <->ip
+                        
                     }
                     
-            
-                    # BPA1AD: Pulses not rejected by bagplots and not detected by A1/AD
-                    #===============================================================
-                    # if in same pixel than previous && in required temporal range &&
-                    #    energy prim/sec in range of interest && in same pixel
-                    if((diffSamples>=BP.failRange[[closestBag]][1] && diffSamples<=BP.failRange[[closestBag]][2]))
-                        BPfails <- TRUE
+                    # just to compare with OLD matrices
+                    #probDet <-probDetOLD
+                    #probDet2 <-probDet2OLD
                     
+                    if(diffSamplesPrev <= timeRes) probDet <- 0.
                     # ip = secondary
                     # ip -1 = primary
                     #======================================================================
                     # prob=140%     
-                    #     Prim (50pulses)      Secondaries (50 pulses)
-                    #         (50)ok                 (10) ok -> 10/50=20%  (well)         
-                    #                            (40+40 very close) -> 40/50=80% (bad)
+                    #     Prim (50pulses)           Secondaries (50 pulses)
+                    #         (50)ok                         (10) ok -> 10/50=20%  (well)         
+                    #                                   (40+40 very close) -> 40/50=80% (bad)
                     # prob=70%     
-                    #     Prim (50pulses)      Secondaries (50 pulses)
-                    #         (50)ok             (20) ok -> 20/50=40%  (well)         
-                    #                            (30) missing-> 30/50=60% (bad)
-                    # prob=30%     
-                    #     Prim (50pulses)      Secondaries (50 pulses)
-                    #         (30)ok             (0) ok -> 0/50=0%  (well)         
-                    #         ->30/50=60%        (50) missing-> 50/50=100% (bad)    
+                    #     Prim (50pulses)           Secondaries (50 pulses)
+                    #         (50)ok                    (20) ok -> 20/50=40%  (well)         
+                    #                                   (30) missing-> 30/50=60% (bad)
+                    # prob=30% (if Eprim>0.3 keV) # missing secondaries
+                    #     Prim (50pulses)           Secondaries (50 pulses)
+                    #         (30)ok                    (0) ok -> 0/50=0%  (well)         
+                    #         ->30/50=60%               (50) missing-> 50/50=100% (bad)    
+                    # prob=30% (if Eprim <= 0.3keV) # missing primaries
+                    #     Prim (50pulses)           Secondaries (50 pulses)
+                    #     (0) ok -> 0/50=0%(well)       (30) ok -> 30/50=60% (well)
+                    #     (50) missing->            
+                    #          50/50=100% (bad)    
+                
                     
-                     
                     # Computed Probs in 0-1 scale (matrix probs in 0-100%)
                     
                     # ip-1 <--> ip
@@ -207,10 +366,17 @@ for (ifi in 1:nfilters){
                         probMissSec <- abs(probDet-100)/50.   # secondary
                         probDetSec <- 1-probMissSec 
                     }else if (probDet < 50){
-                        probDetPrim <- probDet/50.
-                        probMissPrim <- 1.-probDetPrim      # primary
-                        probDetSec <- 0.
-                        probMissSec <- 1. #secondary
+                        if(closestEnergyPrim > 0.3){
+                            probDetPrim <- probDet/50.
+                            probMissPrim <- 1.-probDetPrim      # primary
+                            probDetSec <- 0.
+                            probMissSec <- 1. #secondary
+                        }else{
+                            probDetPrim <- 0.
+                            probMissPrim <- 1.      # primary
+                            probDetSec <- probDet/50.
+                            probMissSec <- 1.-probDetPrim   #secondary
+                        }
                     }else if (probDet >102){
                         probDetPrim <- 0.
                         probDetSec <- 0.
@@ -230,10 +396,70 @@ for (ifi in 1:nfilters){
                     probDetPh[[phName]] <- probDetPh[[phName]] + (1-probDetPh[[phNamePrev]])*probDetSec2
                     probDetPh[[phNamePrev]] <- probDetPh[[phNamePrev]]*probDetPrim 
                     
-                    if(BPfails){ # if not in 'bad area' probBPfail=0
-                        probBPfail[[phName]] <- 1-probDetPh[[phName]]
-                        probBPfail[[phNamePrev]] <- 1-probDetPh[[phNamePrev]] # just in case it's changed
+                    # Once known phName -> look for the filter used for phNamePrev
+                    #=============================================================
+                    # => calculate bagplots (a posteriori)
+                    if(ip>2){
+                        # 1) look for the closest energy of photons Prim & Sec  in bagplots
+                        idclosPrimBP <- whichClosest(EprimsBPs,EkeVrecons[[phNamePrevPrev]])
+                        idclosSecBP  <- whichClosest(EsecsBPs,EkeVrecons[[phNamePrev]])
+                        
+                        # 2) For probDetPh[phName] times -> filter with length=diffSamplesPrevPrev will be used for 
+                        # (phNamePrevPrev,phNamePrev) pair
+                        if(diffSamplesPrevPrev < as.numeric(min(filterLengths))) {
+                             closestFilDet <- "LRes"
+                        }else{
+                             closestFilDet <- max(filterLengths[as.numeric(filterLengths)<=diffSamplesPrevPrev])
+                        }
+                        idclosFilDet  <- which(filterLengths == closestFilDet)
+                        #    For 1-probDetPh[phName] times -> filter with length=HighRes will be used for phNamePrev
+                        closestFilNoDet <- max(filterLengths)
+                        idclosFilNoDet  <- which(filterLengths == closestFilNoDet)
+                        
+                        # # 3) BPA1AD: Pulses not rejected by bagplots and not detected by A1/AD
+                        # #===============================================================
+                        # # if in same pixel than previous && in required temporal range (bagplots) for given
+                        # #    energy prim/sec. 
+                        # 
+                        if(closestFilDet == "LRes"){
+                             BPfailsDet <- FALSE  # flagged as Lres and possibly not reconstructed
+                        }else if((diffSamplesPrevPrev>=BP.failRange[idclosPrimBP,idclosSecBP,idclosFilDet,1] && 
+                             diffSamplesPrevPrev<=BP.failRange[idclosPrimBP,idclosSecBP,idclosFilDet,2])){
+                             BPfailsDet <- TRUE
+                        }
+                        if(diffSamplesPrevPrevPrev>=closestFilNoDet) { #no problem: phName does not interfere
+                            if((diffSamplesPrevPrevPrev>=BP.failRange[idclosPrimBP,idclosSecBP,idclosFilNoDet,1] && 
+                                diffSamplesPrevPrevPrev<=BP.failRange[idclosPrimBP,idclosSecBP,idclosFilNoDet,2]))
+                                BPfailsNoDet <- TRUE
+                        }else{ # pulse phName is not detected and enters in phNamePrevPrev-phNamePrev pair
+                                # bagplots do not consider triple pulses...be conservative!
+                            BPfailsNoDet <- TRUE
+                        }     
+                        if(BPfailsDet){ # if not in 'bad area' probBPfail=0
+                             probBPfail[[phNamePrev]] <- probDetPh[[phName]]*(1-probDetPh[[phNamePrev]])
+                        }
+                        if(BPfailsNoDet){ # if not in 'bad area' probBPfail=0
+                            probBPfail[[phNamePrev]] <- probBPfail[[phNamePrev]] + 
+                                (1-probDetPh[[phName]])*(1-probDetPh[[phNamePrev]]) # just in case it's changed
+                        }
                     }
+                    # 
+                    # # Discover with which filter this 'undetected' pair would be reconstructed
+                    # if (ip<nphs) {
+                    #     phNameNext <- phs.in.pix[ip+1]
+                    #     diffSamples3 <- (evt.times[[phNameNext]] - evt.times[[phName]])*samprate
+                    #     if(diffSamples3 < as.numeric(min(filterLengths))) {
+                    #         closestFil <- "LRes"
+                    #     }else{
+                    #         closestFil <- max(filterLengths[as.numeric(filterLengths)<=diffSamples3])
+                    #     }
+                    # }else{
+                    #     closestFil <- filterLengths[1]
+                    # }
+                    # idclosFil  <- which(filterLengths == closestFil)
+                    # 
+                    # 
+                    
                 } #photons in pixel 
             } #pixels (given a ctrate and detection mode)
             percentMiss[ifl,ifi,idet] <- sum(1-unlist(probDetPh, use.names = F))/nsims # 0-1
@@ -241,13 +467,15 @@ for (ifi in 1:nfilters){
         } #detMod
     } #each flux
 }#each filter
-par(mfrow=c(1,2))
+
 
 # PLOTTING (UN)DETECTION
 ##########################
-subtit=""
+par(mfrow=c(1,2))
+subtit=paste("//",jitter,"//",XT)
 y1max <- 6
-y2max <- 0.1
+y2max <- 0.06
+if (XT == "XT") y2max <- 0.1
 if(libTemplates == "_SHORT") {
     subtit <- "(SHORT lib templates)"
     y1max <- 80
@@ -301,8 +529,8 @@ legend("topleft",legend=c(paste(detectionModes[1],legendTitles[1]),
                           pch=c(legendPch[1],legendPch[1],legendPch[2],legendPch[2]),
                           cex=0.7,bty="n")
 abline(v=0.5,col="grey",lty=2)
-text(1E-3,0.08,"PSF=athena_psf_onaxis_20150602.fits",cex=0.4)
-text(30,0.08,"PSF=\nathena_ladapt_defocus_35mm_kev_psf_20161013.fits",cex=0.4)
+text(1E-3,0.04,"PSF=athena_psf_onaxis_20150602.fits",cex=0.4)
+text(30,0.04,"PSF=\nathena_ladapt_defocus_35mm_kev_psf_20161013.fits",cex=0.4)
 
 dev.off()
 
