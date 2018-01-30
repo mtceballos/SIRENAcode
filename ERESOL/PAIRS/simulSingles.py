@@ -26,6 +26,7 @@ import shlex
 import shutil
 import sys
 import tempfile
+from time import gmtime, strftime
 from subprocess import check_call, check_output, STDOUT
 from astropy.io import fits
 import xml.etree.ElementTree as ET
@@ -109,16 +110,16 @@ def simulSingles(pixName, monoEkeV, acbias):
         # continue  # to simulate only piximpact files
 
     if not os.path.isfile(fitsFile):
-        comm = ("tessim PixID=" + str(pixel) + " PixImpList=" + pixFile + " Streamfile=" + fitsFile +
+        commTessim = ("tessim PixID=" + str(pixel) + " PixImpList=" + pixFile + " Streamfile=" + fitsFile +
                 " tstart=0 tstop=" + simTime + " triggerSize=" + str(triggerSizeTS) + " preBuffer=" +
                 str(PreBufferSize) + " triggertype='diff:3:" + str(triggerTH[pixName]) + ":" +
                 str(triggerTS3val) + "'" + " acbias=" + acbias + " sample_rate=" + samprate +
                 " PixType=" + PixTypeFile)
 
         print("\n##### Runing tessim #########")
-        print(comm, "\n")
+        print(commTessim, "\n")
         try:
-            args = shlex.split(comm)
+            args = shlex.split(commTessim)
             check_call(args, stderr=STDOUT)
         except:
             print("Error running TESSIM for data simulation")
@@ -148,6 +149,13 @@ def simulSingles(pixName, monoEkeV, acbias):
             assert nrows2 == nrows-2, "Failure removing initial & last rows in (%s): " % fitsFile
             nettot = nrows2  # new number of pulses
             fsim[1].header['NETTOT'] = nettot
+            # update HISTORY in header[0]
+            dateTime = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+            fsim[0].header['HISTORY'] = "Created & Updated by simulSingles.py on " + dateTime + "with command: "
+            # split command line in blocks of 60 chars for HISTORY keyword
+            commSplit = [commTessim[i:i + 60] for i in range(0, len(commTessim), 60)]
+            for i in range(len(commSplit)):
+                fsim[0].header['HISTORY'] = commSplit[i]
             fsim.close()
         except:
             print("Error running FTOOLS to remove initial & last rows in ", fitsFile)
