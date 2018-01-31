@@ -61,13 +61,12 @@ print(samprate)
 triggerTH = {'LPA1shunt': 50, 'LPA2shunt': 30}
 
 
-def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, sepsStr):
+def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias):
     """
     :param pixName: Extension name in the FITS pixel definition file (SPA*, LPA1*, LPA2*, LPA3*)
     :param monoEkeV1: Monochromatic energy (keV) of input first simulated pulses
     :param monoEkeV2: Monochromatic energy (keV) of input second simulated pulses
     :param acbias: Operating Current (AC if acbias=yes or DC if acbias=no)
-    :param sepsStr: separations between pulses
     :return: files with simulated PAIRS
     """
 
@@ -78,10 +77,38 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, sepsStr):
     tessim = "tessim" + pixName
     SIMFILESdir = PAIRSdir + "/" + tessim
     PixTypeFile = "file:" + simSIXTEdir + "/newpixels.fits[" + pixName + "]"
-    pulseLength = 2048
+    sepsStr = ['0']
+    pulseLength = 0
+    if "SPA" in pixName:
 
-    for sepA in sepsStr:
-        sep12 = int(sepA)
+        sepsStr = ['00004', '00005', '00007', '00010', '00013', '00017', '00023', '00031', '00042', '00056', '00075',
+                   '00101', '00136', '00182', '00244', '00328', '00439', '00589', '00791', '01061', '01423', '01908']
+        pulseLength = 1024  # only to calculate triggerSize
+
+    elif "LPA1" in pixName:
+
+        sepsStr = ['00004', '00005', '00007', '00010', '00013', '00017', '00023', '00031', '00042', '00056', '00075',
+                   '00101', '00136', '00182', '00244', '00328', '00439', '00589', '00791', '01061', '01423', '01908'
+                   ]
+        pulseLength = 2048  # only to calculate triggerSize
+
+    elif ("LPA2" in pixName) or ("LPA3" in pixName):
+
+        # sepsStr = ['00001', '00002', '00005', '00010', '00013', '00017', '00023', '00031', '00042', '00056', '00075',
+        #           '00101', '00136', '00182', '00244', '00328', '00439', '00589', '00791', '01061', '01423', '01908',
+        #           '02560', '03433', '04605']
+        #sepsStr = ['00002', '00005', '00010', '00020', '00022', '00030', '00045','00050', '00060', '00100', '00125', '00150', '00200','00250','00300', '00400','00500','00800', '01000']
+        sepsStr = ['{0:05d}'.format(member) for member
+                   in list(map(int, numpy.ndarray.tolist(numpy.logspace(numpy.log10(2), numpy.log10(1000), num=20))))]
+	#sepsStr = ['{0:05d}'.format(member) for member
+        #           in list(map(int, numpy.ndarray.tolist(numpy.logspace(numpy.log10(4), numpy.log10(2000), num=20))))]
+        seps = numpy.logspace(numpy.log10(2), numpy.log10(1000), num=20)
+        sepsInt = seps.astype(int)
+        pulseLength = 2048
+
+    #for sepA in sepsStr:
+    for sep12 in sepsInt:
+        sepA = '{0:05d}'.format(sep12)
         triggerSizeTC = PreBufferSize + sep12 + recordSeparation + 1000
         triggerSizeTS = PreBufferSize + sep12 + pulseLength + 1000
         triggerTS3val = triggerSizeTS - PreBufferSize
@@ -92,8 +119,8 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, sepsStr):
         simTime = nSimPulses/2. * triggerSizeTC/float(samprate)
         simTime = '{0:0.0f}'.format(simTime)
 
-        root0 = "sep" + sepA + "sam_" + simTime + "s_" + monoEkeV1 + "keV_" + monoEkeV2 + "keV_samprate2"  # for piximpact
-        root = "sep" + sepA + "sam_" + str(nSimPulses) + "p_" + monoEkeV1 + "keV_" + monoEkeV2 + "keV_samprate2"  # for fits
+        root0 = "sep" + sepA + "sam_" + simTime + "s_" + monoEkeV1 + "keV_" + monoEkeV2 + "keV_samprate2NEW"  # for piximpact
+        root = "sep" + sepA + "sam_" + str(nSimPulses) + "p_" + monoEkeV1 + "keV_" + monoEkeV2 + "keV_samprate2NEW"  # for fits
 
         pixFile = cwd + "/PIXIMPACT/" + root0 + "_trSz" + str(triggerSizeTC) + ".piximpact"
         fitsFile = SIMFILESdir + "/" + root + ".fits"
@@ -175,10 +202,7 @@ if __name__ == "__main__":
     parser.add_argument('--monoEnergy2', help='Monochromatic energy (keV) of input simulated second pulse')
     parser.add_argument('--acbias', choices=['yes', 'no'],
                         help='Operating Current (acbias=yes for AC or acbias=no for DC)')
-    parser.add_argument('--separations', help='spaced list of separations between Prim & Sec pulses', required=True,
-                        nargs='+')
     
     inargs = parser.parse_args()
     simulPairs(pixName=inargs.pixName, monoEkeV1=inargs.monoEnergy1,
-               monoEkeV2=inargs.monoEnergy2, acbias=inargs.acbias,
-               sepsStr=inargs.separations)
+               monoEkeV2=inargs.monoEnergy2, acbias=inargs.acbias)

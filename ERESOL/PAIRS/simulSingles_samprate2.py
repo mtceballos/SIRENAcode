@@ -36,7 +36,7 @@ os.environ["HEADASNOQUERY"] = ""
 os.environ["HEADASPROMPT"] = "/dev/null/"
 
 nSimPulses = 20000
-singleSeparation = "40000"
+singleSeparation = "20000"
 pulseLength = 2048  # only to calculate triggerSize
 
 #simSIXTEdir = "/home/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE"
