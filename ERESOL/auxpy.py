@@ -44,21 +44,31 @@ def rmLastAndFirst(simfile, ppr):
         assert nrows2 == nrows-2, "Failure removing initial & last rows in (%s): " % simfile
         nettot = nrows2 * ppr  # new number of pulses (=nofrecords in LPA2; ==2*nofrecords in LPA1)
         fsim[1].header['NETTOT'] = nettot
-        # update HISTORY in header[0]
-        dateTime = strftime("%Y-%m-%d %H:%M:%S", gmtime())
-        fsim[0].header['HISTORY'] = "Created & Updated by rmLastAndFirst.py on " + dateTime + "with commands: "
-        # split command line in blocks of 60 chars for HISTORY keyword
-        commSplit1 = [comm1[i:i + 60] for i in range(0, len(comm1), 60)]
-        for i in range(len(commSplit1)):
-            fsim[0].header['HISTORY'] = commSplit1[i]
-        # split command line in blocks of 60 chars for HISTORY keyword
-        commSplit2 = [comm1[i:i + 60] for i in range(0, len(comm1), 60)]
-        for i in range(len(commSplit2)):
-            fsim[0].header['HISTORY'] = commSplit2[i]
         fsim.close()
+
+        # update HISTORY in header[0]
+        comm = comm1 + "\n" + comm2
+        updateHISTORY(simfile, comm)
 
     except:
         print("Error running FTOOLS to remove initial & last rows in ", simfile)
         shutil.rmtree(tmpDir)
         raise
 
+def updateHISTORY(file, history)
+    """
+    
+    :param file: File for which the keyword HISTORY in the HEADER[0] will be updated 
+    :param history: String for the HISTORY keyword (if large it will be splitted in several lines
+    :return:
+     
+    """
+
+    dateTime = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+    f = fits.open(file, mode='update')
+    f[0].header['HISTORY'] = "Created & Updated on " + dateTime + "with commands: "
+    # split command line in blocks of 60 chars for HISTORY keyword
+    histSplit = [history[i:i + 60] for i in range(0, len(history), 60)]
+    for i in range(len(histSplit)):
+        f[0].header['HISTORY'] = histSplit[i]
+    f.close()
