@@ -26,6 +26,7 @@ import shlex
 import shutil
 import sys
 import tempfile
+import auxpy
 from time import gmtime, strftime
 from subprocess import check_call, check_output, STDOUT
 from astropy.io import fits
@@ -138,25 +139,9 @@ def simulSingles(pixName, monoEkeV, acbias):
         # continue
         try:
             print("Removing first & last row, just in case, and updating NETTOS")
-            comm = "fdelrow infile=" + fitsFile + "+1 firstrow=" + str(nrows) + " nrows=1 confirm=no proceed=yes"
-            args = shlex.split(comm)
-            check_call(args, stderr=STDOUT)
-            comm = "fdelrow infile=" + fitsFile + "+1 firstrow=1 nrows=1 confirm=no proceed=yes"
-            args = shlex.split(comm)
-            check_call(args, stderr=STDOUT)
-            fsim = fits.open(fitsFile, mode='update')
-            nrows2 = fsim[1].header['NAXIS2']
-            assert nrows2 == nrows-2, "Failure removing initial & last rows in (%s): " % fitsFile
-            nettot = nrows2  # new number of pulses
-            fsim[1].header['NETTOT'] = nettot
+            rmLastAndFirst(fitsFile, 2)
             # update HISTORY in header[0]
-            dateTime = strftime("%Y-%m-%d %H:%M:%S", gmtime())
-            fsim[0].header['HISTORY'] = "Created & Updated by simulSingles.py on " + dateTime + "with command: "
-            # split command line in blocks of 60 chars for HISTORY keyword
-            commSplit = [commTessim[i:i + 60] for i in range(0, len(commTessim), 60)]
-            for i in range(len(commSplit)):
-                fsim[0].header['HISTORY'] = commSplit[i]
-            fsim.close()
+            updateHISTORY(fitsFile, comm)
         except:
             print("Error running FTOOLS to remove initial & last rows in ", fitsFile)
             os.chdir(cwd)
