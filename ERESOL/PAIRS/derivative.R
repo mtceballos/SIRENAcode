@@ -4,35 +4,38 @@
 rm(list=ls())
 library(FITSio)
 library(aplpack)
+library(Hmisc)
 setwd("/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/PAIRS/")
 # --------------------------------------------------------------------------------------
 #  For input: 
 #
 npulses <- 1000      # Number of pulses at each energy
 nPairs <- 500    
-filterLengths <- c(4096,512,256)
 samprate <- 156250
 samprateStr="" # to name files with full samprate
-pulseLength<- 4096   # pulse length
-fEnergy="6" #keV
-#samprate <- samprate/2.
 #samprateStr="_samprate2" # to name files with 1/2 samprate
-#pulseLength<- 2048   # pulse length
-
+if (samprateStr == "_samprate2"){
+    samprate <- samprate/2.    
+    filterLengths <- c(4096,256,128)
+    pulseLength<- 4096   # pulse length
+    xmax <- c(400, 400, 150 )
+    separations <- sprintf("%05d",
+        sort(c(seq(15,180,5),250,300,400,500)))
+}else{
+    filterLengths <- c(8192,512,256)
+    pulseLength<- 8192   # pulse length
+    xmax <- c(800, 800, 300 )
+    separations <- sprintf("%05d",
+        sort(c(seq(30,300,5),52,57,62,seq(310,500,5),510,seq(520,800,20),900,1000,2000)))
+}
+fEnergy="6" #keV
 energies <- c("0.2", "0.5", "1", "2", "3", "4", "5", "6", "7", "8") # pulses energies
 nenergies <- length(energies)
-Esec <- "0.2" # keV : energy of secondary pulses
-
-pdf(paste("baselineLPA2/derivativePairsStudy_Esec",Esec,"keV",samprateStr,".pdf",sep=""),width=10, height=7,version="1.4")
-#energies <- c("0.2", "0.5")
-
-separations <-c("00090","00100","00110","00120","00130","00140","00150",
-                "00250","00260","00270","00280","00290",
-                "00300","00310","00320","00330","00340","00350","00360",
-                "00500","00510")
-
+Esec <- "8" # keV : energy of secondary pulses
 nseps <- length(separations)
 seps.ms <- as.numeric(separations)/samprate*1E3 #separations in ms
+
+pdf(paste("baselineLPA2/derivativePairsStudy_Esec",Esec,"keV",samprateStr,".pdf",sep=""),width=10, height=7,version="1.4")
 
 # --------------------------------------------------------------------------------------
 
@@ -102,8 +105,8 @@ for (ie in 1:length(energies)){
                                 pulseLength,"_",energies[ie],"keV_",Esec,"keV_NTRIG_F0F_fixedlib",fEnergy,"OF_OPTFILT",fl,
                                 samprateStr,".fits",sep="")
             zz <- file(description = eventsFile, open = "rb")
-            header0 <- readFITSheader(zz, fixHdr = 'remove') # read primary header
-            header <- readFITSheader(zz, fixHdr = 'remove') # read extension header
+            header0 <- readFITSheader(zz, fixHdr = 'none') # read primary header
+            header <- readFITSheader(zz, fixHdr = 'none') # read extension header
             evtTable <- readFITSbintable(zz, header)
             close(zz)
             idcol <- which(evtTable$colNames == "SIGNAL")
@@ -118,136 +121,120 @@ for (ie in 1:length(energies)){
 } # foreach calib energy
 cat("PAIR pulses (yellow bagplot) finished\n")
 
-#
-# Draw Bagplots
-#
 par(mfrow=c(2,3))
+#
 # DEFINE array of separations to Plot (min,max)
 #                                            Eprim    Esec           flength      min max
-separationsToPlot <- array(data=NA, dim=c(nenergies,nenergies,length(filterLengths),2), 
-                           dimnames = list(energies,energies,filterLengths, c("min","max")))
-# Esec=0.2 keV
-separationsToPlot[    ,1,1,1]  <-"00250"
-separationsToPlot[1:6 ,1,1,2]  <-"00360"
-separationsToPlot[7:10,1,1,2] <-"00330"
-separationsToPlot[    ,1,2,1] <-"00075"
-separationsToPlot[    ,1,2,2] <-"00200"
-separationsToPlot[    ,1,3,1] <-"00039"
-separationsToPlot[    ,1,3,2] <-"00260"
-# Esec=0.5 keV
-separationsToPlot[    ,2,1,1] <-"00260"
-separationsToPlot[1:8 ,2,1,2] <-"00310"
-separationsToPlot[9:10,2,1,2] <-"00300"
-separationsToPlot[    ,2,2,1] <-"00500"
-separationsToPlot[    ,2,2,2] <-"00520"
-separationsToPlot[    ,2,3,1] <-"00220"
-separationsToPlot[    ,2,3,2] <-"00260"
-# Esec=1 keV
-separationsToPlot[,3,1,1] <-"00270"
-separationsToPlot[,3,1,2] <-"00300"
-separationsToPlot[,3,2,1] <-"00500"
-separationsToPlot[,3,2,2] <-"00520"
-separationsToPlot[,3,3,1] <-"00220"
-separationsToPlot[,3,3,2] <-"00260"
-# Esec=2 keV
-separationsToPlot[,4,1,1] <-"00270"
-separationsToPlot[,4,1,2] <-"00290"
-separationsToPlot[,4,2,1] <-"00500"
-separationsToPlot[,4,2,2] <-"00520"
-separationsToPlot[,4,3,1] <-"00220"
-separationsToPlot[,4,3,2] <-"00260"
-# Esec=3 keV
-separationsToPlot[,5,1,1] <-"00270"
-separationsToPlot[,5,1,2] <-"00290"
-separationsToPlot[,5,2,1] <-"00510"
-separationsToPlot[,5,2,2] <-"00520"
-separationsToPlot[,5,3,1] <-"00230"
-separationsToPlot[,5,3,2] <-"00260"
-# Esec=4 keV
-separationsToPlot[    ,6,1,1] <-"00270"
-separationsToPlot[    ,6,1,2] <-"00290"
-separationsToPlot[1:3 ,6,2,1] <-"00500"
-separationsToPlot[4:10,6,2,1] <-"00510"
-separationsToPlot[    ,6,2,2] <-"00520"
-separationsToPlot[1   ,6,3,1] <-"00220"
-separationsToPlot[2:10,6,3,1] <-"00230"
-separationsToPlot[    ,6,3,2] <-"00260"
-
-# Esec=5 keV
-separationsToPlot[    ,7,1,1] <-"00270"
-separationsToPlot[    ,7,1,2] <-"00280"
-separationsToPlot[    ,7,2,1] <-"00510"
-separationsToPlot[    ,7,2,2] <-"00520"
-separationsToPlot[1   ,7,3,1] <-"00220"
-separationsToPlot[2:10,7,3,1] <-"00230"
-separationsToPlot[    ,7,3,2] <-"00260"
-
-# Esec=6 keV
-separationsToPlot[    ,8,1,1] <-"00270"
-separationsToPlot[    ,8,1,2] <-"00280"
-separationsToPlot[    ,8,2,1] <-"00510"
-separationsToPlot[    ,8,2,2] <-"00520"
-separationsToPlot[1   ,8,3,1] <-"00220"
-separationsToPlot[2:10,8,3,1] <-"00230"
-separationsToPlot[    ,8,3,2] <-"00260"
-
-# Esec=7 keV
-separationsToPlot[1:8 ,9,1,1] <-"00270"
-separationsToPlot[9:10,9,1,1] <-"00260"
-separationsToPlot[    ,9,1,2] <-"00280"
-separationsToPlot[    ,9,2,1] <-"00510"
-separationsToPlot[    ,9,2,2] <-"00520"
-separationsToPlot[1   ,9,3,1] <-"00220"
-separationsToPlot[2:10,9,3,1] <-"00230"
-separationsToPlot[    ,9,3,2] <-"00260"
-
-# Esec=8 keV
-separationsToPlot[    ,10,1,1] <-"00260"
-separationsToPlot[    ,10,1,2] <-"00280"
-separationsToPlot[    ,10,2,1] <-"00510"
-separationsToPlot[    ,10,2,2] <-"00520"
-separationsToPlot[1   ,10,3,1] <-"00220"
-separationsToPlot[2:10,10,3,1] <-"00230"
-separationsToPlot[    ,10,3,2] <-"00260"
-
+separationsToPlot <- array(data="", dim=c(nenergies,length(filterLengths)), 
+                           dimnames = list(energies,filterLengths))
+#
+# PLOTTING
+#
 indexEsec <- which(energies == Esec)
+lcols <- rainbow(length(energies))
+
 for (ie in 1:length(energies)){
+    #
+    # Plot variation of Reconstructed energy with separation for every filter length
+    #
+    bagplots.separations <- list()
+    
     for (ifl in 1:length(filterLengths)){
         fLength=filterLengths[ifl]
-        minSep <- as.numeric(separationsToPlot[ie,indexEsec,ifl,1])
-        maxSep <- as.numeric(separationsToPlot[ie,indexEsec,ifl,2])
-        cat("Plotting figure for Eprim=",energies[ie],"keV, Esec=",Esec, "and Filter Length=",fLength,"\n")
-        xmin<-min(derivArrayMean4samples[,ie,ifl],derivArrayMean4samplesPair[,ie,,ifl])
-        xmax<- max(derivArrayMean4samples[,ie,ifl],derivArrayMean4samplesPair[,ie,,ifl])
-        ymin <- min(EkeVrecons[,ie,ifl],EkeVreconsPairs[,ie,which(as.numeric(separations) %in% minSep:maxSep),ifl])
-        ymax <- max(EkeVrecons[,ie,ifl],EkeVreconsPairs[,ie,which(as.numeric(separations) %in% minSep:maxSep),ifl])
+        meanErecon <- numeric(length(separations))
+        maxErecon <- numeric(length(separations))
+        minErecon <- numeric(length(separations))
+        # define orange band
+        bandMin <- min(EkeVrecons[,ie,ifl])
+        bandMax <- max(EkeVrecons[,ie,ifl])
         
-        # Yellow-ish bagplot (single pulses)
-        bagplot(derivArrayMean4samples[,ie,ifl],EkeVrecons[,ie,ifl],xlab="<4 derivative samples>", 
-                ylab="Reconstructed Energy (keV)", 
-                main=(bquote(paste(E[prim],"=",.(energies[ie])," keV  ",
-                                   E[sec],"=",.(Esec)," keV  ", "FLength=",.(fLength),
-                                   "  FEnergy=",.(fEnergy)," keV",sep=""))), cex.main=0.8,
-                xlim=c(floor(xmin),ceiling(xmax*1.005)), ylim=c(ymin,ymax),
-                col.loophull="cornsilk",col.looppoints="peachpuff",col.baghull="orange",show.outlier = FALSE)
-                # blue-ish bagplots (pairs of pulses)
         for(is in 1:length(separations)){
-            if(!as.numeric(separations[is]) %in% minSep:maxSep) next
-            cat("............Plotting bagplot for sep=",separations[is],"samples\n")
-            bag <- try(compute.bagplot(derivArrayMean4samplesPair[,ie,is,ifl],EkeVreconsPairs[,ie,is,ifl]))
-    
-            if(class(bag) == "try-error") next
-            plot.bagplot(bag,add=TRUE, transparency=TRUE)
-    
-            text(xmax,ymax,"Separation(sam)", cex=0.8 )
-    
-            #text(xmax*1.001,bag$center[2],paste(separations[is],"sam/",seps.ms[is],"ms",sep=""), cex=0.7)
-            text(xmax*1.001,bag$center[2],paste(separations[is],"sam",sep=""), cex=0.7)
-        } #separations
-        abline(h=max(EkeVrecons[,ie,ifl]), col="orange",lty=2)
-        abline(h=min(EkeVrecons[,ie,ifl]), col="orange",lty=2)
+            meanErecon[is] <- mean(EkeVreconsPairs[,ie,is,ifl])
+            maxErecon[is] <- max(EkeVreconsPairs[,ie,is,ifl])
+            minErecon[is] <- min(EkeVreconsPairs[,ie,is,ifl])
+            # look for minimum separation where points enter the orange band
+            if((meanErecon[is]<=bandMax && meanErecon[is]>=bandMin ) || 
+               (maxErecon[is] <=bandMax && maxErecon[is] >=bandMin ) ||
+               (minErecon[is] <=bandMax && minErecon[is] >=bandMin ) ||
+               (minErecon[is] <=bandMin && maxErecon[is] >=bandMax )){
+                if (separationsToPlot[ie,ifl] == ""){
+                    separationsToPlot[ie,ifl] <- separations[is]
+                }else{
+                    separationsToPlot[ie,ifl] <- paste(separationsToPlot[ie,ifl],",",separations[is],sep="")
+                }
+                #cat("Adding",separations[is]," ")
+            }
+        }
+        fileBPfail <- paste("baselineLPA2/BPfail_",Esec,"keV",samprateStr,".dat",sep="")
+        save(separationsToPlot,file=fileBPfail)
+        bgpseps <-unlist(strsplit(separationsToPlot[ie,ifl],","))
+        bgpseps <- bgpseps[bgpseps != ""]
+        bagplots.separations[[ifl]] <-bgpseps
         
-    } # filter lengths
+        x1 = 0
+        x2 = fLength-1
+        if(length(bagplots.separations[[ifl]]) >0){
+            x1 <- min(0,as.numeric(bagplots.separations[[ifl]]))
+            x2 <- min(fLength-1,max(as.numeric(bagplots.separations[[ifl]])))
+        }
+        errbar(x=as.numeric(separations),y=meanErecon, yplus=maxErecon, yminus=minErecon,
+               col="darkmagenta", pch=1, typ="b",cex=0.7, errbar.col="cornflowerblue",
+               xlab="Pair separation (samples)", ylab="<Erecon>", xlim=c(0,xmax[ifl]))
+        title(main=(bquote(paste(E[prim],"=",.(energies[ie])," keV  ",
+                                 E[sec],"=",.(Esec)," keV  ", "FLength=",.(fLength),
+                                 "  FEnergy=",.(fEnergy)," keV",sep=""))),cex.main=0.8)
+        abline(h=bandMax, col="orange",lty=2)
+        abline(h=bandMin, col="orange",lty=2)
+        abline(v=fLength, col="black",lty=2)
+        abline(v=x1, col="orange", lty=2)
+        abline(v=x2, col="orange", lty=2)
+        text(max(0,(x1-20)),(bandMax+0.01), x1,cex=0.7)
+        text(min(xmax[ifl],(x2+20)),(bandMax+0.01), x2,cex=0.7)
+    }
+    #
+    # Draw Bagplots  and reconstruction curves
+    #
+    for (ifl in 1:length(filterLengths)){
+         fLength=filterLengths[ifl]
+         #minSep <- as.numeric(separationsToPlot[ie,indexEsec,ifl,1])
+         #maxSep <- as.numeric(separationsToPlot[ie,indexEsec,ifl,2])
+         cat("Plotting figure for Eprim=",energies[ie],"keV, Esec=",Esec, "and Filter Length=",fLength,"\n")
+         xmin2<-min(derivArrayMean4samples[,ie,ifl],derivArrayMean4samplesPair[,ie,,ifl])
+         xmax2<- max(derivArrayMean4samples[,ie,ifl],derivArrayMean4samplesPair[,ie,,ifl])
+    
+         # use as ylimits those of the most extreme bagplots among those to be plotted
+         ymin2 <- min(EkeVrecons[,ie,ifl],
+                     EkeVreconsPairs[,ie,which(separations %in% bagplots.separations[[ifl]]),ifl])
+         ymax2 <- max(EkeVrecons[,ie,ifl],
+                     EkeVreconsPairs[,ie,which(separations %in% bagplots.separations[[ifl]]),ifl])
+    
+         # Yellow-ish bagplot (single pulses)
+         bagplot(derivArrayMean4samples[,ie,ifl],EkeVrecons[,ie,ifl],xlab="<4 derivative samples>",
+                 ylab="Reconstructed Energy (keV)",
+                 main=(bquote(paste(E[prim],"=",.(energies[ie])," keV  ",
+                                    E[sec],"=",.(Esec)," keV  ", "FLength=",.(fLength),
+                                    "  FEnergy=",.(fEnergy)," keV",sep=""))), cex.main=0.8,
+                 xlim=c(floor(xmin2),ceiling(xmax2*1.005)), ylim=c(ymin2,ymax2),
+                 col.loophull="cornsilk",col.looppoints="peachpuff",col.baghull="orange",show.outlier = FALSE)
+                 # blue-ish bagplots (pairs of pulses)
+         for(is in 1:length(separations)){
+             if(!separations[is] %in% bagplots.separations[[ifl]]) next
+             if(as.numeric(separations[is]) >= fLength-1) next
+             cat("............Plotting bagplot for sep=",separations[is],"samples\n")
+             bag <- try(compute.bagplot(derivArrayMean4samplesPair[,ie,is,ifl],EkeVreconsPairs[,ie,is,ifl]))
+    
+             if(class(bag) == "try-error") next
+             plot.bagplot(bag,add=TRUE, transparency=TRUE)
+    
+             text(xmax2,ymax2,"Separation(sam)", cex=0.8 )
+    
+             #text(xmax*1.001,bag$center[2],paste(separations[is],"sam/",seps.ms[is],"ms",sep=""), cex=0.7)
+             text(xmax2*1.001,bag$center[2],separations[is], cex=0.7)
+         } #separations
+         abline(h=max(EkeVrecons[,ie,ifl]), col="orange",lty=2)
+         abline(h=min(EkeVrecons[,ie,ifl]), col="orange",lty=2)
+
+     } # filter lengths
 }
 dev.off()
 
