@@ -51,7 +51,7 @@ XMLdir = os.environ["SIXTE"] + "/" + "share/sixte/instruments/athena/1469mm_xifu
 pixel = 1
 PreBufferSize = 1000
 pulseLength = 8192  # only to calculate triggerSize
-# with these thresholds, 0.2keV pulses are triggered at 999, 0.5keV @999 or @1000 and larger pulses @10000 
+# For samprate: with these thresholds, 0.2keV pulses are triggered at 999, 0.5keV @999 or @1000 and larger pulses @1000
 triggerTH = {'LPA1shunt': 50, 'LPA2shunt': 20} 
 
 
@@ -70,8 +70,15 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, samprate, jitter, sepsStr)
     global cwd, nSimPulses, XMLdir, pixel, PreBufferSize, simSIXTEdir, triggerTH, pulseLength
     # samprate
     smprtStr = ""
+    if monoEkeV1 == "0.5":
+            triggerTH["LPA2shunt"] = 50 #increase threshold so that they are all triggered @999
+
     if samprate == 'samprate2':
         smprtStr = "_samprate2"
+        triggerTH["LPA2shunt"] = 25
+        if monoEkeV1 == "0.5":
+            triggerTH["LPA2shunt"] = 60  # increase threshold so that they are all triggered @999
+
     XMLfile = "/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/xifu_detector_hex_baselineNEWgrades" + smprtStr + ".xml"
     XMLtree = ET.parse(XMLfile)
     XMLroot = XMLtree.getroot()
@@ -87,8 +94,6 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, samprate, jitter, sepsStr)
         jitterStr = "_jitter"
         offset = " offset=-1"
 
-    if monoEkeV1 == "0.5":
-            triggerTH["LPA2shunt"] = 50 #increase threshold so that they are all triggered @999
 
     tessim = "tessim" + pixName
     SIMFILESdir = PAIRSdir + "/" + tessim
