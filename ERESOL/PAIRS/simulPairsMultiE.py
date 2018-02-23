@@ -140,27 +140,7 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, samprate, jitter, sepsStr)
 
         if os.path.isfile(fitsFile):
             # verify existing file
-            commVerify = "fverify infile=" + fitsFile+ " outfile=pp.stdout prstat=no testdata=no clobber=yes"
-            try:
-                args = shlex.split(commVerify)
-                check_call(args, stderr=STDOUT)
-            except:
-                print("Error running fverify por pre-existing simulated data")
-                os.chdir(cwd)
-                shutil.rmtree(tmpDir)
-                raise
-
-            commVerify2 = "pget fverify numerrs"
-            numerrs = 0
-            try:
-                args = shlex.split(commVerify2)
-                numerrs = int(check_output(args, stderr=STDOUT))
-            except:
-                print("Error running fverify(2) por pre-existing simulated data")
-                os.chdir(cwd)
-                shutil.rmtree(tmpDir)
-                raise
-            # if fverify detects errors, remove pre-simulated file and simulate it again
+            numerrs = auxpy.fitsVerify(fitsFile)
             if numerrs > 0:
                 print("numerrs = ", numerrs, " for ", fitsFile, ": repeating simulation")
                 os.remove(fitsFile)

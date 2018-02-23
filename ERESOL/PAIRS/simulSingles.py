@@ -139,6 +139,13 @@ def simulSingles(pixName, monoEkeV, acbias, samprate, jitter):
             raise
         # continue  # to simulate only piximpact files
 
+    if os.path.isfile(fitsFile):
+        # verify existing file
+        numerrs = auxpy.fitsVerify(fitsFile)
+        if numerrs > 0:
+            print("numerrs = ", numerrs, " for ", fitsFile, ": repeating simulation")
+            os.remove(fitsFile)
+
     if not os.path.isfile(fitsFile):
         commTessim = ("tessim PixID=" + str(pixel) + " PixImpList=" + pixFile + " Streamfile=" + fitsFile +
                       " tstart=0." + " tstop=" + simTime + " triggerSize=" + str(triggerSizeTS) + " preBuffer=" +
