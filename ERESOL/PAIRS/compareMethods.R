@@ -3,18 +3,18 @@
 #        a given array (SPA, LPA1, LPA2, LPA3)  
 #        @ different energies (0.5,1,2,3,4,6,9) keV
 #        for different methods  (fixed and multilib): OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED
-# calculated with pulses separated by 20000 samples      
+# calculated with pulses separated by 40000 samples      
 
 library(rjson)
 library(Hmisc)
 
 # LOAD methods characteristics
-load("/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat")
+load("/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat") #created @ polyfit2Bias.R
 
-plotFWHM_GAINCORRS <- 0   # FWHM vs. Energy
-plotFWHM_GAINCORRE <- 0   # FWHM vs. Energy
+plotFWHM_GAINCORRS <- 1   # FWHM vs. Energy
+plotFWHM_GAINCORRE <- 1   # FWHM vs. Energy
 plotBiasCorrFit    <- 0   # Bias-gainScaleCorrected vs. separation
-plotFWHM_rlength   <- 1   # FWHM vs. Record Length     
+plotFWHM_rlength   <- 0   # FWHM vs. Record Length     
 if(plotFWHM_GAINCORRS || plotFWHM_GAINCORRE){
     pdfName <- "fwhmVSenergy_methods"
 }else if (plotBiasCorrFit){
@@ -25,6 +25,7 @@ if(plotFWHM_GAINCORRS || plotFWHM_GAINCORRE){
 subtitle <- "ALL"
 subtitle <- "FIXEDLIB"
 subtitle <- "FIXEDLIBOF"
+subtitle <- "FIXEDLIB6OF"
 #subtitle <- "WEIGHTS"
 #subtitle <- "MULTILIB"
 #subtitle <- "PERF"
@@ -41,11 +42,13 @@ separation <- "40000"
 array <- "LPA2shunt"
 nSimPulses <- "20000"
 nIntervals <- "150000"
-nSamples <- "4096" # samples for the noise (also pulseLength in library)
-pulseLength <- "4096" # pulse(record) length
-invalids <- 700
+noiseMat <-paste("_noiseMat",nIntervals,sep="")
+noiseMat=""
+#nSamples <- "4096" # samples for the noise (also pulseLength in library)
+#pulseLength <- "4096" # pulse(record) length
+invalids <- 1234
 
-outPDF <- paste("./PDFs/",pdfName,"_",subtitle,"_noiseMat",nIntervals,".pdf",sep="")
+outPDF <- paste("./PDFs/",pdfName,"_",subtitle,noiseMat,".pdf",sep="")
 setwd(paste("/home/ceballos/INSTRUMEN/EURECA/ERESOL/PAIRS/eresol",array,sep=""))
 pdf(outPDF,width=7, height=7)
 
@@ -67,6 +70,8 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
     }else if(subtitle == "FIXEDLIBOF"){
         methods <- list(fixed1OF, fixed1OFNM, fixed1OF_I2R, fixed1OF_I2RNOL, fixed1OF_I2RFITTED, 
                         weightnOF)
+    }else if(subtitle == "FIXEDLIB6OF"){
+        methods <- list(fixed6OFsmprtAD, fixed6OFsmprt2AD,fixed6OFsmprtA1, fixed6OFsmprt2A1)
     }else if(subtitle == "FIXEDLIB"){
         methods <- list(fixed1OF, fixed1OF_I2R, fixed1OF_I2RNOL, fixed1OF_I2RFITTED,fixed1OFNM,
                         fixed1, fixed1_I2R, fixed1_I2RNOL, fixed1_I2RFITTED, weightnOF,  weight)        
@@ -90,8 +95,8 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
         Emin <- 0.1
         Emax <- 9.
         FWmin<-1.7
-        FWmax<-2.3
-        coeffsFile <- paste("coeffs_polyfit_",nSamples,"_",useGainCorr,".dat",sep="")
+        FWmax<-5
+        coeffsFile <- "coeffs_polyfit.dat"
         EkeV <- c(0.2,0.5,1,2,3,4,5,6,7,8) # CALIBRATION
         
         # INITIALIZE MATRICES #
@@ -109,10 +114,16 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
         # READ energy and resolution from DATA  (EkeV)
         # ========================================================
         for (ie in 1:length(EkeV)){
-            TRIGG = "_NTRIG"
             for (im in 1:nmethods){
-                eresolFile <- paste("eresol_",nSimPulses,"p_SIRENA",nSamples,"_pL",pulseLength,"_", EkeV[ie],"keV_F0F_", 
-                                    methods[[im]]$name,TRIGG,".json",sep="")
+                nSamples = methods[[im]]$nSamples
+                pulseLength = methods[[im]]$nSamples
+                TRIGG <- methods[[im]]$detMethod
+                samprateStr <-methods[[im]]$samprateStr
+                jitterStr <- methods[[im]]$jitterStr
+                lib <- methods[[im]]$lib
+                eresolFile <- paste("eresol_",nSimPulses,"p_SIRENA",nSamples,
+                                    "_pL",pulseLength,"_", EkeV[ie],"keV_",TRIGG,"_F0F_", 
+                                    lib,nSamples,samprateStr,jitterStr,".json",sep="")
                 if(file.exists(eresolFile)){
                     # use data for selected separation (see initial definitions)
                     cat("Reading file ",eresolFile,"\n")
@@ -143,8 +154,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                 
             plot(seq(Emin,Emax,length.out=20),seq(FWmin,FWmax,length.out=20),type="n",cex=2,
                  xlab="Input Energy (keV)", ylab="Energy Resolution FWHM (eV)",
-                 main=paste("ENERGY RESOLUTION: GAINCORRS (with ",useGainCorr," pulses) \n",
-                            array," - ",nSamples,sep=""),
+                 main="ENERGY RESOLUTION: GAINCORRS (jitter)",
                  sub="(Calibration Points marked)",pty="s")
             axis(4,labels=FALSE)
             minor.tick(nx=5,ny=5,tick.ratio=0.5)
