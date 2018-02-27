@@ -1,7 +1,7 @@
 #
 # BAGPLOTS: PACKAGE Documented on derivative.ipynb (also GitHub)
 #
-rm(list=ls())
+#rm(list=ls())
 library(FITSio)
 library(aplpack)
 library(Hmisc)
@@ -13,14 +13,14 @@ npulses <- 1000      # Number of pulses at each energy
 nPairs <- 500    
 samprate <- 156250
 samprateStr="" # to name files with full samprate
-#samprateStr="_samprate2" # to name files with 1/2 samprate
+samprateStr="_samprate2" # to name files with 1/2 samprate
 if (samprateStr == "_samprate2"){
     samprate <- samprate/2.    
     filterLengths <- c(4096,256,128)
     pulseLength<- 4096   # pulse length
     xmax <- c(400, 400, 150 )
     separations <- sprintf("%05d",
-        sort(c(seq(15,180,5),250,300,400,500)))
+        sort(c(seq(15,35,5),seq(40,190,2),200,250,300,400,500)))
 }else{
     filterLengths <- c(8192,512,256)
     pulseLength<- 8192   # pulse length
@@ -31,7 +31,7 @@ if (samprateStr == "_samprate2"){
 fEnergy="6" #keV
 energies <- c("0.2", "0.5", "1", "2", "3", "4", "5", "6", "7", "8") # pulses energies
 nenergies <- length(energies)
-Esec <- "8" # keV : energy of secondary pulses
+Esec <- "0.2" # keV : energy of secondary pulses
 nseps <- length(separations)
 seps.ms <- as.numeric(separations)/samprate*1E3 #separations in ms
 
