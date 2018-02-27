@@ -8,9 +8,9 @@ python getEresolCurves_manySeps.py
         ** Check resultsDir (nodetSP in case secondaries are not detected)
                             (detSP in case secondaries are also detected
                             gainScale in case results are for gain scale curves)
-        ** Check library (LONG, SHORT) & filenames
-        ** Check jitter
 
+        ** SINCE NEWSIMULATIONS (Feb2018): library is always the jiiter one although applied to
+                            no jitter simulations(bagplots)
 """
 
 # ----IMPORT MODULES --------------
@@ -40,12 +40,11 @@ os.environ["HEADASPROMPT"] = "/dev/null/"
 
 XMLdir = os.environ["SIXTE"] + "/" + "share/sixte/instruments/athena/1469mm_xifu"
 XMLfile = XMLdir + "/" + "xifu_detector_hex_baseline.xml"
-XMLfile = "/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/xifu_detector_hex_baselineNEWgrades.xml"
+# XMLfile = "/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/xifu_detector_hex_baselineNEWgrades.xml"
 # calibLibs = (0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)  # only for searching for libray intervals
-jitter = ""  # or '_jitter' to be added to filenames
 
 
-def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMethod, filterMeth, filterLength,
+def getEresolCurves(pixName, labelLib, samprate, jitter, mono1EkeV, mono2EkeV, reconMethod, filterMeth, filterLength,
                     nsamples, pulseLength, nSimPulses, fdomain, scaleFactor, samplesUp,
                     samplesDown, nSgms, detMethod, tstartPulse1, tstartPulse2,
                     nSimPulsesLib, coeffsFile, libTmpl, resultsDir, sepsStr):
@@ -53,6 +52,7 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
     :param pixName: Extension name for FITS pixel definition file (SPA*, LPA1*, LPA2*, LPA3*)
     :param labelLib: Label identifying the library ( multilib, multilibOF, fixedlib1 )
     :param samprate: Samprate value with respect to baseline of 156250 Hz: "" (baseline), "samprate2" (half_baseline)
+    :param jitter: jitter option ("" for no_jitter and "jitter" for jitter)
     :param mono1EkeV: Monochromatic energy (keV) of input primary simulated pulse
     :param mono2EkeV: Monochromatic energy (keV) of input secondary simulated pulse
     :param reconMethod: Energy reconstruction Method (OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL)
@@ -94,6 +94,11 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
     # XMLfile = XMLdir + "/" + "xifu_detector_hex_baseline" + smprtStr + ".xml"
     XMLfile = "/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/xifu_detector_hex_baselineNEWgrades" + smprtStr + ".xml"
 
+    # jitter
+    jitterStr = ""
+    if jitter == "jitter":
+        jitterStr = "_jitter"
+
     # pulses start
     if tstartPulse1 > 0:
         TRIGG = "NTRIG"
@@ -134,7 +139,7 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
     outDir = cwd + "/PAIRS/eresol" + pixName + "/" + resultsDir
     simSIXTEdir = "/dataj6/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE"
     noiseDir = simSIXTEdir + "/NOISE/" + tessim
-    noiseFile = noiseDir + "/noise" + str(nsamples) + "samples_" + tessim + "_B0_" + space + smprtStr + ".fits"
+    noiseFile = noiseDir + "/noise" + str(nsamples) + "samples_" + tessim + "_B0_" + space + smprtStr + jitterStr + ".fits"
     libDirRoot = simSIXTEdir + "/LIBRARIES/" + tessim
     libDir = libDirRoot + "/GLOBAL/" + space + "/"
     if libTmpl == "SHORT":
@@ -143,26 +148,27 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
         libTmpl = ""
 
     if 'multilib' in labelLib:
-        libFile = libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) + "_" + str(nSimPulsesLib) + "p" + smprtStr + ".fits"
+        libFile = libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) + "_" + str(nSimPulsesLib) + "p" +\
+                  smprtStr + jitterStr + ".fits"
         filtEeV = 1000.  # eV
     elif 'fixedlib' in labelLib:  # fixedlib1,...
         fixedEkeV = labelLib.replace("OF", "")[8:]
         filtEeV = float(fixedEkeV) * 1E3  # eV
-        if tstartPulse1 == 0: #detection to be performed -> require different models
-            libFile = libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) + "_" + str(nSimPulsesLib) + "p" + smprtStr \
-                      + ".fits"
+        if tstartPulse1 == 0:  # detection to be performed -> require different models
+            libFile = libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) + "_" + str(nSimPulsesLib) + "p" + \
+                      smprtStr + jitterStr + ".fits"
         else:
             libFile = libDir + "/library" + fixedEkeV + "keV_PL" + str(nsamples) + "_" + str(nSimPulsesLib) + "p" + \
-                      smprtStr + ".fits"
+                      smprtStr + jitterStr + ".fits"
     libFile = libFile.replace(".fits", libTmpl+".fits")
 
     root = ''.join([str(nSimPulses), 'p_SIRENA', str(nsamples), '_pL', str(pulseLength), '_',
                     mono1EkeV, 'keV_', mono2EkeV, 'keV_', TRIGG, "_", str(filterMeth),
-                    str(fdomain), '_', str(labelLib), '_', str(reconMethod), smprtStr])
+                    str(fdomain), '_', str(labelLib), '_', str(reconMethod), str(filterLength), smprtStr, jitterStr])
     if mono2EkeV == "0":
         root = ''.join([str(nSimPulses), 'p_SIRENA', str(nsamples), '_pL', str(pulseLength), '_',
                         mono1EkeV, 'keV_', TRIGG, "_", str(filterMeth), str(fdomain), '_',
-                        str(labelLib), '_', str(reconMethod), smprtStr])
+                        str(labelLib), '_', str(reconMethod), str(filterLength), smprtStr, jitterStr])
 
     #if tstartPulse1 > 0:
     #    root += TRIGG
@@ -176,9 +182,9 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
 
     # locate coefficients in table
     # -----------------------------
-    alias = labelLib + "_" + TRIGG + "_" + reconMethod + smprtStr
+    alias = detMethod + "_" + labelLib + "_" + reconMethod + str(pulseLength) + smprtStr + jitterStr
     if 'fixedlib' in labelLib and 'OF' not in labelLib:
-        alias = labelLib + "OF_" + TRIGG + "_" + reconMethod + smprtStr
+        alias = detMethod + "_" + labelLib + "OF_" + "_" + reconMethod + str(pulseLength) + smprtStr + jitterStr
     print("Using alias=", alias)
     os.chdir(outDir)
 
@@ -210,13 +216,13 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
         if tstartPulse1 > 0 and tstartPulse2 == -1:  # calculate tstartPulse2 using separation
             tstartPulse2 = tstartPulse1 + int(sep)
         inFile = simDir + "/sep" + sep12 + "sam_" + str(nSimPulses) + "p_" + mono1EkeV + "keV_" \
-            + mono2EkeV + "keV" + smprtStr + jitter + ".fits"
+            + mono2EkeV + "keV" + smprtStr + jitterStr + ".fits"
         if mono2EkeV == "0":  # for single Pulses
             inFile = simDir + "/sep" + sep12 + "sam_" + str(nSimPulses) + "p_" + mono1EkeV + "keV" \
-                     + smprtStr + jitter + ".fits"
+                     + smprtStr + jitterStr + ".fits"
 
-        evtFile = "events_sep" + sep12 + "sam_" + root + jitter + ".fits"
-        evtFile = evtFile.replace(jitter + ".fits", libTmpl + jitter + ".fits")
+        evtFile = "events_sep" + sep12 + "sam_" + root + ".fits"
+        evtFile = evtFile.replace(jitterStr + ".fits", libTmpl + jitterStr + ".fits")
         print("=============================================")
         print("Using file: ", inFile)
         print("Using library: ", libFile)
@@ -225,30 +231,16 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
         print("Setting eresolFile: ", eresolFile)
         print("=============================================")
 
-
         # -- SIRENA processing -----
+
         if os.path.isfile(evtFile):
-            # if events already exist get number nSgms used to get events
-            print("Event file", evtFile, " already DOES exist: recalculating FWHMs...")
-            try:
-                comm = "fkeyprint infile=" + evtFile + "+0 keynam=HISTORY"
-                args = shlex.split(comm)
-                nSgmsStr = check_output(args)
-                # print(nSgmsStr)
-                # look for ocurrence of nSgms (before, nSgms, after) and take "after"
-                nSgms = nSgmsStr.partition("nSgms")  # as in "HISTORY P19 nSgms = 0"
-                # as "after" has a lot of lines, separate by newline and take first one
-                nSgms = nSgms[2].splitlines()[0]  # = 0
-                # remove "=" and get numerical value
-                nSgms = nSgms.split()[1]
-                # print(nSgms)
-            except:
-                print("Error reading pre-existing evtFile:", evtFile)
-                print(comm)
-                os.chdir(cwd)
-                shutil.rmtree(tmpDir)
-                raise
-        else:
+            if os.stat(evtFile).st_size == 0:
+                os.remove(evtFile)
+                print("Event file", evtFile, " already DOES exist but size 0: removing...")
+            else:
+                print("Event file", evtFile, " already DOES exist: recalculating FWHMs...")
+
+        if not os.path.isfile(evtFile):
             ndetpulses = 0
             print("\nRunning SIRENA for detection & reconstruction")
             print("filtEev=", filtEeV)
@@ -308,7 +300,7 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
         for aries in classAries:  # PRIMARIES / SECONDARIES / ALL
             print("Working with:", aries, "\n")
             if "aries" in aries:  # PRIMARIES // SECONDARIES
-                evt = rootEvt + "_" + aries + jitter + ".fits"
+                evt = rootEvt + "_" + aries + jitterStr + ".fits"
                 if os.path.isfile(evt):
                     os.remove(evt)
             elif aries == "all":
@@ -322,6 +314,8 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
                 elif aries == "secondaries":
                     comm = "fselect infile=" + evtFile + " outfile=" + evt + " expr='#ROW%2==0 && GRADE1>0' clobber=yes"
                     monoEeV = mono2EeV
+                else:
+                    comm = "fselect infile=" + evtFile + " outfile=" + evt + " expr='GRADE1>0' clobber=yes"
                 args = shlex.split(comm)
                 check_call(args, stdout=open(os.devnull, 'wb'))
             except:
@@ -430,6 +424,8 @@ def getEresolCurves(pixName, labelLib, samprate, mono1EkeV, mono2EkeV, reconMeth
 #
 # --------- Read input parameters and PROCESS simulations -----------------
 #
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -443,6 +439,7 @@ if __name__ == "__main__":
     parser.add_argument('--libTmpl', choices=['SHORT','LONG'], default='LONG',
                         help='Label identifying the library for the templates: SHORT or LONG')
     parser.add_argument('--samprate', default="", choices=['', 'samprate2'], help="baseline, half_baseline")
+    parser.add_argument('--jitter', default="", choices=['', 'jitter'], help="no jitter, jitter")
     parser.add_argument('--monoEnergy1', help='Monochromatic energy (keV) of input primary simulated pulses',
                         required=True)
     parser.add_argument('--monoEnergy2', help='Monochromatic energy (keV) of input secondary simulated pulse',
@@ -477,7 +474,7 @@ if __name__ == "__main__":
     parser.add_argument('--detectSP', help='are Secondaries to be detected (1:yes; 0:no)', default=1, type=int)
     parser.add_argument('--resultsDir', help='directory for resulting evt and json files (from '
                         '.../PAIRS/eresol+pixName) tipically "nodetSP", "detSP" or "gainScale" or ""',
-                        required=True)
+                        default="")
     parser.add_argument('--separations', help='spaced list of separations between Prim & Sec pulses', default="",
                         nargs='+')
 
@@ -488,7 +485,8 @@ if __name__ == "__main__":
         print("Start sample of pulses or detection parameters must be provided")
         sys.exit()
 
-    getEresolCurves(pixName=inargs.pixName, labelLib=inargs.lib, samprate=inargs.samprate,
+    getEresolCurves(pixName=inargs.pixName, labelLib=inargs.lib,
+                    samprate=inargs.samprate, jitter=inargs.jitter,
                     mono1EkeV=inargs.monoEnergy1, mono2EkeV=inargs.monoEnergy2,
                     reconMethod=inargs.reconMethod, filterMeth=inargs.filter,
                     filterLength=inargs.filterLength,
