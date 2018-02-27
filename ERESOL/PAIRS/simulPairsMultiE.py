@@ -94,7 +94,6 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, samprate, jitter, sepsStr)
         jitterStr = "_jitter"
         offset = " offset=-1"
 
-
     tessim = "tessim" + pixName
     SIMFILESdir = PAIRSdir + "/" + tessim
     # PixTypeFile = "file:" + simSIXTEdir + "/newpixels.fits[" + pixName + "]"  # pre-Feb 2018 telecon
@@ -140,7 +139,7 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, samprate, jitter, sepsStr)
 
         if os.path.isfile(fitsFile):
             # verify existing file
-            numerrs = auxpy.fitsVerify(fitsFile)
+            numerrs, numwrns = auxpy.fitsVerify(fitsFile)
             if numerrs > 0:
                 print("numerrs = ", numerrs, " for ", fitsFile, ": repeating simulation")
                 os.remove(fitsFile)
@@ -172,15 +171,9 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, samprate, jitter, sepsStr)
             assert nrows > 1, "Tessim failed: just one huge row present!"
             fsim.close()
             # continue
-            try:
-                print("Removing first & last row, just in case, and updating NETTOT")
-                auxpy.rmLastAndFirst(fitsFile, 2)
-            except:
-                print("Error running FTOOLS to remove initial & last rows in ", fitsFile)
-                os.chdir(cwd)
-                shutil.rmtree(tmpDir)
-                raise
-
+            print("Removing first & last row, just in case, and updating NETTOT")
+            auxpy.rmLastAndFirst(fitsFile, 2)
+            
     # some cleaning before exiting the function
     os.chdir(cwd)
     shutil.rmtree(tmpDir)
