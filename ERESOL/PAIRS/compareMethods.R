@@ -95,7 +95,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
         Emin <- 0.1
         Emax <- 9.
         FWmin<-1.7
-        FWmax<-5
+        FWmax<-16
         coeffsFile <- "coeffs_polyfit.dat"
         EkeV <- c(0.2,0.5,1,2,3,4,5,6,7,8) # CALIBRATION
         
@@ -154,7 +154,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                 
             plot(seq(Emin,Emax,length.out=20),seq(FWmin,FWmax,length.out=20),type="n",cex=2,
                  xlab="Input Energy (keV)", ylab="Energy Resolution FWHM (eV)",
-                 main="ENERGY RESOLUTION: GAINCORRS (jitter)",
+                 main="ENERGY RESOLUTION: GAINCORRS (Hres pulses, jitter)",
                  sub="(Calibration Points marked)",pty="s")
             axis(4,labels=FALSE)
             minor.tick(nx=5,ny=5,tick.ratio=0.5)
@@ -235,8 +235,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
             
             plot(seq(Emin,Emax,length.out=20),seq(FWmin,FWmax,length.out=20),type="n",cex=2,
                  xlab="Input Energy (keV)", ylab="Energy Resolution FWHM (eV)",
-                 main=paste("ENERGY RESOLUTION: GAINCORRE (with ",
-                            useGainCorr," pulses) \n",array," - ",nSamples,sep=""),
+                 main="ENERGY RESOLUTION: GAINCORRE (Hres pulses, jitter)",
                  sub="(Calibration Points marked)")
             minor.tick(nx=5,ny=5,tick.ratio=0.5)
             axis(4,label=FALSE)
