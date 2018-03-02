@@ -86,7 +86,8 @@ fixed6OFsmprtA1    <- list(name="A1_fixedlib6OF_OPTFILT8192_jitter", nSamples=81
 #      fixed1, fixed1_I2R, fixed1_I2RALL, fixed1_I2RNOL, fixed1_I2RFITTED, 
 #      fixed1OF, fixed1OFNM,fixed1OF_I2R, fixed1OF_I2RALL, fixed1OF_I2RNOL, fixed1OF_I2RFITTED,
 #      weight, weightn, weightnOF,file="/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat")
-save(fixed6OFsmprt, fixed6OFsmprt2, file="/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat")
+save(fixed6OFsmprtAD,fixed6OFsmprtA1, fixed6OFsmprt2AD,fixed6OFsmprt2A1, 
+     file="/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat")
 #===========================================================================================
 # methods<- list(multi, fixed1, multi_I2R, fixed1_I2R,  multi_I2RALL, fixed1_I2RALL, 
 #                multi_I2RNOL, fixed1_I2RNOL, multi_I2RFITTED, fixed1_I2RFITTED,
