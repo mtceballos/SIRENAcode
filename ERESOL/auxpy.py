@@ -4,8 +4,11 @@ import shlex
 import shutil
 import tempfile
 from time import gmtime, strftime
+import numpy as np
 from subprocess import check_call, check_output,STDOUT
 from astropy.io import fits
+from astropy.io import ascii
+
 
 tmpDir = tempfile.mkdtemp()
 os.environ["PFILES"] = tmpDir + ":" + os.environ["PFILES"]
@@ -149,6 +152,7 @@ def rmLastAndFirst(simfile, ppr):
 
     os.remove(tmpFile)
 
+
 def updateHISTORY(file, history):
     """
     
@@ -166,3 +170,60 @@ def updateHISTORY(file, history):
     for i in range(len(histSplit)):
         f[0].header['HISTORY'] = histSplit[i]
     f.close()
+
+
+def enerToCalEner(inEner, coeffsFile, alias):
+    """
+    :param inEner: numpy array with input uncorrected energies
+    :param coeffsFile: file with coefficients of polynomial fit to gain curves from polyfit2bias.R
+    :param alias: string to select reconstruction type in the coefficients table
+    :return calEner: numpy vector with calibrated energies
+    """
+
+    # locate coefficients in calibration table
+    # ----------------------------------------
+    coeffsDict = dict()
+    if coeffsFile:
+        codata = ascii.read(coeffsFile, guess=False, format='basic')
+        # codata[1] : row 2
+        # codata[1][1]: row 2, col 2
+        for i in range(0, len(codata)):
+            #  METHOD   ALIAS  a0  a1  a2  a3  a4
+            coeffsDict[codata[i][1]] = (codata[i][2], codata[i][3], codata[i][4], codata[i][5], codata[i][6])
+
+    calEner = np.zeros(inEner.size, dtype=float)
+    ie = 0
+
+    #
+    # convert energies
+    #
+    for ie in range(0, inEner.size):
+        # read fitting coeffs taken from polyfit2Bias.R (a0, a1, a2, a3)
+        #  as in y = a0 + a1*x + a2*x^2 + a3*x^3
+        # where y=E_reconstructed and x=Ecalibration (keV)
+
+        coeffs = coeffsDict[alias]
+        # print("SIGNAL=", inEner[ie], "coeffs=", coeffs)
+        npCoeffs = np.array(coeffs)
+        # print("npCoeffs=",npCoeffs)
+        npCoeffs[0] -= inEner[ie]  # subtract "y" (0 = a0 + a1*x + a2*x^2 + ... - y)
+        npCoeffsRev = npCoeffs[::-1]  # reversed to say fit with poly1d definition
+        polyfit = np.poly1d(npCoeffsRev)
+        # get real root (value of Ereal for a given Erecons )
+        r = np.roots(polyfit)
+        # real && >0 roots
+        # print("r=", r)
+        rreal = r.real[abs(r.imag) < 1e-5]
+        # print("rreal=", rreal)
+        rrealpos = rreal[rreal > 0]
+        # print("rrealpos=", rrealpos)
+        # closest root
+        # print(inEner[ie])
+        rclosest = min(enumerate(rrealpos), key=lambda x: abs(x[1]-inEner[ie]))[1]  # (idx,value)
+        # print("For:", alias, " Recon energy=", rclosest, "npCoeffs=", npCoeffs)
+        calEner[ie] = rclosest
+
+    # return calibrated energies
+    # ------------------------------------
+    return calEner
+
