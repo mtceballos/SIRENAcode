@@ -23,9 +23,10 @@ import sys
 import tempfile
 import numpy as np
 import json
+import auxpy
 from subprocess import check_call, check_output, STDOUT
 from astropy.io import fits
-from astropy.io import ascii
+import xml.etree.ElementTree as ET
 
 
 # ----GLOBAL VARIABLES -------------
@@ -93,7 +94,14 @@ def getEresolCurves(pixName, labelLib, samprate, jitter, mono1EkeV, mono2EkeV, r
         smprtStr = "_samprate2"
     # XMLfile = XMLdir + "/" + "xifu_detector_hex_baseline" + smprtStr + ".xml"
     XMLfile = "/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/xifu_detector_hex_baselineNEWgrades" + smprtStr + ".xml"
-
+    XMLtree = ET.parse(XMLfile)
+    XMLroot = XMLtree.getroot()
+    for key in XMLroot.findall('grading'):
+        num = key.get('num')
+        if num == "1":
+            invalid = key.get('pre')
+            Hres = key.get('post')
+    print("Hres,invalid=", Hres,invalid)
     # jitter
     jitterStr = ""
     if jitter == "jitter":
@@ -109,7 +117,7 @@ def getEresolCurves(pixName, labelLib, samprate, jitter, mono1EkeV, mono2EkeV, r
     mono1EeV = float(mono1EkeV) * 1000.
     mono2EeV = float(mono2EkeV) * 1000.
 
-    #pulses types
+    # pulses types
     tessim = "tessim" + pixName
     classAries = ["primaries", "secondaries", "all"]
     if tstartPulse2 == 0:
@@ -170,8 +178,6 @@ def getEresolCurves(pixName, labelLib, samprate, jitter, mono1EkeV, mono2EkeV, r
                         mono1EkeV, 'keV_', TRIGG, "_", str(filterMeth), str(fdomain), '_',
                         str(labelLib), '_', str(reconMethod), str(filterLength), smprtStr, jitterStr])
 
-    #if tstartPulse1 > 0:
-    #    root += TRIGG
     eresolFile = "eresol_" + root + ".json"
     eresolFile = eresolFile.replace(".json", libTmpl+".json")
 
@@ -187,17 +193,6 @@ def getEresolCurves(pixName, labelLib, samprate, jitter, mono1EkeV, mono2EkeV, r
         alias = detMethod + "_" + labelLib + "OF_" + "_" + reconMethod + str(pulseLength) + smprtStr + jitterStr
     print("Using alias=", alias)
     os.chdir(outDir)
-
-    # -- Read gain scale coefficients if file is provided --- otherwise we are in the process of creating
-    # the gain scale curve
-    coeffsDict = dict()
-    if coeffsFile:
-        codata = ascii.read(coeffsFile, guess=False, format='basic')
-        # codata[1] : row 2
-        # codata[1][1]: row 2, col 2
-        for i in range(0, len(codata)):
-            #  METHOD   ALIAS  a0  a1  a2  a3  a4
-            coeffsDict[codata[i][1]] = (codata[i][2], codata[i][3], codata[i][4], codata[i][5], codata[i][6])
 
     # ------------------------------------
     # --- Process input data files -------
@@ -269,53 +264,41 @@ def getEresolCurves(pixName, labelLib, samprate, jitter, mono1EkeV, mono2EkeV, r
                 raise
 
             evtf = fits.open(evtFile)
-            nrows = evtf[1].header["NAXIS2"]
             nTrigPulses = evtf[1].header["NETTOT"]
+            ndetpulses = evtf[1].header["NAXIS2"]
+            print("Checking DETECTION............................")
+            assert ndetpulses > 0, "Empty evt file (%s): nrows=0 " % evtFile
+            print("Reconstruction finished => sim/det: ", nTrigPulses, "/", ndetpulses)
             evtf.close()
 
-            print("Checking DETECTION............................")
-            assert nrows > 0, "Empty evt file (%s): nrows=0 " % evtFile
-
-            try:
-                comm = "fstatistic infile=" + evtFile + " colname='GRADE1' rows='-' minval=0"
-                print("Running: ", comm)
-                args = shlex.split(comm)
-                check_call(args, stdout=open(os.devnull, 'wb'))  # >/dev/null" does not work
-                comm = "pget fstatistic numb"
-                args = shlex.split(comm)
-                ndetpulses = int(check_output(args))
-            except:
-                print("Error checking number of detected pulses in evtfile:", evtFile)
-                print(comm)
-                os.chdir(cwd)
-                shutil.rmtree(tmpDir)
-                raise
-            print("Reconstruction finished => sim/det: ", nTrigPulses, "/", ndetpulses)
-
-        # -----------------------------------------
-        # EVENT file processing to calculate FWHM
-        # -----------------------------------------
+        # --------------------------------------------------------------
+        # EVENT file processing to calculate FWHM (only for Hres pulses)
+        # ---------------------------------------------------------------
         rootEvt = os.path.splitext(evtFile)[0]
 
         for aries in classAries:  # PRIMARIES / SECONDARIES / ALL
             print("Working with:", aries, "\n")
             if "aries" in aries:  # PRIMARIES // SECONDARIES
-                evt = rootEvt + "_" + aries + jitterStr + ".fits"
+                evt = rootEvt + jitterStr + "_" + aries + ".fits"
                 if os.path.isfile(evt):
                     os.remove(evt)
             elif aries == "all":
-                evt = evtFile
+                # evt = evtFile
+                evt = rootEvt + jitterStr + "_HR.fits"
 
-            # use only rows with GRADE1>0 (non initially truncated)
+            # use only rows with GRADE1==Hres && GRADE2>invalid (Hres pulses)
             try:
                 monoEeV = mono1EeV
                 if aries == "primaries":
-                    comm = "fselect infile=" + evtFile + " outfile=" + evt + " expr='#ROW%2!=0 && GRADE1>0' clobber=yes"
+                    comm = "fselect infile=" + evtFile + " outfile=" + evt + \
+                           " expr='#ROW%2!=0 && GRADE1==" + str(Hres) + " && GRADE2>" + str(invalid) + "' clobber=yes"
                 elif aries == "secondaries":
-                    comm = "fselect infile=" + evtFile + " outfile=" + evt + " expr='#ROW%2==0 && GRADE1>0' clobber=yes"
+                    comm = "fselect infile=" + evtFile + " outfile=" + evt + \
+                           " expr='#ROW%2==0 && GRADE1==" + str(Hres) + " && GRADE2>" + str(invalid) + "' clobber=yes"
                     monoEeV = mono2EeV
                 else:
-                    comm = "fselect infile=" + evtFile + " outfile=" + evt + " expr='GRADE1>0' clobber=yes"
+                    comm = "fselect infile=" + evtFile + " outfile=" + evt + " expr='GRADE1==" + str(Hres) + \
+                           " && GRADE2>" + str(invalid) + "' clobber=yes"
                 args = shlex.split(comm)
                 check_call(args, stdout=open(os.devnull, 'wb'))
             except:
@@ -350,39 +333,13 @@ def getEresolCurves(pixName, labelLib, samprate, jitter, mono1EkeV, mono2EkeV, r
             #print("biasErecons=", biasErecons, "\n")
 
             # calculate corrected energies if polyfit coeffs are provided and previous fwhm is not NaN (some NULL Eners)
+            # FWHM only calculated for those pulses reconstructed with HRes
             # if any(a != 0 for a in coeffs) and not math.isnan(fwhm):
-            if coeffsFile and not math.isnan(fwhm):
-                print("...Calculating corrected energies for ", aries, " pulses")
-                ErealKeV = np.zeros(ftab['SIGNAL'].size, dtype=float)
-                ie = 0
-                for SIGNALKeV in ftab['SIGNAL']:
-                    # read fitting coeffs taken from polyfit2Bias.R (a0, a1, a2, a3)
-                    #  as in y = a0 + a1*x + a2*x^2 + a3*x^3
-                    # where y=E_reconstructed and x=Ecalibration (keV)
 
-                    coeffs = coeffsDict[alias]
-                    # print("SIGNAL=", SIGNALKeV, "coeffs=", coeffs)
-                    npCoeffs = np.array(coeffs)
-                    # print("npCoeffs=",npCoeffs)
-                    npCoeffs[0] -= SIGNALKeV  # subtract "y" (0 = a0 + a1*x + a2*x^2 + ... - y)
-                    npCoeffsRev = npCoeffs[::-1]  # reversed to say fit with poly1d definition
-                    polyfit = np.poly1d(npCoeffsRev)
-                    # get real root (value of Ereal for a given Erecons )
-                    r = np.roots(polyfit)
-                    # real && >0 roots
-                    # print("r=", r)
-                    rreal = r.real[abs(r.imag) < 1e-5]
-                    # print("rreal=", rreal)
-                    rrealpos = rreal[rreal > 0]
-                    # print("rrealpos=", rrealpos)
-                    # closest root
-                    rclosest = min(enumerate(rrealpos), key=lambda x: abs(x[1]-SIGNALKeV))[1]  # (idx,value)
-                    # print("For:", alias, " Recon energy=", rclosest, "npCoeffs=", npCoeffs)
-                    ErealKeV[ie] = rclosest
-                    ie += 1
-                    # if aries == "secondaries":
-                        #print("For:", alias, " Recon energy SEC=", SIGNALKeV, " Real energy SEC=", rclosest)
-                        #print(rclosest)
+            if coeffsFile and not math.isnan(fwhm):
+                EreconKeV = np.array(ftab['SIGNAL'])
+                print("...Calculating corrected energies for ", aries, " pulses")
+                ErealKeV = auxpy.enerToCalEner(EreconKeV, coeffsFile, alias)
 
                 ErealKeVsigma = ErealKeV.std()
                 fwhm = ErealKeVsigma * 2.35 * 1000.
