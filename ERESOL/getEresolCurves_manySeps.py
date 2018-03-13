@@ -279,12 +279,12 @@ def getEresolCurves(pixName, labelLib, samprate, jitter, mono1EkeV, mono2EkeV, r
         for aries in classAries:  # PRIMARIES / SECONDARIES / ALL
             print("Working with:", aries, "\n")
             if "aries" in aries:  # PRIMARIES // SECONDARIES
-                evt = rootEvt + jitterStr + "_" + aries + ".fits"
+                evt = rootEvt + "_" + aries + ".fits"
                 if os.path.isfile(evt):
                     os.remove(evt)
             elif aries == "all":
                 # evt = evtFile
-                evt = rootEvt + jitterStr + "_HR.fits"
+                evt = rootEvt + "_HR.fits"
 
             # use only rows with GRADE1==Hres && GRADE2>invalid (Hres pulses)
             try:
