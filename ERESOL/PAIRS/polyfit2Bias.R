@@ -29,7 +29,7 @@ library(rjson)
 #                         lab="OPTIMAL FILTERING (fixed OF 1keV filter)")
 fixed6OFsmprt2AD    <- list(name="AD_fixedlib6OF_OPTFILT4096_samprate2_jitter", nSamples=4096, 
                           samprateStr="_samprate2", jitterStr="_jitter",detMethod="AD",
-                          lib="fixedlib6OF_OPTFILT",color="cyan", point=4, ltype=1,
+                          lib="fixedlib6OF_OPTFILT",color="cyan", point=1, ltype=1,
                           lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate2) AD")
 fixed6OFsmprtAD    <- list(name="AD_fixedlib6OF_OPTFILT8192_jitter", nSamples=8192,
                          samprateStr="", jitterStr="_jitter", detMethod="AD",
@@ -41,7 +41,7 @@ fixed6OFsmprt2A1    <- list(name="A1_fixedlib6OF_OPTFILT4096_samprate2_jitter", 
                             lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate2) A1")
 fixed6OFsmprtA1    <- list(name="A1_fixedlib6OF_OPTFILT8192_jitter", nSamples=8192,
                            samprateStr="", jitterStr="_jitter", detMethod="A1",
-                           lib="fixedlib6OF_OPTFILT",color="blue", point=1, ltype=2,
+                           lib="fixedlib6OF_OPTFILT",color="blue", point=4, ltype=2,
                            lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate) A1")
 
 # fixed1OFNM      <- list(name="fixedlib1OF_OPTFILTNM", color="blue", point=2, ltype=2,
@@ -95,7 +95,7 @@ save(fixed6OFsmprtAD,fixed6OFsmprtA1, fixed6OFsmprt2AD,fixed6OFsmprt2A1,
 # methods <- list(fixed1OF, fixed1OFNM, fixed1OF_I2R,fixed1OF_I2RNOL, fixed1OF_I2RFITTED, 
 #                 weight,weightnOF, weightn)
 methods <- list(fixed6OFsmprt2AD, fixed6OFsmprtAD,fixed6OFsmprt2A1, fixed6OFsmprtA1)
-#methods <- list(fixed6OFsmprt2AD, fixed6OFsmprtAD)
+#methods <- list(fixed6OFsmprtAD)
 nmethods <- length(methods)
 
 
