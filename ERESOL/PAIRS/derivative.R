@@ -2,6 +2,15 @@
 # BAGPLOTS: PACKAGE Documented on derivative.ipynb (also GitHub)
 #
 rm(list=ls())
+
+args = commandArgs(trailingOnly = TRUE)
+# test if there is one argument: if not, return an error
+if (length(args)==0) {
+    # default secondary energy
+    args[1] = "0.2"
+}
+#cat("args=",args[1])
+
 library(FITSio)
 library(aplpack)
 library(Hmisc)
@@ -13,26 +22,28 @@ npulses <- 1000      # Number of pulses at each energy
 nPairs <- 500    
 samprate <- 156250
 samprateStr="" # to name files with full samprate
-#samprateStr="_samprate2" # to name files with 1/2 samprate
+samprateStr="_samprate2" # to name files with 1/2 samprate
 if (samprateStr == "_samprate2"){
     samprate <- samprate/2.    
     filterLengths <- c(4096,256,128)
     pulseLength<- 4096   # pulse length
     xmax <- c(4200, 260, 150 )
     separationsBGplots <- sprintf("%05d",
-                           sort(c(15,seq(16,34,2),25,35,seq(40,250,2),300,400,500)))
+                           sort(c(15,seq(19,25,2),seq(16,34,2),35,seq(40,256,2),300,
+                            seq(320,340,10),seq(360,400,20),450,500,750,800,seq(1000,4000,250),
+                            4050,4100,4196,4200)))
 }else{
     filterLengths <- c(8192,512,256)
     pulseLength<- 8192   # pulse length
     xmax <- c(8200, 550, 260 )
     separationsBGplots <- sprintf("%05d",
         sort(c(seq(30,300,5),42,47,52,57,62,seq(310,500,5),510,seq(520,800,20),900,1000,
-               seq(1500,8000,500))))
+               seq(1500,7500,500),seq(7600,8000,100),8050,8100,8150,8192,8250)))
 }
 fEnergy="6" #keV
 energies <- c("0.2", "0.5", "1", "2", "3", "4", "5", "6", "7", "8") # pulses energies
 nenergies <- length(energies)
-Esec <- "0.2" # keV : energy of secondary pulses
+Esec <- args[1] # keV : energy of secondary pulses
 nseps <- length(separationsBGplots)
 seps.ms <- as.numeric(separationsBGplots)/samprate*1E3 #separations in ms
 
@@ -184,7 +195,7 @@ for (ie in 1:length(energies)){
                (maxErecon[is] <=bandMax && maxErecon[is] >=bandMin ) ||
                (minErecon[is] <=bandMax && minErecon[is] >=bandMin ) ||
                (minErecon[is] <=bandMin && maxErecon[is] >=bandMax )){
-                if(as.numeric(separationsBGplots[is]) >= fLength-1) next
+                if(as.numeric(separationsBGplots[is]) > fLength) next
                 if (separationsToPlot[ie,ifl] == ""){
                     separationsToPlot[ie,ifl] <- separationsBGplots[is]
                 }else{
@@ -196,7 +207,7 @@ for (ie in 1:length(energies)){
         roots<-numeric(2)
         # look for Crosses of bandMax
         is <- 3
-        while(is <= nseps){
+        while(is <= nseps && as.numeric(separationsBGplots[is])<fLength){
             crossSignMax <- (meanErecon[is]-bandMax)*(meanErecon[is-2]-bandMax)
             if(crossSignMax<0){
                 x1 <- as.numeric(separationsBGplots[is-2])
@@ -238,7 +249,7 @@ for (ie in 1:length(energies)){
                 } # if error bars in band
                 newroot <- okroot
                 if(altroot > 0) newroot<-altroot
-                cat("find root ",newroot," for is=", is,"\n")
+                #cat("find root ",newroot," for is=", is,"\n")
                 if(rootsMax[ie,ifl] == ""){
                     rootsMax[ie,ifl] <- newroot
                 }else{
@@ -253,7 +264,7 @@ for (ie in 1:length(energies)){
         # look for Crosses of bandMin
         roots<-numeric(2)
         is <- 3
-        while(is <= nseps){
+        while(is <= nseps && as.numeric(separationsBGplots[is])<fLength){
             crossSignMin <- (meanErecon[is]-bandMin)*(meanErecon[is-2]-bandMin)
             if(crossSignMin<0){
                 x1 <- as.numeric(separationsBGplots[is-2])
@@ -304,6 +315,7 @@ for (ie in 1:length(energies)){
             is <- is+1
         } #while is
         
+        stopifnot(abs(nrootsMax-nrootsMin)<2)
         if(nrootsMax>nrootsMin){
             rootsMin[ie,ifl] <- paste(rootsMin[ie,ifl],",",fLength,sep="")
         }else if(nrootsMax<nrootsMin){
@@ -311,8 +323,8 @@ for (ie in 1:length(energies)){
         }
         
         # save interesting quantities for detectionMaps y frequencyPairs
-        fileBPseps <- paste("baselineLPA2/BPseps_",Esec,"keV",samprateStr,".dat",sep="")
-        save(separationsBGplots,file=fileBPseps)
+        # fileBPseps <- paste("baselineLPA2/BPseps_",Esec,"keV",samprateStr,".dat",sep="")
+        # save(separationsBGplots,file=fileBPseps)
         
         fileBPfail <- paste("baselineLPA2/BPfail_",Esec,"keV",samprateStr,".dat",sep="")
         #save(separationsToPlot,file=fileBPfail)
@@ -326,8 +338,9 @@ for (ie in 1:length(energies)){
         # Draw reconstruction curves
         #
         errbar(x=as.numeric(separationsBGplots),y=meanErecon, yplus=maxErecon, yminus=minErecon,
-               col="darkmagenta", pch=1, typ="b",cex=0.7, errbar.col="cornflowerblue",
-               xlab="Pair separation (samples)", ylab="<Erecon>", xlim=c(0,xmax[ifl]))
+                col="darkmagenta", pch=1, typ="b",cex=0.7, errbar.col="cornflowerblue",
+                xlab="Pair separation (samples)", ylab="<Erecon>", 
+                xlim=c(min(as.numeric(separationsBGplots)),xmax[ifl]))
         title(main=(bquote(paste(E[prim],"=",.(energies[ie])," keV  ",
                                  E[sec],"=",.(Esec)," keV  ", "FLength=",.(fLength),
                                  "  FEnergy=",.(fEnergy)," keV",sep=""))),cex.main=0.8)
@@ -389,7 +402,7 @@ for (ie in 1:length(energies)){
          text(xmax2,ymax2,"Separation(sam)", cex=0.8 )
          for(is in 1:nseps){
              if(!separationsBGplots[is] %in% bagplots.separations[[ifl]]) next
-             if(as.numeric(separationsBGplots[is]) >= fLength-1) next
+             if(as.numeric(separationsBGplots[is]) > fLength) next
              cat("............Plotting bagplot for sep=",separationsBGplots[is],"samples\n")
              bag <- try(compute.bagplot(derivArrayMean4samplesPair[,ie,is,ifl],EkeVreconsPairs[,ie,is,ifl]))
     
