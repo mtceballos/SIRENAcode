@@ -8,10 +8,10 @@ python simulLibsGlobal.py
 # ----IMPORT MODULES --------------
 from __future__ import print_function
 import os
-import sys
 import shlex
 import shutil
-import tempfile, auxpy
+import tempfile
+import auxpy
 from time import gmtime, strftime
 from subprocess import check_call, STDOUT
 from astropy.io import fits
@@ -39,7 +39,7 @@ os.environ["HEADASNOQUERY"] = ""
 os.environ["HEADASPROMPT"] = "/dev/null/"
 
 
-def simulGlobalLibs(pixName, space, samprate, jitter, noise, stoch,
+def simulLibsGlobal(pixName, space, samprate, jitter, noise, stoch,
                     pulseLength, libEnergies, largeFilter, nsamples,
                     nSimPulses, acbias, tstartPulse1All,
                     createLib, noiseMat, weightMat):
@@ -104,35 +104,34 @@ def simulGlobalLibs(pixName, space, samprate, jitter, noise, stoch,
 
     # noise
     noiseStr = ""
-    simnoise = "simnoise=y"
+    simnoise = " simnoise=y"
     if noise == "nonoise":
         noiseStr = "_nonoise"
-        simnoise = "simnoise=n"
+        simnoise = " simnoise=n"
 
     # stochastic
     stochStr = ""
-    stochastic = "stochastic_integrator=n"
+    stochastic = " stochastic_integrator=n"
     if stoch == "stoch":
         stochStr = "_stoch"
-        stochastic = ("stochastic_integrator=y dobbfb=y" +
+        stochastic = (" stochastic_integrator=y dobbfb=y" +
                       " carrier_frequency = 2e6 bbfb_delay = 40" +
                       " decimation_filter = y")
 
     # -- CALIB/SIM/NOISE/LIB/XML dirs & files --
     EURECAdir = "/dataj6/ceballos/INSTRUMEN/EURECA"
     simSIXTEdir = EURECAdir + "/testHarness/simulations/SIXTE"
-    XMLdir = (os.environ["SIXTE"] + "/" +
-              "share/sixte/instruments/athena/1469mm_xifu")
+    XMLdir = EURECAdir + "/ERESOL"
     PIXIMPACTdir = simSIXTEdir + "/LIBRARIES/PIXIMPACT"
     SIMFILESdir = simSIXTEdir + "/LIBRARIES/" + tessim
     NOISEdir = simSIXTEdir + "/NOISE/" + tessim
     libDir = SIMFILESdir + "/GLOBAL/" + space
-    XMLtree = ET.parse(XMLfile)
-    XMLroot = XMLtree.getroot()
 
     # XMLfile = XMLdir + "/" + "xifu_baseline.xml"
     XMLfile = (XMLdir + "/" + "xifu_detector_hex_baselineNEWgrades" +
                smprtStr + ".xml")
+    XMLtree = ET.parse(XMLfile)
+    XMLroot = XMLtree.getroot()
 
     noiseFile = (NOISEdir + "/noise" + str(nsamples) + "samples_" + tessim +
                  "_B0_" + space + smprtStr + jitterStr + stochStr + ".fits")
@@ -156,8 +155,8 @@ def simulGlobalLibs(pixName, space, samprate, jitter, noise, stoch,
 
     # calculate simTime so that nSimPulses are simulated (1 pulses per record)
     simTime = nSimPulses * (PreBufferSize + separation) / float(samplingrate)
-    simTime = '{0:0.0f}'.format(simTime)
     tstop = tstart + simTime
+    simTime = '{0:0.0f}'.format(simTime)
     tstop = '{0:0.0f}'.format(tstop)
 
     # Sigmas and Samples and scaleFactor for Detection
@@ -270,9 +269,9 @@ def simulGlobalLibs(pixName, space, samprate, jitter, noise, stoch,
         # -- Create/update LIBRARY --
         if tstartPulse1[monoEkeV] == 0:
             # Detecting
-            detectStr = (" samplesUp=" + samplesUp +
-                         " samplesDown=" + samplesDown +
-                         " nSgms=" + nSgms + " detectionMode=STC")
+            detectStr = (" samplesUp=" + str(samplesUp) +
+                         " samplesDown=" + str(samplesDown) +
+                         " nSgms=" + str(nSgms) + " detectionMode=STC")
 
         else:
             # Not detecting
@@ -282,8 +281,8 @@ def simulGlobalLibs(pixName, space, samprate, jitter, noise, stoch,
                 " TesEventFile=" + evttmpFile.name +
                 " Rcmethod=SIRENA" + detectStr +
                 " PulseLength=" + str(pulseLength) +
-                " LibraryFile=" + libFile +
-                " NoiseFile=" + noiseFile + detectStr +
+                " LibraryFile=" + libFile + energyMethod +
+                " NoiseFile=" + noiseFile +
                 " mode=0 clobber=yes intermediate=0" +
                 " monoenergy=" + str(monoEeV) + " EventListSize=1000" +
                 " XMLFile=" + XMLfile +
@@ -332,10 +331,10 @@ if __name__ == "__main__":
             prog='simulLibsGlobal')
 
     parser.add_argument('--pixName', help=('Extension name in FITS pixel \
-                        definition file (SPA*, LPA1*, LPA2*, LPA3*)',
+                        definition file (SPA*, LPA1*, LPA2*, LPA3*)'),
                         required=True)
     parser.add_argument('--space', required=True,
-                        choices=['ADC', 'R', 'RALL', 'RNOL', 'RFITTED'], 
+                        choices=['ADC', 'R', 'RALL', 'RNOL', 'RFITTED'],
                         help='Input Data Space  (ADC, R, RALL, RNOL, RFITTED)')
     parser.add_argument('--samprate', default="", choices=['', 'samprate2'],
                         help="baseline, half_baseline")
@@ -345,11 +344,11 @@ if __name__ == "__main__":
                         help="noise, nonoise")
     parser.add_argument('--stoch', default="", choices=['', 'stoch'],
                         help="nonstochastic, stochastic")
-    parser.add_argument('--pulseLength', type=int, required=True
+    parser.add_argument('--pulseLength', type=int, required=True,
                         help='pulse length samples')
     parser.add_argument('--nsamples', type=int, required=True,
                         help='noise samples')
-    parser.add_argument('--nSimPulses', type=int,required=True,
+    parser.add_argument('--nSimPulses', type=int, required=True,
                         help='Number of Pulses in simulated files')
     parser.add_argument('--calibEnergies', nargs='*', required=True,
                         help="list of energies (keV) from calibration files")
@@ -375,11 +374,11 @@ if __name__ == "__main__":
     if inargs.tstartPulse1All is not None:
         len1 = len(inargs.tstartPulse1All)
     lenE = len(inargs.calibEnergies)
-    cLib=1
+    cLib = 1
     if len1 == 0:
         inargs.tstartPulse1All = [0 for i in range(0, lenE)]
-                    
-    simulGlobalLibs(pixName=inargs.pixName, space=inargs.space, 
+
+    simulLibsGlobal(pixName=inargs.pixName, space=inargs.space,
                     samprate=inargs.samprate, jitter=inargs.jitter,
                     noise=inargs.noise, stoch=inargs.stoch,
                     pulseLength=inargs.pulseLength,
