@@ -28,7 +28,7 @@ import shlex
 import shutil
 import tempfile
 import auxpy
-from subprocess import check_call, check_output,STDOUT
+from subprocess import check_call, STDOUT
 from astropy.io import fits
 import xml.etree.ElementTree as ET
 
@@ -56,7 +56,7 @@ pulseLength = 8192  # only to calculate triggerSize
 triggerTH = {'LPA1shunt': 50, 'LPA2shunt': 20}
 
 
-def simulSingles(pixName, monoEkeV, acbias, samprate, jitter, noise):
+def simulSingles(pixName, monoEkeV, acbias, samprate, jitter, noise, stoch):
     """
     :param pixName: Extension name in the FITS pixel definition file
                     (SPA*, LPA1*, LPA2*, LPA3*)
@@ -66,6 +66,8 @@ def simulSingles(pixName, monoEkeV, acbias, samprate, jitter, noise):
                     "" (baseline), "samprate2" (half_baseline)
     :param jitter: jitter option ("" for no_jitter and "jitter" for jitter)
     :param noise: noise option ("" for noise and "nonoise" for nonoise)
+    :param stoch: stochastic option ("" for non-stochastic and
+                                     "stoch" for stochastic)
     :return: files with simulated SINGLES
     """
 
@@ -94,8 +96,6 @@ def simulSingles(pixName, monoEkeV, acbias, samprate, jitter, noise):
         samprate = samplefreq.get('value')
     # added to solve floating point inaccu. due to sampling rate
     # (Christian's mail 31/03/2017)
-    # separation time (ms) between pulses:
-    dtaums = int(singleSeparation) / float(samprate) * 1000.
     tstart = 0.5 / float(samprate)
 
     # jitter
@@ -111,6 +111,15 @@ def simulSingles(pixName, monoEkeV, acbias, samprate, jitter, noise):
     if noise == "nonoise":
         noiseStr = "_nonoise"
         simnoise = " simnoise=n"
+
+    # stochastic
+    stochStr = ""
+    stochastic = " stochastic_integrator=n"
+    if stoch == "stoch":
+        stochStr = "_stoch"
+        stochastic = (" stochastic_integrator=y dobbfb=y" +
+                      " carrier_frequency = 2e6 bbfb_delay = 40" +
+                      " decimation_filter = y")
 
     tessim = "tessim" + pixName
     SIMFILESdir = PAIRSdir + "/" + tessim
@@ -132,29 +141,23 @@ def simulSingles(pixName, monoEkeV, acbias, samprate, jitter, noise):
     root0 = "sep" + str(singleSeparation) + "sam_" + simTime + "s_" + \
         monoEkeV + "keV" + smprtStr + jitterStr + noiseStr
     # for fits:
-    root = "sep" + str(singleSeparation) + "sam_" + str(nSimPulses) + \
-        "p_" + monoEkeV + "keV" + smprtStr + jitterStr + noiseStr
-    pixFile = cwd + "/PIXIMPACT/" + root0 + "_trSz" + str(triggerSizeTC) +  \
-        ".piximpact"
+    root = ("sep" + str(singleSeparation) + "sam_" + str(nSimPulses) + "p_" +
+            monoEkeV + "keV" + smprtStr + jitterStr + noiseStr + stochStr)
+    pixFile = (cwd + "/PIXIMPACT/" + root0 + "_trSz" + str(triggerSizeTC) +
+               ".piximpact")
     fitsFile = SIMFILESdir + "/" + root + ".fits"
     print("-------------------------------------------\n")
     print("Simulating ", fitsFile, "\n")
     print("-------------------------------------------\n")
 
     if not os.path.isfile(pixFile):
-        #        if jitterStr == "":
-        #            comm = ("tesgenimpacts PixImpList=" + pixFile +
-        #                    " mode=const tstart=" + str(tstart) +
-        #                    " tstop=" + simTime + " EConst=" + monoEkeV +
-        #                    " dtau=" + str(dtaums) + " clobber=yes")
-        #        else:
         comm = ("tesconstpileup PixImpList=" + pixFile +
                 " XMLFile=" + XMLfile + " timezero=" + str(tstart) +
                 " tstop=" + str(simTime) + " energy=" + monoEkeV +
                 offset + " pulseDistance=" + str(singleSeparation) +
                 " TriggerSize=" + str(triggerSizeTC) + " clobber=yes")
 
-        print("\n##### Runing tesconstpileup/tesgenimpacts #########")
+        print("\n##### Runing tesconstpileup #########")
         print(comm, "\n")
         try:
             args = shlex.split(comm)
@@ -181,7 +184,7 @@ def simulSingles(pixName, monoEkeV, acbias, samprate, jitter, noise):
                       " preBuffer=" + str(PreBufferSize) +
                       " triggertype='diff:3:" + str(triggerTH[pixName]) + ":" +
                       str(triggerTS3val) + "'" + " acbias=" + acbias +
-                      " sample_rate=" + samprate + simnoise +
+                      " sample_rate=" + samprate + simnoise + stochastic +
                       " PixType=" + PixTypeFile)
 
         print("\n##### Runing tessim #########")
@@ -241,8 +244,11 @@ if __name__ == "__main__":
                         help="no jitter, jitter")
     parser.add_argument('--noise', default="", choices=['', 'nonoise'],
                         help="noise, no_noise")
+    parser.add_argument('--stoch', default="", choices=['', 'stoch'],
+                        help="non-stochastic, stochastic")
 
     inargs = parser.parse_args()
     simulSingles(pixName=inargs.pixName, monoEkeV=inargs.monoEnergy,
                  acbias=inargs.acbias, samprate=inargs.samprate,
-                 jitter=inargs.jitter, noise=inargs.noise)
+                 jitter=inargs.jitter, noise=inargs.noise, 
+                 stoch=inargs.stoch)

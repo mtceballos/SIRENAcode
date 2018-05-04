@@ -377,7 +377,7 @@ def getEresolCurves(pixName, labelLib, samprate, jitter, stoch, noise,
 
             fwhm = SIGNALsigma * 2.35 * 1000.
             # FWHM for reconstructed events in eV:
-            fwhmErecons = '{0:0.5f}'.format(fwhm) 
+            fwhmErecons = '{0:0.5f}'.format(fwhm)
             # EBIAS = <Erecons> - monoEeV
             bias = SIGNALmean * 1000. - monoEeV
             biasErecons = '{0:0.5f}'.format(bias)
@@ -512,7 +512,7 @@ if __name__ == "__main__":
     parser.add_argument('--detMethod', default='AD', choices=['AD', 'STC'])
     parser.add_argument('--detectSP', default=1, type=int,
                         help='are Secondaries to be detected (1:yes; 0:no)')
-    parser.add_argument('--resultsDir', default=""
+    parser.add_argument('--resultsDir', default="",
                         help='directory for resulting evt and json files\
                         (from ..../PAIRS/eresol+pixName) tipically\
                         "nodetSP", "detSP" or "gainScale" or ""')
