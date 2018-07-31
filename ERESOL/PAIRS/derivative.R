@@ -31,7 +31,7 @@ if (samprateStr == "_samprate2"){
     separationsBGplots <- sprintf("%05d",
                            sort(c(15,seq(19,25,2),seq(16,34,2),35,seq(40,256,2),300,
                             seq(320,340,10),seq(360,400,20),450,500,750,800,seq(1000,4000,250),
-                            4050,4100,4196,4200)))
+                            seq(4010,4196,10),4200)))
 }else{
     filterLengths <- c(8192,512,256)
     pulseLength<- 8192   # pulse length
@@ -64,9 +64,6 @@ findCrosses <- function(x1,x2,x3,y1,y2,y3,level){
     root2 <- (-bpar - sqrt(bpar^2 - 4*apar*cpar))/(2*apar)
     return(c(root1,root2))
 }
-
-pdf(paste("baselineLPA2/derivativePairsStudy_Esec",Esec,"keV",samprateStr,".pdf",sep=""),width=10, height=7,version="1.4")
-
 # --------------------------------------------------------------------------------------
 
 derivArrayMean4samples <- array(data=NA,dim=c(npulses,length(energies),length(filterLengths)))
@@ -166,9 +163,11 @@ rootsMin <- array(data="", dim=c(nenergies,length(filterLengths)),
 #
 # PLOTTING
 #
+pdf(paste("baselineLPA2/derivativePairsStudy_Esec",Esec,"keV",samprateStr,".pdf",sep=""),width=10, height=7,version="1.4")
+
 indexEsec <- which(energies == Esec)
 lcols <- rainbow(length(energies))
-
+cat("antes del bucle\n")
 for (ie in 1:length(energies)){
     #
     # Plot variation of Reconstructed energy with separation for every filter length
@@ -177,6 +176,7 @@ for (ie in 1:length(energies)){
     
     for (ifl in 1:length(filterLengths)){
         fLength=filterLengths[ifl]
+        cat("Looking for roots for EnergyPrim=",energies[ie],"EnergySec=",Esec,"Filter=",fLength,"\n")
         nrootsMin <- 0
         nrootsMax <- 0
         meanErecon <- numeric(nseps)
@@ -207,7 +207,9 @@ for (ie in 1:length(energies)){
         roots<-numeric(2)
         # look for Crosses of bandMax
         is <- 3
+        cat("Max crosses\n")
         while(is <= nseps && as.numeric(separationsBGplots[is])<fLength){
+            cat("is=",is)
             crossSignMax <- (meanErecon[is]-bandMax)*(meanErecon[is-2]-bandMax)
             if(crossSignMax<0){
                 x1 <- as.numeric(separationsBGplots[is-2])
@@ -223,7 +225,7 @@ for (ie in 1:length(energies)){
                 # get prev separation if minerr bar below bandMax
                 altroot <- 0
                 if(meanErecon[is-1] > meanErecon[is] && minErecon[is-1] < bandMax){ #en bajada
-                    #cat("en bajada\n")
+                    cat("en bajada\n")
                     altroot <- as.numeric(separationsBGplots[is-1])
                     isnew <- is-1
                     while (isnew > 1){
@@ -246,9 +248,11 @@ for (ie in 1:length(energies)){
                             break
                         }
                     }#while isnew
+                    is <- isnew # start again after new root
                 } # if error bars in band
                 newroot <- okroot
                 if(altroot > 0) newroot<-altroot
+                
                 #cat("find root ",newroot," for is=", is,"\n")
                 if(rootsMax[ie,ifl] == ""){
                     rootsMax[ie,ifl] <- newroot
@@ -264,9 +268,11 @@ for (ie in 1:length(energies)){
         # look for Crosses of bandMin
         roots<-numeric(2)
         is <- 3
+        cat("Min crosses\n")
         while(is <= nseps && as.numeric(separationsBGplots[is])<fLength){
             crossSignMin <- (meanErecon[is]-bandMin)*(meanErecon[is-2]-bandMin)
             if(crossSignMin<0){
+                cat("is in min=",is)
                 x1 <- as.numeric(separationsBGplots[is-2])
                 x2 <- as.numeric(separationsBGplots[is-1])
                 x3 <- as.numeric(separationsBGplots[is])
@@ -279,6 +285,7 @@ for (ie in 1:length(energies)){
                 # get prev separation if minerr bar below bandMax
                 altroot <- 0
                 if(meanErecon[is-1] > meanErecon[is] && maxErecon[is] > bandMin){#en bajada
+                    cat("en bajada\n")
                     altroot <- as.numeric(separationsBGplots[is])
                     isnew <- is+1
                     while (isnew<nseps){
@@ -289,8 +296,10 @@ for (ie in 1:length(energies)){
                         }else{
                             break
                         }
-                    }#while isnew        
+                    }#while isnew 
+                    is <- isnew # start again after new root
                 }else if(meanErecon[is] > meanErecon[is-1] && maxErecon[is-1] > bandMin){#en subida
+                    cat("en subida\n")
                     altroot <- as.numeric(separationsBGplots[is-1])
                     isnew <-is-1
                     while (isnew<nseps){
@@ -304,6 +313,7 @@ for (ie in 1:length(energies)){
                 }#if errbars in band
                 newroot <- okroot
                 if(altroot > 0) newroot<-altroot
+                
                 if(rootsMin[ie,ifl] == ""){
                     rootsMin[ie,ifl] <- newroot
                 }else{
