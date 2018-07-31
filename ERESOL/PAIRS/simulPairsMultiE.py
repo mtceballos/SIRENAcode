@@ -6,7 +6,7 @@
 #           record                             record                             record
 #   <----------------------->         <----------------------->         <----------------------->
 #
-# python simulPairs.py
+# python simulPairsMultiE.py
 #
 #  Input parameters:
 #          array (SPA|LPA1|LPA2|LPA3)
@@ -37,7 +37,8 @@ os.environ["PFILES"] = tmpDir + ":" + os.environ["PFILES"]
 os.environ["HEADASNOQUERY"] = ""
 os.environ["HEADASPROMPT"] = "/dev/null/"
 
-nSimPulses = 2000  # 1000 records = 1000 secondary pulses
+#nSimPulses = 2000  # 1000 records = 1000 secondary pulses
+nSimPulses = 10  # 1000 records = 1000 secondary pulses
 recordSeparation = 40000  # separation from secondary-->primary for next record
 
 EURECAdir = "/dataj6/ceballos/INSTRUMEN/EURECA"
@@ -55,7 +56,7 @@ triggerTH = {'LPA1shunt': 50, 'LPA2shunt': 20}
 
 
 def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, samprate, jitter,
-               noiseStr, stochStr, sepsStr):
+               noise, stoch, sepsStr):
     """
     :param pixName: Extension name in the FITS pixel definition file
                      (SPA*, LPA1*, LPA2*, LPA3*)
@@ -227,7 +228,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description='Simulate pairs of pulses',
-                                     prog='simulPairs')
+                                     prog='simulPairsMultiE.py')
 
     parser.add_argument('--pixName',
                         help='Extension name in pixel definition FITS file\
