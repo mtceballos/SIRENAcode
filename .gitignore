@@ -8,6 +8,7 @@
 *.png
 *.dat
 *.out
+*.ok
 ERESOL/.RData
 ERESOL/.RDataTmp
 ERESOL/.RDataTmp1
@@ -31,6 +32,13 @@ ERESOL/PAIRS/compareMethodsPerf.ods
 ERESOL/PAIRS/eresolLPA1shunt/
 ERESOL/PAIRS/eresolLPA2shunt/
 ERESOL/PAIRS/tessimLPA2shunt/
+ERESOL/PAIRS/frequencyPairs_bysec.R
+ERESOL/PAIRS/simulSakai.csh
+ERESOL/PAIRS/simulSingles_Pinsard.py
+ERESOL/PAIRS/baselineLPA2/
+ERESOL/*xml
+ERESOL/PAIRS/polyfit.R
+ERESOL/TRIOS
 ERESOL/TRIOS/.RData
 ERESOL/TRIOS/.Rhistory
 ERESOL/TRIOS/.fuse_hidden000003dc00000005
@@ -42,6 +50,7 @@ ERESOL/TRIOS/eresolLAP3
 ERESOL/TRIOS/eresolLPA1shunt/
 ERESOL/TRIOS/eresolSPA
 ERESOL/TRIOS/fixtrios.pl
+ERESOL/TRIOS/eresolLPA2shunt/
 ERESOL/getEresolCurves.csh.copyPP
 ERESOL/getEresolCurves.pl
 ERESOL/getEresolCurves.pyEW6771.new
@@ -92,4 +101,4 @@ testHarness/simulations/SIXTE/simulMonoen.pl
 testHarness/simulations/SIXTE/tabmerge
 testHarness/simulations/SIXTE/tabmergeADC
 testHarness/simulations/SIXTE/xifu_detector_hex_baseline.xml
-
+testHarness/simulations/SIXTE/pp
