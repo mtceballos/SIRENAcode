@@ -8,7 +8,8 @@
 library(gridExtra)
 library(Hmisc)
 library(rjson)
-#TRIGG = "A1"
+library(FITSio)
+#TRIGG = "STC"
 # DEFINE and SAVE methods characteristics
 #    Read them back with:
 #    > load("/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat")
@@ -27,22 +28,72 @@ library(rjson)
 #                         lab="OPTIMAL FILTERING (fixed 1keV filter)")
 # fixed1OF        <- list(name="fixedlib1OF_OPTFILT", color="blue", point=1, ltype=2,
 #                         lab="OPTIMAL FILTERING (fixed OF 1keV filter)")
-fixed6OFsmprt2AD    <- list(name="AD_fixedlib6OF_OPTFILT4096_samprate2_jitter", nSamples=4096, 
-                          samprateStr="_samprate2", jitterStr="_jitter",detMethod="AD",
-                          lib="fixedlib6OF_OPTFILT",color="cyan", point=1, ltype=1,
-                          lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate2) AD")
-fixed6OFsmprtAD    <- list(name="AD_fixedlib6OF_OPTFILT8192_jitter", nSamples=8192,
-                         samprateStr="", jitterStr="_jitter", detMethod="AD",
-                         lib="fixedlib6OF_OPTFILT",color="blue", point=1, ltype=1,
-                        lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate) AD")
-fixed6OFsmprt2A1    <- list(name="A1_fixedlib6OF_OPTFILT4096_samprate2_jitter", nSamples=4096, 
-                            samprateStr="_samprate2", jitterStr="_jitter",detMethod="A1",
-                            lib="fixedlib6OF_OPTFILT",color="cyan", point=4, ltype=2,
-                            lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate2) A1")
-fixed6OFsmprtA1    <- list(name="A1_fixedlib6OF_OPTFILT8192_jitter", nSamples=8192,
-                           samprateStr="", jitterStr="_jitter", detMethod="A1",
-                           lib="fixedlib6OF_OPTFILT",color="blue", point=4, ltype=2,
-                           lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate) A1")
+fixed6OFsmprt2AD <- 
+                list(name="AD_fixedlib6OF_OPTFILT4096_samprate2_jitter", nSamples=4096, 
+                    samprateStr="_samprate2", jitterStr="_jitter",detMethod="AD",
+                    lib="fixedlib6OF_OPTFILT",color="cyan", point=1, ltype=1,
+                    lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate2) AD")
+fixed6OFsmprtAD <-   
+                list(name="AD_fixedlib6OF_OPTFILT8192_jitter", nSamples=8192,
+                    samprateStr="", jitterStr="_jitter", detMethod="AD",
+                    lib="fixedlib6OF_OPTFILT",color="blue", point=1, ltype=1,
+                    lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate) AD")
+# Stoch pero no bbfb, no pone jitter!!!
+#fixed6OFsmprtSTCnnStoch <-
+#                list(name="STC_fixedlib6OF_OPTFILT8192_jitter_nonoise_stoch", nSamples=8192,
+#                    samprateStr="", jitterStr="_jitter", noiseStr="_nonoise", stochStr="_stoch",
+#                    detMethod="STC", lib="fixedlib6OF_OPTFILT",color="blue", point=4, ltype=2,
+#                    lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate) STC, nonoise, stoch")
+fixed6OFsmprtSTCnn <-
+                list(name="STC_fixedlib6OF_OPTFILT8192_jitter_nonoise", nSamples=8192,samprateStr="",
+                    jitterStr="_jitter", noiseStr="_nonoise", stochStr="",bbfbStr="",
+                    detMethod="STC", lib="fixedlib6OF_OPTFILT",color="blue", point=4, ltype=2,
+                    lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate) STC, nonoise")
+fixed6OFsmprtSTC <-
+                list(name="STC_fixedlib6OF_OPTFILT8192_jitter", nSamples=8192,
+                    samprateStr="", jitterStr="_jitter", detMethod="STC",
+                    noiseStr="", stochStr="",bbfbStr="",
+                    lib="fixedlib6OF_OPTFILT",color="blue", point=0, ltype=2,
+                    lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate) STC")
+
+fixed6OFsmprt2STCnn <-
+                list(name="STC_fixedlib6OF_OPTFILT4096_samprate2_jitter_nonoise", nSamples=4096,
+                     samprateStr="_samprate2",jitterStr="_jitter", noiseStr="_nonoise", stochStr="",
+                     bbfbStr="",detMethod="STC", lib="fixedlib6OF_OPTFILT",
+                     color="blue", point=4, ltype=2,
+                     lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate2) STC, nonoise")
+fixed6OFsmprt2STC <-
+                list(name="STC_fixedlib6OF_OPTFILT4096_samprate2_jitter", nSamples=4096,
+                    samprateStr="_samprate2", jitterStr="_jitter", detMethod="STC",
+                    noiseStr="", stochStr="",bbfbStr="",
+                    lib="fixedlib6OF_OPTFILT",color="blue", point=0, ltype=2,
+                    lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate2) STC")
+
+fixed6OFsmprtSTCnnBbfb <-
+                list(name="STC_fixedlib6OF_OPTFILT8192_jitter_nonoise_bbfb", nSamples=8192,
+                     samprateStr="", jitterStr="_jitter", noiseStr="_nonoise", stochStr="",
+                     bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT",
+                     color="blue", point=1, ltype=1,
+                     lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate) STC, nonoise, bbfb")
+fixed6OFsmprtSTCBbfb <-
+                list(name="STC_fixedlib6OF_OPTFILT8192_jitter_bbfb", nSamples=8192,
+                    samprateStr="", jitterStr="_jitter", noiseStr="", stochStr="",
+                    bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT",
+                    color="blue", point=1, ltype=1,
+                    lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate) STC, bbfb")
+fixed6OFsmprt2STCnnBbfb <-
+                    list(name="STC_fixedlib6OF_OPTFILT4096_samprate2_jitter_nonoise_bbfb", nSamples=4096,
+                    samprateStr="_samprate2", jitterStr="_jitter", noiseStr="_nonoise", stochStr="",
+                    bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT",
+                    color="blue", point=1, ltype=1,
+                    lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate2) STC, nonoise, bbfb")
+fixed6OFsmprt2STCBbfb <-
+                    list(name="STC_fixedlib6OF_OPTFILT4096_samprate2_jitter_bbfb", nSamples=4096,
+                    samprateStr="_samprate2", jitterStr="_jitter", noiseStr="", stochStr="",
+                    bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT",
+                    color="blue", point=1, ltype=1,
+                    lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate2) STC, bbfb")
+
 
 # fixed1OFNM      <- list(name="fixedlib1OF_OPTFILTNM", color="blue", point=2, ltype=2,
 #                         lab="OPTIMAL FILTERING NOISE MAT(fixed OF 1keV filter)")
@@ -86,7 +137,10 @@ fixed6OFsmprtA1    <- list(name="A1_fixedlib6OF_OPTFILT8192_jitter", nSamples=81
 #      fixed1, fixed1_I2R, fixed1_I2RALL, fixed1_I2RNOL, fixed1_I2RFITTED, 
 #      fixed1OF, fixed1OFNM,fixed1OF_I2R, fixed1OF_I2RALL, fixed1OF_I2RNOL, fixed1OF_I2RFITTED,
 #      weight, weightn, weightnOF,file="/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat")
-save(fixed6OFsmprtAD,fixed6OFsmprtA1, fixed6OFsmprt2AD,fixed6OFsmprt2A1, 
+#save(fixed6OFsmprtAD,fixed6OFsmprtSTC, fixed6OFsmprt2AD,fixed6OFsmprt2STC, fixed6OFsmprtSTCnnStochBbfb,
+#     file="/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat")
+save(fixed6OFsmprtSTCnn,fixed6OFsmprtSTC,fixed6OFsmprt2STCnn,fixed6OFsmprt2STC,
+     fixed6OFsmprtSTCBbfb,fixed6OFsmprtSTCnnBbfb,fixed6OFsmprt2STCBbfb,fixed6OFsmprt2STCnnBbfb,
      file="/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat")
 #===========================================================================================
 # methods<- list(multi, fixed1, multi_I2R, fixed1_I2R,  multi_I2RALL, fixed1_I2RALL, 
@@ -94,8 +148,11 @@ save(fixed6OFsmprtAD,fixed6OFsmprtA1, fixed6OFsmprt2AD,fixed6OFsmprt2A1,
 #                weight, weightn)
 # methods <- list(fixed1OF, fixed1OFNM, fixed1OF_I2R,fixed1OF_I2RNOL, fixed1OF_I2RFITTED, 
 #                 weight,weightnOF, weightn)
-methods <- list(fixed6OFsmprt2AD, fixed6OFsmprtAD,fixed6OFsmprt2A1, fixed6OFsmprtA1)
-#methods <- list(fixed6OFsmprtAD)
+#methods <- list(fixed6OFsmprt2AD, fixed6OFsmprtAD,fixed6OFsmprt2STC, fixed6OFsmprtSTC)
+methods <- list(fixed6OFsmprtSTCnn, fixed6OFsmprtSTC,
+                fixed6OFsmprtSTCnnBbfb, fixed6OFsmprtSTCBbfb, 
+                fixed6OFsmprt2STCnn, fixed6OFsmprt2STC,
+                fixed6OFsmprt2STCnnBbfb, fixed6OFsmprt2STCBbfb)
 nmethods <- length(methods)
 
 
@@ -108,6 +165,7 @@ pulsesCateg <- c("all")
 #-----------------------
 array <- "LPA2shunt"
 nSimPulses <- "20000"
+#nSimPulses <- "50"
 EkeV <- c(0.2,0.5,1,2,3,4,5,6,7,8)
 nIntervals <- 150000
 nIntervals <- 0
@@ -122,6 +180,8 @@ ebiasUNCORR <- array(data=NA,dim=c(length(EkeV),nmethods))
 
 # READ CALIBRATION DATA
 # ======================
+meanEkeVfilt <- array(data=NA,dim=c(length(EkeV),nmethods))
+errmean      <- array(data=NA,dim=c(length(EkeV),nmethods))
 for (ie in 1:length(EkeV)){
     for (im in 1:nmethods){
         nSamples <- methods[[im]]$nSamples
@@ -129,11 +189,16 @@ for (ie in 1:length(EkeV)){
         TRIGG <- methods[[im]]$detMethod
         samprateStr <-methods[[im]]$samprateStr
         jitterStr <- methods[[im]]$jitterStr
+        noiseStr <- methods[[im]]$noiseStr
+        stochStr <- methods[[im]]$stochStr
+        bbfbStr <- methods[[im]]$bbfbStr
         lib <- methods[[im]]$lib
         eresolFile <- paste("gainScale/eresol_",nSimPulses,"p_SIRENA",nSamples,
                             "_pL",pulseLength,"_", EkeV[ie],"keV_",TRIGG,"_F0F_", 
-                            lib,nSamples,samprateStr,jitterStr,".json",sep="")
-        
+                            lib,nSamples,samprateStr,jitterStr,noiseStr,stochStr, bbfbStr,".json",sep="")
+        eventsFile <- paste("gainScale/events_sep40000sam_",nSimPulses,"p_SIRENA",nSamples,
+                            "_pL",pulseLength,"_", EkeV[ie],"keV_",TRIGG,"_F0F_", 
+                            lib,nSamples,samprateStr,jitterStr,noiseStr,stochStr, bbfbStr,"_HR.fits",sep="")
         if(file.exists(eresolFile)){
             #data <- read.table(eresolFile,header=TRUE)
             # use data for selected separation (see initial definitions)
@@ -149,6 +214,21 @@ for (ie in 1:length(EkeV)){
             fwhmUNCORR[ie,im]  <- NaN
             ebiasUNCORR[ie,im] <- NaN
         }
+        cat("Reading file ",eventsFile,"\n")
+        stopifnot(file.exists(eventsFile))
+        zz <- file(description = eventsFile, open = "rb")
+        header0 <- readFITSheader(zz, fixHdr = 'remove') # read primary header
+        header <- readFITSheader(zz, fixHdr = 'remove') # read extension header
+        evtTable <- readFITSbintable(zz, header)
+        close(zz)
+        idcol <- which(evtTable$colNames == "SIGNAL")
+        nreconPulses <- length(evtTable$col[[idcol]])
+        cat("npulses=",nreconPulses,"\n")
+        EkeVrecons <- numeric(nreconPulses)
+        EkeVrecons <- evtTable$col[[idcol]]
+        meanEkeVfilt[ie,im] <- mean(EkeVrecons)
+        errmean[ie,im] <- sd(EkeVrecons)/sqrt(nreconPulses)
+        
         if(all(is.nan(fwhmUNCORR[ie,im])) || all(is.nan(ebiasUNCORR[ie,im]))){
             warning("Error in ",eresolFile,"\n","  Non numerical values in eresol files: check event files")
         }
@@ -181,7 +261,7 @@ tt3 <- ttheme_minimal(
 #=================================
 
 ebiaskeV <- ebias/1000.
-meanEkeVfilt <- ebiaskeV + EkeV  # Ebias = <Erecons> - Einput
+#meanEkeVfilt <- ebiaskeV + EkeV  # Ebias = <Erecons> - Einput
 plot(EkeV,EkeV,type="n",mgp=c(2,1,0),ylim=c(min(EkeV),max(EkeV)+2),
      xlab="Input Energy keV (calibration points marked)", ylab="Reconstructed energy (keV)",
      main="GAIN SCALE (jitter)")
@@ -208,7 +288,9 @@ for (im in 1:nmethods){
     cat("Fitting method ",methods[[im]]$lab,"\n")
     # plot points and fit
     points(EkeV,meanEkeVfilt[,im],pch=methods[[im]]$point,col=methods[[im]]$color, 
-           type="p",lty=1)
+               type="p",lty=1)
+    #errbar(EkeV,meanEkeVfilt[,im],yplus=meanEkeVfilt[,im]+errmean[,im],errbar.col = 'red',
+    #       yminus=meanEkeVfilt[,im]-errmean[,im],pch=methods[[im]]$point,col=methods[[im]]$color)
     
     # check significance of npoly fit
     # use all calibration points available for multilib or fixedlib
