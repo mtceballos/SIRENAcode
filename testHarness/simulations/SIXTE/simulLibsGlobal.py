@@ -1,5 +1,5 @@
 """
-CREATE GLOBAL LIBRARY for simulated pairs of pulses for calibration
+CREATE GLOBAL LIBRARY for simulated pulses for calibration
 
 python simulLibsGlobal.py
 
@@ -7,17 +7,12 @@ python simulLibsGlobal.py
 
 # ----IMPORT MODULES --------------
 from __future__ import print_function
-import os
-import sys
-import tempfile
 import auxpy
 import argparse
 
 
 # ----GLOBAL VARIABLES -------------
 preBufferSize = 1000
-# separation = 20000  # LPA1shunt
-separation = 40000    # LPA2shunt
 
 # With triggerTH=20, 0.2 keV pulses trigger 1 sample late (1001 instead
 #                               of 1000), but ALL of them
@@ -25,18 +20,13 @@ separation = 40000    # LPA2shunt
 #                               pulses trigger ok (1000) => set to 50
 #                    >= 1 keV:  ALL trigger OK
 
-triggerTH = {'LPA1shunt': 50, 'LPA2shunt': 20}
-pixel = 1
-
-cwd = os.getcwd()
-
 #
 # --------- Read input parameters and PROCESS simulations -----------------
 #
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-            description='Create GLOBAL library from pairs of pulses',
+            description='Create GLOBAL library from simulated pulses',
             prog='simulLibsGlobal')
 
     parser.add_argument('--pixName', help=('Extension name in FITS pixel \
@@ -51,8 +41,6 @@ if __name__ == "__main__":
                         help="no jitter, jitter")
     parser.add_argument('--noise', default="", choices=['', 'nonoise'],
                         help="noise, nonoise")
-    parser.add_argument('--stoch', default="", choices=['', 'stoch'],
-                        help="nonstochastic, stochastic")
     parser.add_argument('--bbfb', default="", choices=['', 'bbfb'],
                         help="bbfb for stochastic tessim")
     parser.add_argument('--pulseLength', type=int, required=True,
@@ -79,6 +67,8 @@ if __name__ == "__main__":
     parser.add_argument('--weightMat', default='no', choices=['yes', 'no'],
                         help='Should the Weight Matrices HDU be created? \
                         [default %(default)s]')
+    parser.add_argument('--decimation', type=int, default=1,
+                        help='xifusim decimation factor')
 
     inargs = parser.parse_args()
     len1 = 0
@@ -90,7 +80,7 @@ if __name__ == "__main__":
 
     auxpy.simulLibsGlobal(pixName=inargs.pixName, space=inargs.space,
                           samprate=inargs.samprate, jitter=inargs.jitter,
-                          noise=inargs.noise, stoch=inargs.stoch,
+                          noise=inargs.noise,
                           bbfb=inargs.bbfb,
                           pulseLength=inargs.pulseLength,
                           largeFilter=inargs.largeFilter,
@@ -101,5 +91,5 @@ if __name__ == "__main__":
                           acbias=inargs.acbias, createLib=inargs.createLib,
                           noiseMat=inargs.noiseMat,
                           weightMat=inargs.weightMat,
-                          pixel=pixel, separation=separation,
+                          dcmt=inargs.decimation,
                           preBufferSize=preBufferSize)

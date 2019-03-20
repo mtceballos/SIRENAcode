@@ -24,14 +24,14 @@ import tempfile
 import numpy as np
 import json
 import auxpy
+from astropy.io import fits, ascii
 from subprocess import check_call, STDOUT
-from astropy.io import fits
+#from astropy.io import fits
 import xml.etree.ElementTree as ET
 
 
 # ----GLOBAL VARIABLES -------------
 PreBufferSize = 1000
-separation = '40000'  # if unique separation
 cwd = os.getcwd()
 tmpDir = tempfile.mkdtemp()
 os.environ["PFILES"] = tmpDir + ":" + os.environ["PFILES"]
@@ -39,7 +39,7 @@ os.environ["HEADASNOQUERY"] = ""
 os.environ["HEADASPROMPT"] = "/dev/null/"
 
 
-def getEresolCurves(pixName, labelLib, samprate, jitter, stoch, noise, bbfb,
+def getEresolCurves(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb,
                     mono1EkeV, mono2EkeV, reconMethod, filterMeth,
                     filterLength, nsamples, pulseLength, nSimPulses,
                     fdomain, scaleFactor, samplesUp, samplesDown,
@@ -52,9 +52,9 @@ def getEresolCurves(pixName, labelLib, samprate, jitter, stoch, noise, bbfb,
     :param labelLib: Label identifying the library
                     ( multilib, multilibOF, fixedlib1 )
     :param samprate: Samprate value with respect to baseline of 156250 Hz:
-                    "" (baseline), "samprate2" (half_baseline)
+                    "" (baseline), "samprate2" (half_baseline), samprate4 (quarter baseline)
     :param jitter: jitter option ("" for no_jitter and "jitter" for jitter)
-    :param stoch: stochastic option ("" for no_stoch and "stoch" for stochast)
+    :param dcmt: decimation factor for xifusim jitter
     :param bbfb: ("") for dobbfb=n or ("bbfb") for dobbfb=y
     :param noise: simulations done with ("") or without ("nonoise") noise
     :param mono1EkeV: Monochromatic energy (keV)
@@ -100,10 +100,15 @@ def getEresolCurves(pixName, labelLib, samprate, jitter, stoch, noise, bbfb,
     EURECAdir = "/dataj6/ceballos/INSTRUMEN/EURECA/"
     ERESOLdir = EURECAdir + "/ERESOL/"
 
+    separation = '40000'  # if unique separation
     # samprate
     smprtStr = ""
     if samprate == 'samprate2':
         smprtStr = "_samprate2"
+        separation = '20000'  # if unique separation
+    if samprate == 'samprate4':
+        smprtStr = "_samprate4"
+        separation = '10000'  # if unique separation
 
     XMLfile = (ERESOLdir + "xifu_detector_hex_baselineNEWgrades" +
                smprtStr + ".xml")
@@ -114,28 +119,24 @@ def getEresolCurves(pixName, labelLib, samprate, jitter, stoch, noise, bbfb,
         if num == "1":
             invalid = key.get('pre')
             Hres = key.get('post')
-    print("Hres,invalid=", Hres, invalid)
+    #print("Hres,invalid=", Hres, invalid)
 
     # jitter
     jitterStr = ""
-    if jitter == "jitter":
-        jitterStr = "_jitter"
+    if jitter == "jitter" and dcmt > 1:
+        jitterStr = "_jitter_dcmt" + str(dcmt)
 
     # noise
     noiseStr = ""
     if noise == "nonoise":
         noiseStr = "_nonoise"
 
-    # stochastic
-    stochStr = ""
-    if stoch == "stoch":
-        stochStr = "_stoch"
-
     # bbfb
     bbfbStr = ""
     if bbfb == "bbfb":
         bbfbStr = "_bbfb"
-        
+        jitterStr = "_jitter"
+ 
     # pulses start
     if tstartPulse1 > 0:
         TRIGG = "NTRIG"
@@ -147,7 +148,7 @@ def getEresolCurves(pixName, labelLib, samprate, jitter, stoch, noise, bbfb,
     mono2EeV = float(mono2EkeV) * 1000.
 
     # pulses types
-    tessim = "tessim" + pixName
+    xifusim = "xifusim" + pixName
     classAries = ["primaries", "secondaries", "all"]
     if tstartPulse2 == 0:
         classAries = ["all"]
@@ -169,17 +170,17 @@ def getEresolCurves(pixName, labelLib, samprate, jitter, stoch, noise, bbfb,
         OFstrategy = " OFStrategy=FIXED OFLength=" + str(filterLength)
 
     # -- LIB & NOISE & SIMS & RESULTS dirs and files ----------
-    simDir = cwd + "/PAIRS/" + tessim
+    simDir = ERESOLdir + "PAIRS/" + xifusim
     if resultsDir == "gainScale":
         simDir += "/gainScale/"
 
-    outDir = cwd + "/PAIRS/eresol" + pixName + "/" + resultsDir
-    simSIXTEdir = EURECAdir + "/testHarness/simulations/SIXTE"
-    noiseDir = simSIXTEdir + "/NOISE/" + tessim
+    outDir = ERESOLdir + "PAIRS/eresol" + pixName + "/" + resultsDir
+    simSIXTEdir = EURECAdir + "testHarness/simulations/SIXTE"
+    noiseDir = simSIXTEdir + "/NOISE/" + xifusim
     noiseFile = (noiseDir + "/noise" + str(nsamples) + "samples_" +
-                 tessim + "_B0_" + space + smprtStr +
-                 jitterStr + stochStr + bbfbStr + ".fits")
-    libDirRoot = simSIXTEdir + "/LIBRARIES/" + tessim
+                 xifusim + "_B0_" + space + smprtStr +
+                 jitterStr + bbfbStr + ".fits")
+    libDirRoot = simSIXTEdir + "/LIBRARIES/" + xifusim
     libDir = libDirRoot + "/GLOBAL/" + space + "/"
     if libTmpl == "SHORT":
         libTmpl = "_SHORT"
@@ -189,20 +190,20 @@ def getEresolCurves(pixName, labelLib, samprate, jitter, stoch, noise, bbfb,
     if 'multilib' in labelLib:
         libFile = (libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) +
                    "_" + str(nSimPulsesLib) + "p" + smprtStr +
-                   jitterStr + noiseStr + stochStr + bbfbStr + ".fits")
-        filtEeV = 1000.  # eV
+                   jitterStr + noiseStr + bbfbStr + ".fits")
+        filtEeV = 6000.  # eV
     elif 'fixedlib' in labelLib:  # fixedlib1,...
         fixedEkeV = labelLib.replace("OF", "")[8:]
         filtEeV = float(fixedEkeV) * 1E3  # eV
         # detection to be performed -> require different models:
-        if tstartPulse1 == 0:
+        if tstartPulse1 == 0 and detMethod == "AD":
             libFile = (libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) +
                        "_" + str(nSimPulsesLib) + "p" + smprtStr +
-                       jitterStr + noiseStr + stochStr + bbfbStr + ".fits")
+                           jitterStr + noiseStr + bbfbStr + ".fits")
         else:
             libFile = (libDir + "/library" + fixedEkeV + "keV_PL" +
                        str(nsamples) + "_" + str(nSimPulsesLib) + "p" +
-                       smprtStr + jitterStr + noiseStr + stochStr + bbfbStr +
+                       smprtStr + jitterStr + noiseStr + bbfbStr +
                        ".fits")
     libFile = libFile.replace(".fits", libTmpl+".fits")
 
@@ -210,13 +211,13 @@ def getEresolCurves(pixName, labelLib, samprate, jitter, stoch, noise, bbfb,
                     str(pulseLength), '_', mono1EkeV, 'keV_', mono2EkeV,
                     'keV_', TRIGG, "_", str(filterMeth), str(fdomain), '_',
                     str(labelLib), '_', str(reconMethod), str(filterLength),
-                    smprtStr, jitterStr, noiseStr, stochStr, bbfbStr])
+                    smprtStr, jitterStr, noiseStr, bbfbStr])
     if mono2EkeV == "0":
         root = ''.join([str(nSimPulses), 'p_SIRENA', str(nsamples), '_pL',
                         str(pulseLength), '_', mono1EkeV, 'keV_', TRIGG, "_",
                         str(filterMeth), str(fdomain), '_', str(labelLib),
                         '_', str(reconMethod), str(filterLength), smprtStr,
-                        jitterStr, noiseStr, stochStr, bbfbStr])
+                        jitterStr, noiseStr, bbfbStr])
 
     eresolFile = "eresol_" + root + ".json"
     eresolFile = eresolFile.replace(".json", libTmpl+".json")
@@ -230,11 +231,11 @@ def getEresolCurves(pixName, labelLib, samprate, jitter, stoch, noise, bbfb,
     # -----------------------------
     alias = (detMethod + "_" + labelLib + "_" + reconMethod +
              str(pulseLength) + smprtStr + jitterStr + noiseStr +
-             stochStr + bbfbStr)
+             bbfbStr)
     if 'fixedlib' in labelLib and 'OF' not in labelLib:
         alias = (detMethod + "_" + labelLib + "OF_" + "_" + reconMethod +
                  str(pulseLength) + smprtStr + jitterStr + noiseStr +
-                 stochStr + bbfbStr)
+                 bbfbStr)
     print("Using alias=", alias)
     os.chdir(outDir)
 
@@ -258,19 +259,20 @@ def getEresolCurves(pixName, labelLib, samprate, jitter, stoch, noise, bbfb,
 
         inFile = (simDir + "/sep" + sep12 + "sam_" + str(nSimPulses) +
                   "p_" + mono1EkeV + "keV_" + mono2EkeV + "keV" +
-                  smprtStr + jitterStr + noiseStr + stochStr + bbfbStr +
+                  smprtStr + jitterStr + noiseStr + bbfbStr +
                   ".fits")
         if mono2EkeV == "0":  # for single Pulses
             inFile = (simDir + "/sep" + sep12 + "sam_" + str(nSimPulses) +
                       "p_" + mono1EkeV + "keV" +
-                      smprtStr + jitterStr + noiseStr + stochStr + bbfbStr +
+                      smprtStr + jitterStr + noiseStr + bbfbStr +
                       ".fits")
 
         evtFile = "events_sep" + sep12 + "sam_" + root + ".fits"
         evtFile = evtFile.replace(
-                jitterStr + noiseStr + stochStr + bbfbStr + ".fits",
-                libTmpl + jitterStr + noiseStr + stochStr + bbfbStr + ".fits")
+                jitterStr + noiseStr + bbfbStr + ".fits",
+                libTmpl + jitterStr + noiseStr + bbfbStr + ".fits")
         print("=============================================")
+        print("Working in:", outDir)
         print("Using file: ", inFile)
         print("Using library: ", libFile)
         print("Using noisefile: ", noiseFile)
@@ -302,7 +304,7 @@ def getEresolCurves(pixName, labelLib, samprate, jitter, stoch, noise, bbfb,
                     " scaleFactor=" + str(scaleFactor) +
                     " samplesUp=" + str(samplesUp) + " nSgms=" + str(nSgms) +
                     " samplesDown=" + str(samplesDown) +
-                    " mode=1 NoiseFile=" + noiseFile +
+                    " opmode=1 NoiseFile=" + noiseFile +
                     " OFLib=" + OFLib + " FilterDomain=" + fdomain +
                     " detectionMode=" + detMethod +
                     " FilterMethod=" + filterMeth + " clobber=yes" +
@@ -467,14 +469,14 @@ if __name__ == "__main__":
     parser.add_argument('--libTmpl', choices=['SHORT', 'LONG'], default='LONG',
                         help='Label identifying the library for the templates:\
                         SHORT or LONG')
-    parser.add_argument('--samprate', default="", choices=['', 'samprate2'],
-                        help="baseline, half_baseline")
+    parser.add_argument('--samprate', default="", choices=['', 'samprate2', 'samprate4'],
+                        help="baseline, half_baseline, quarter baseline")
     parser.add_argument('--jitter', default="", choices=['', 'jitter'],
                         help="no jitter, jitter")
     parser.add_argument('--noise', default="", choices=['', 'nonoise'],
                         help="noisy, nonoise")
-    parser.add_argument('--stoch', default="", choices=['', 'stoch'],
-                        help="non-stochastic, stochastic")
+    parser.add_argument('--decimation', type=int, default=1,
+                        help='xifusim decimation factor')
     parser.add_argument('--monoEnergy1', help='Monochromatic energy (keV) of\
                         input primary simulated pulses', required=True)
     parser.add_argument('--monoEnergy2', help='Monochromatic energy (keV) of\
@@ -545,7 +547,7 @@ if __name__ == "__main__":
 
     getEresolCurves(pixName=inargs.pixName, labelLib=inargs.lib,
                     samprate=inargs.samprate, jitter=inargs.jitter,
-                    noise=inargs.noise, stoch=inargs.stoch, bbfb=inargs.bbfb,
+                    dcmt=inargs.decimation, noise=inargs.noise, bbfb=inargs.bbfb,
                     mono1EkeV=inargs.monoEnergy1, mono2EkeV=inargs.monoEnergy2,
                     reconMethod=inargs.reconMethod, filterMeth=inargs.filter,
                     filterLength=inargs.filterLength,

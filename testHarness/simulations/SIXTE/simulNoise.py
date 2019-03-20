@@ -1,5 +1,5 @@
 """
-# NOISE spectrum simulation
+# NOISE spectrum simulation (with xifusim)
 #
 # python simulNoise.py
 #
@@ -14,9 +14,9 @@
 #
 #
 # 1) Simulate 10s stream with no events to calculate Baseline
-#                             (pixdetillum + tessim) --> not requiered anymore
+#                             (pixdetillum + xifusim) --> not requiered anymore
 # 2) Simulate 100s stream with no events as input for gennoisespec
-#                             (tesconstpileup + tessim)
+#                             (tesconstpileup + xifusim)
 # 3) Obtain noise spectrum with gennoisespec
 #
 """
@@ -28,7 +28,6 @@ import argparse
 from auxpy import simulNoise
 import tempfile
 
-preBufferSize = 1000
 Ifit = 45.3E-6
 tmpDir = tempfile.mkdtemp()
 tmpFile = tempfile.TemporaryFile()
@@ -49,8 +48,6 @@ if __name__ == "__main__":
                         help='baseline, half_baseline')
     parser.add_argument('--jitter',  default="", choices=['', 'jitter'],
                         help='no_jitter, jitter')
-    parser.add_argument('--stoch', default="", choices=['', 'stoch'],
-                        help="nonstochastic, stochastic")
     parser.add_argument('--bbfb', default="", choices=['', 'bbfb'],
                         help="dobbfb=n, dobbfb=y")
     parser.add_argument('--pulseLength', required=True, type=int,
@@ -65,7 +62,7 @@ if __name__ == "__main__":
     parser.add_argument('--scaleFactor', default=0.0, type=float,
                         help='Param for gennoise[default %(default)s]')
     parser.add_argument('--samplesUp', default=2, type=int,
-                        help='Param samplesUp for gennoise [default %(default)s]')
+                        help='Param samplesUp for gennoise [def %(default)s]')
     parser.add_argument('--nSgms', default=5., type=float,
                         help='Param nSgms for gennoise [default %(default)s]')
     parser.add_argument('--simTimeN', default=100,
@@ -74,17 +71,17 @@ if __name__ == "__main__":
     parser.add_argument('--nintervals', default=1000, type=int,
                         help='Number of intervals in gennoisespec for spectra\
                         calculation [default %(default)s]')
-    parser.add_argument('--pixel', default=1,
-                        help='Pixel Number [default %(default)s]')
+    parser.add_argument('--decimation', type=int, default=1,
+                        help='xifusim decimation factor')
 
     inargs = parser.parse_args()
 
     simulNoise(pixName=inargs.pixName, samprate=inargs.samprate,
-               jitter=inargs.jitter, stoch=inargs.stoch,
-               bbfb=inargs.bbfb, pulseLength=inargs.pulseLength,
+               jitter=inargs.jitter, bbfb=inargs.bbfb,
+               pulseLength=inargs.pulseLength,
                space=inargs.space, acbias=inargs.acbias,
                scaleFactor=inargs.scaleFactor,
                samplesUp=inargs.samplesUp,
                nSgms=inargs.nSgms, nintervals=inargs.nintervals,
-               simTimeN=inargs.simTimeN, pixel=inargs.pixel,
-               preBufferSize=preBufferSize)
+               simTimeN=inargs.simTimeN,
+               dcmt=inargs.decimation)
