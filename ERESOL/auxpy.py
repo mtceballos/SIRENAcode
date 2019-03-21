@@ -1,5 +1,4 @@
 from __future__ import print_function
-from sys import exit
 import os
 import shlex
 from shutil import copy, rmtree
@@ -19,9 +18,16 @@ SIXTEinst = os.environ["SIXTE"] + "/share/sixte/instruments/athena-xifu/"
 XIFUSIMinst = os.environ["SIXTE"] + "/share/xifusim/instruments/"
 XMLsixte = (SIXTEinst +
             "/xifu_detector_lpa_75um_AR0.5_pixoffset_mux40_pitch275um.xml")
+# samplerate-dependent quantities
 sampfreqs = (156250., 78125, 39062.5)  # Hz
 sampids = ("", "samprate2", "samprate4")
 sampStrs = ("", "_samprate2", "_samprate4")
+separations = (40000, 20000, 10000)
+samplesUps = (3, 2, 2)
+samplesDowns = (4, 3, 3)
+nSigmss = (3, 4, 4)
+preBufferPulses = 1000
+scaleFactor = 0
 
 
 def addkeys(fitsfile, ext, keynames, keyvals):
@@ -100,9 +106,16 @@ def simulNoise(pixName, samprate, jitter, bbfb, pulseLength,
           :return fits file with Noise spectra in specified space and sampling
 
     """
-    triggerSize = max(10000, pulseLength)
+    # ----GLOBAL VARIABLES -------------
+    EURECAdir = "/dataj6/ceballos/INSTRUMEN/EURECA"
+    simSIXTEdir = EURECAdir + "/testHarness/simulations/SIXTE"
+    cwd = os.getcwd()
+
     preBuffer = 0
     diffth = 0
+
+    # ---- param dependent variables
+    triggerSize = max(10000, pulseLength)
 
     # samprate
     smprtStr = ""
@@ -130,18 +143,23 @@ def simulNoise(pixName, samprate, jitter, bbfb, pulseLength,
         XMLxifusim = XIFUSIMinst + "1pix_noise_bbfb.xml"
         bbfbStr = "_bbfb"
 
-    # ----GLOBAL VARIABLES -------------
-    EURECAdir = "/dataj6/ceballos/INSTRUMEN/EURECA"
-    simSIXTEdir = EURECAdir + "/testHarness/simulations/SIXTE"
-
-    cwd = os.getcwd()
-
-    # set input params dependent variables
-    # -------------------------------------
+    # energyMethod
+    energyMethod = "NONE"
+    if space == "R":
+        energyMethod = " EnergyMethod=I2R"
+    elif space == "RALL":
+        energyMethod = " EnergyMethod=I2RALL"
+    elif space == "RNOL":
+        energyMethod = " EnergyMethod=I2RNOL"
+    elif space == "RFITTED":
+        energyMethod = " EnergyMethod=I2RFITTED"
+    elif space == "ADC":
+        energyMethod = " EnergyMethod=OPTFILT"
 
     xifusim = "xifusim" + pixName
     wdir = simSIXTEdir + "/NOISE/" + xifusim
     os.chdir(wdir)
+
     # define files
     rootN = ("forNoise" + str(pulseLength) + "samples_" + xifusim +
              "_" + str(simTimeN) + "s_pairscps_" + space)
@@ -223,40 +241,12 @@ def simulNoise(pixName, samprate, jitter, bbfb, pulseLength,
         fN['TESRECORDS'].header["TRIGGSZ"] = triggerSize
         fN['TESRECORDS'].header["DELTAT"] = \
             dcmt * fN['TESRECORDS'].header["DELTA_T"]
-        # fN['TESRECORDS'].header["EXTNAME"] = 'RECORDS'
-        # oldExtName = fN[1].header["EXTNAME"]
-        # if not oldExtName == "RECORDS":
-        #    print("Changing name...")
-        #    fNhdr['EXTNAME'] = 'RECORDS'
         fN.close()
-
-        if space in ("R", "RFITTED", "RALL", "RNOL"):
-            print("RfromItrigger: Adding Resistance column for NOISE...")
-            try:
-                RfromItrigger(infile=fitsFileN, Icol="ADC",
-                              current="ADC", Rcol="ADCR",
-                              Rmethod=space, samplingrate=samplingrate)
-                # delete ADC col
-                comm = ("fdelcol infile=" + fitsFileN +
-                        "+1 colname=ADC confirm=no proceed=YES")
-                args = shlex.split(comm)
-                check_call(args, stderr=STDOUT)
-                # copy ADCR in ADC new col (required by gennoise)
-                comm = ("ftcalc infile=" + fitsFileN + " outfile=" +
-                        fitsFileN + " clobber=yes column=ADC expr='ADCR'")
-                args = shlex.split(comm)
-                check_call(args, stderr=STDOUT)
-            except RuntimeError:
-                print("Error adding resistance column in ADCR -> ADC (NOISE):")
-                print(comm)
-                os.chdir(cwd)
-                rmtree(tmpDir)
-                raise
-            print("FCALC: ..................................END")
 
     print("\nGENNOISESPEC: Generating NOISE spectrum file "
           "in (", space, " space)")
     comm = ("gennoisespec --inFile=" + fitsFileN +
+            " --" + energyMethod +
             " --outFile=" + noiseFile +
             " --intervalMinSamples=" + str(pulseLength) +
             " --nintervals=" + str(nintervals) +
@@ -280,8 +270,7 @@ def simulNoise(pixName, samprate, jitter, bbfb, pulseLength,
 
 
 def simulSingles(pixName, monoEkeV, acbias, samprate, jitter, noise,
-                 bbfb, nSimPulses, singleSeparation, preBufferSize,
-                 pulseLength, dcmt):
+                 bbfb, nSimPulses, pulseLength, dcmt):
     """
     :param pixName: Extension name in the FITS pixel definition file
                     (SPA*, LPA1*, LPA2*, LPA3*)
@@ -293,8 +282,6 @@ def simulSingles(pixName, monoEkeV, acbias, samprate, jitter, noise,
     :param noise: noise option ("" for noise and "nonoise" for nonoise)
     :param bbfb: ("") for dobbfb=n or ("bbfb") for dobbfb=y
     :param nSimPulses: number of pulses to be simulated
-    :param singleSeparation: separation from secondary->primary for next record
-    :param preBufferSize: pre-buffersize
     :param pulseLength: length of pulses to calculate trigger size
     :param dcmt: decimation factor for xifusim jitter simulations
     :return: files with simulated SINGLES
@@ -304,12 +291,17 @@ def simulSingles(pixName, monoEkeV, acbias, samprate, jitter, noise,
     EURECAdir = "/dataj6/ceballos/INSTRUMEN/EURECA"
     ERESOLdir = EURECAdir + "/ERESOL"
     PAIRSdir = ERESOLdir + "/PAIRS"
+    preBufferSize = preBufferPulses
 
     # samprate
     smprtStr = ""
     idxsmp = sampids.index(samprate)
     smprtStr = sampStrs[idxsmp]
     samplingrate = sampfreqs[idxsmp]
+
+    # deal with separations from definitions above
+    idxsmp = sampids.index(samprate)
+    singleSeparation = separations[idxsmp]
 
     XMLxifusim = XIFUSIMinst + "1pix_nobbfb.xml"
 
@@ -461,8 +453,7 @@ def simulSingles(pixName, monoEkeV, acbias, samprate, jitter, noise,
 
 
 def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, samprate, jitter,
-               noise, bbfb, nSimPulses, preBufferSize,
-               pulseLength, dcmt, sepsStr):
+               noise, bbfb, nSimPulses, pulseLength, dcmt, sepsStr):
     """
     :param pixName: Extension name in the FITS pixel definition file
                      (SPA*, LPA1*, LPA2*, LPA3*)
@@ -486,6 +477,7 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, samprate, jitter,
     EURECAdir = "/dataj6/ceballos/INSTRUMEN/EURECA"
     ERESOLdir = EURECAdir + "/ERESOL"
     PAIRSdir = ERESOLdir + "/PAIRS"
+    preBufferSize = preBufferPulses
 
     # samprate
     smprtStr = ""
@@ -495,8 +487,9 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, samprate, jitter,
 
     XMLxifusim = XIFUSIMinst + "1pix_nobbfb.xml"
 
-    if samprate == 'samprate2':
-        recordSeparation = 20000
+    # deal with record separations from definitions above
+    recordSeparation = separations[idxsmp]
+    
     # added to solve floating point inaccu. due to sampling rate
     # (Christian's mail 31/03/2017)
     tstart = 0.5 / float(samplingrate)
@@ -648,8 +641,7 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, samprate, jitter,
 def simulLibsGlobal(pixName, space, samprate, jitter, noise, bbfb,
                     pulseLength, libEnergies, largeFilter, nsamples,
                     nSimPulses, acbias, tstartPulse1All,
-                    createLib, noiseMat, weightMat, preBufferSize,
-                    dcmt):
+                    createLib, noiseMat, weightMat, dcmt):
     """
     :type pixName: str
     :param pixName: Extension name in FITS file pixel definition
@@ -691,34 +683,31 @@ def simulLibsGlobal(pixName, space, samprate, jitter, noise, bbfb,
     :type weigthMat: str
     :param weightMat: should the Weight matrices HDU be created? (yes/no)
     :param dcmt: decimation factor for jitter in xifusim
-    :param preBufferSize: pre-buffersize
     :return: simulated calibration pulses pulses && Global library from them
 
     """
 
     cwd = os.getcwd()
+    preBufferSize = preBufferPulses
     xifusim = "xifusim" + pixName
-    separation = 40000  # samples between singles
+
     # samprate
     smprtStr = ""
     idxsmp = sampids.index(samprate)
     smprtStr = sampStrs[idxsmp]
     samplingrate = sampfreqs[idxsmp]
 
+    # deal with separations from definitions above
+    separation = separations[idxsmp]
+
     # Sigmas and Samples and scaleFactor for Detection
     maxFilterLength = pulseLength
     if largeFilter > 0:
         maxFilterLength = largeFilter
 
-    samplesUp = 3
-    samplesDown = 4
-    nSgms = 3
-
-    if samprate == 'samprate2':
-        separation = 20000
-        samplesUp = 2
-        samplesDown = 3
-        nSgms = 4
+    samplesUp = samplesUps[idxsmp]
+    samplesDown = samplesDowns[idxsmp]
+    nSgms = nSigmss[idxsmp]
 
     XMLxifusim = XIFUSIMinst + "1pix_nobbfb.xml"
 
@@ -893,7 +882,7 @@ def simulLibsGlobal(pixName, space, samprate, jitter, noise, bbfb,
                 " PulseLength=" + str(pulseLength) +
                 " LibraryFile=" + libFile + energyMethod +
                 " NoiseFile=" + noiseFile +
-                " mode=0 clobber=yes intermediate=0" +
+                " opmode=0 clobber=yes intermediate=0" +
                 " monoenergy=" + str(monoEeV) + " EventListSize=1000" +
                 " XMLFile=" + XMLsixte +
                 " hduPRECALWN=" + weightMat + " hduPRCLOFWM=" + noiseMat)
@@ -926,6 +915,305 @@ def simulLibsGlobal(pixName, space, samprate, jitter, noise, bbfb,
               ndetpulses, "in ", simFile)
 
     os.chdir(cwd)
+
+
+def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb,
+                mono1EkeV, mono2EkeV, reconMethod, filterMeth, filterLength,
+                nsamples, pulseLength, nSimPulses, fdomain, detMethod,
+                tstartPulse1, tstartPulse2, nSimPulsesLib, coeffsFile,
+                libTmpl, resultsDir, sepsStr):
+    """
+    :param pixName: Extension name for FITS pixel definition file
+                    (SPA*, LPA1*, LPA2*, LPA3*)
+    :param labelLib: Label identifying the library
+                    ( multilib, multilibOF, fixedlib1 )
+    :param samprate: Samprate value with respect to baseline of 156250 Hz:
+                    "" (baseline), "samprate2" (half_baseline),
+                    samprate4 (quarter baseline)
+    :param jitter: jitter option ("" for no_jitter and "jitter" for jitter)
+    :param dcmt: decimation factor for xifusim jitter
+    :param bbfb: ("") for dobbfb=n or ("bbfb") for dobbfb=y
+    :param noise: simulations done with ("") or without ("nonoise") noise
+    :param mono1EkeV: Monochromatic energy (keV)
+                        of input primary simulated pulse
+    :param mono2EkeV: Monochromatic energy (keV)
+                        of input secondary simulated pulse
+    :param reconMethod: Energy reconstruction Method
+                        (OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL)
+    :param filterMeth: Optimal Filtering Method (F0 or B0)
+    :param filterLength: if set to 0 (default) filters are taken
+                        from library in BASE2, otherwise filterStartegy=FIXED
+    :param nsamples: noise length samples
+    :param pulseLength: pulse length in samples
+    :param nSimPulses: number of simulated pulses
+                        (to locate filenames to be analysed)
+    :param nSimPulsesLib: number of simulated pulses for the library
+    :param fdomain: Optimal Filtering domain (F(req) or T(ime))
+    :param detMethod: Detection method (AD or STC)
+    :param tstartPulse1: Start sample for first pulse (PreBufferSize)
+    :param tstartPulse2:
+                    if /=0 Start sample for second pulse
+                    if = -1 modified to (tstartPulse1 + separation)
+                    if = 0 && tstartPulse1 /=0 => no secondary pulse
+    :param nSimPulsesLib: number of simulated pulses for the library
+    :param libTmpl: label to identify the library regarding
+                    the templates used (LONG or SHORT)
+    :param resultsDir: directory for resulting evt and json files
+                    (from .../PAIRS/eresol+pixName ), tipically
+                    'nodetSP', 'detSP' or 'gainScale' or ''
+    :param sepsStr: blank spaces separated list of pulses separations
+    :return: file with energy resolutions for the input pairs of pulses
+    """
+
+    # --- Define some initial values and conversions ----
+    EURECAdir = "/dataj6/ceballos/INSTRUMEN/EURECA/"
+    ERESOLdir = EURECAdir + "/ERESOL/"
+
+    # samprate
+    smprtStr = ""
+    idxsmp = sampids.index(samprate)
+    smprtStr = sampStrs[idxsmp]
+
+    # separations
+    separation = separations[idxsmp]
+    if sepsStr == "":
+        sepsStr = [separation]
+
+    # detection related params
+    samplesUp = samplesUps[idxsmp]
+    samplesDown = samplesDowns[idxsmp]
+    nSgms = nSigmss[idxsmp]
+
+    # jitter
+    jitterStr = ""
+    if jitter == "jitter" and dcmt > 1:
+        jitterStr = "_jitter_dcmt" + str(dcmt)
+
+    # noise
+    noiseStr = ""
+    if noise == "nonoise":
+        noiseStr = "_nonoise"
+
+    # bbfb
+    bbfbStr = ""
+    if bbfb == "bbfb":
+        bbfbStr = "_bbfb"
+        jitterStr = "_jitter"
+
+    # pulses start
+    TRIGG = ""
+    if tstartPulse1 > 0:
+        TRIGG = "NTRIG"
+    else:
+        TRIGG = detMethod
+
+    # pulses types
+    xifusim = "xifusim" + pixName
+
+    # data space and reconstruction method
+    space = "ADC"
+    if reconMethod in ("I2R", "I2RALL", "I2RNOL", "I2RFITTED"):
+        space = reconMethod.lstrip('I2')
+
+    # libraries
+    OFLib = "no"
+    OFstrategy = ""
+    if "OF" in labelLib:
+        OFLib = "yes"
+        OFstrategy = " OFStrategy=FIXED OFLength=" + str(filterLength)
+
+    # -- LIB & NOISE & SIMS & RESULTS dirs and files ----------
+    simDir = ERESOLdir + "PAIRS/" + xifusim
+    if resultsDir == "gainScale":
+        simDir += "/gainScale/"
+
+    outDir = ERESOLdir + "PAIRS/eresol" + pixName + "/" + resultsDir
+    simSIXTEdir = EURECAdir + "testHarness/simulations/SIXTE"
+    noiseDir = simSIXTEdir + "/NOISE/" + xifusim
+    noiseFile = (noiseDir + "/noise" + str(nsamples) + "samples_" +
+                 xifusim + "_B0_" + space + smprtStr +
+                 jitterStr + bbfbStr + ".fits")
+    libDirRoot = simSIXTEdir + "/LIBRARIES/" + xifusim
+    libDir = libDirRoot + "/GLOBAL/" + space + "/"
+    if libTmpl == "SHORT":
+        libTmpl = "_SHORT"
+    else:
+        libTmpl = ""
+
+    if 'multilib' in labelLib:
+        libFile = (libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) +
+                   "_" + str(nSimPulsesLib) + "p" + smprtStr +
+                   jitterStr + noiseStr + bbfbStr + ".fits")
+        filtEeV = 6000.  # eV
+    elif 'fixedlib' in labelLib:  # fixedlib1,...
+        fixedEkeV = labelLib.replace("OF", "")[8:]
+        filtEeV = float(fixedEkeV) * 1E3  # eV
+        # detection to be performed -> require different models:
+        if tstartPulse1 == 0 and detMethod == "AD":
+            libFile = (libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) +
+                       "_" + str(nSimPulsesLib) + "p" + smprtStr +
+                       jitterStr + noiseStr + bbfbStr + ".fits")
+        else:
+            libFile = (libDir + "/library" + fixedEkeV + "keV_PL" +
+                       str(nsamples) + "_" + str(nSimPulsesLib) + "p" +
+                       smprtStr + jitterStr + noiseStr + bbfbStr +
+                       ".fits")
+    libFile = libFile.replace(".fits", libTmpl+".fits")
+
+    root = ''.join([str(nSimPulses), 'p_SIRENA', str(nsamples), '_pL',
+                    str(pulseLength), '_', mono1EkeV, 'keV_', mono2EkeV,
+                    'keV_', TRIGG, "_", str(filterMeth), str(fdomain), '_',
+                    str(labelLib), '_', str(reconMethod), str(filterLength),
+                    smprtStr, jitterStr, noiseStr, bbfbStr])
+    if mono2EkeV == "0":
+        root = ''.join([str(nSimPulses), 'p_SIRENA', str(nsamples), '_pL',
+                        str(pulseLength), '_', mono1EkeV, 'keV_', TRIGG, "_",
+                        str(filterMeth), str(fdomain), '_', str(labelLib),
+                        '_', str(reconMethod), str(filterLength), smprtStr,
+                        jitterStr, noiseStr, bbfbStr])
+
+    eresolFile = "eresol_" + root + ".json"
+    eresolFile = eresolFile.replace(".json", libTmpl+".json")
+
+    ofnoise = "NSD"
+    if 'OPTFILTNM' in reconMethod:
+        ofnoise = "WEIGHTM"
+        reconMethod = "OPTFILT"
+
+    os.chdir(outDir)
+
+    # ------------------------------------
+    # --- Process input data files -------
+    # ------------------------------------
+    #
+    for sep12 in sepsStr:
+        sep = float(sep12)
+        # calculate tstartPulse2 using separation:
+        if tstartPulse1 > 0 and tstartPulse2 == -1:
+            tstartPulse2 = tstartPulse1 + int(sep)
+
+        inFile = (simDir + "/sep" + sep12 + "sam_" + str(nSimPulses) +
+                  "p_" + mono1EkeV + "keV_" + mono2EkeV + "keV" +
+                  smprtStr + jitterStr + noiseStr + bbfbStr +
+                  ".fits")
+        if mono2EkeV == "0":  # for single Pulses
+            inFile = (simDir + "/sep" + sep12 + "sam_" + str(nSimPulses) +
+                      "p_" + mono1EkeV + "keV" +
+                      smprtStr + jitterStr + noiseStr + bbfbStr +
+                      ".fits")
+
+        evtFile = "events_sep" + sep12 + "sam_" + root + ".fits"
+        evtFile = evtFile.replace(
+                jitterStr + noiseStr + bbfbStr + ".fits",
+                libTmpl + jitterStr + noiseStr + bbfbStr + ".fits")
+        print("=============================================")
+        print("Working in:", outDir)
+        print("Using file: ", inFile)
+        print("Using library: ", libFile)
+        print("Using noisefile: ", noiseFile)
+        print("Setting evtFile: ", evtFile)
+        print("=============================================")
+
+        # -- SIRENA processing -----
+
+        if os.path.isfile(evtFile):
+            if os.stat(evtFile).st_size == 0:
+                os.remove(evtFile)
+                print("Event file", evtFile,
+                      " already DOES exist but size 0: removing...")
+            else:
+                print("Event file", evtFile,
+                      " already DOES exist: recalculating FWHMs...")
+
+        if not os.path.isfile(evtFile):
+            ndetpulses = 0
+            print("\nRunning SIRENA for detection & reconstruction")
+            print("filtEev=", filtEeV)
+            print("XMLFile=", XMLsixte)
+            comm = ("tesreconstruction Recordfile=" + inFile +
+                    " TesEventFile=" + evtFile +
+                    " Rcmethod='SIRENA'" +
+                    " PulseLength=" + str(pulseLength) +
+                    " LibraryFile=" + libFile +
+                    " scaleFactor=" + str(scaleFactor) +
+                    " samplesUp=" + str(samplesUp) + " nSgms=" + str(nSgms) +
+                    " samplesDown=" + str(samplesDown) +
+                    " opmode=1 NoiseFile=" + noiseFile +
+                    " OFLib=" + OFLib + " FilterDomain=" + fdomain +
+                    " detectionMode=" + detMethod +
+                    " FilterMethod=" + filterMeth + " clobber=yes" +
+                    " EventListSize=1000" + " EnergyMethod=" + reconMethod +
+                    " LagsOrNot=1" + " tstartPulse1=" + str(tstartPulse1) +
+                    " tstartPulse2=" + str(tstartPulse2) +
+                    " OFNoise=" + ofnoise + " XMLFile=" + XMLsixte +
+                    " filtEeV=" + str(filtEeV) + OFstrategy)
+            try:
+                print(comm)
+                args = shlex.split(comm)
+                check_call(args, stderr=STDOUT)
+            except RuntimeError:
+                print("Error running SIRENA for detection & reconstruction:")
+                print(comm)
+                rmtree(tmpDir)
+                raise
+
+            # Check that detection went well
+            evtf = fits.open(evtFile)
+            nTrigPulses = evtf[1].header["NETTOT"]
+            ndetpulses = evtf[1].header["NAXIS2"]
+            print("Checking DETECTION............................")
+            assert ndetpulses > 0, "Empty evt file (%s): nrows=0 " % evtFile
+            print("Reconstruction finished => sim/det: ",
+                  nTrigPulses, "/", ndetpulses)
+            evtf.close()
+
+    return smprtStr, jitterStr, noiseStr, bbfbStr, evtFile, eresolFile
+
+
+def convertEnergies(inFile, outFile, coeffsFile, alias):
+    """
+    :param inFile: absolute path to file with reconstructed
+                    (non-calibrated) energies
+    :param coeffsFile: file with coefficients of polynomial
+                    fit to gain curves from polyfit2bias.R
+    :param alias: string to select reconstruction type in
+                    the coefficients table
+    :param outFile: file with reconstructed/calibrated energies
+                    for the input pulses
+    """
+
+    # ------------------------------------
+    # --- Process input data file  -------
+    # ------------------------------------
+
+    f = fits.open(inFile, memmap=True)
+    nrows = f[1].header["NAXIS2"]
+    assert nrows > 0, "Empty evt file (%s): nrows=0 " % inFile
+
+    # read Erecons (SIGNAL) column in numpy array (in keV)
+    ftab = f[1].data
+    EreconKeV = np.array(ftab['SIGNAL'])
+
+    # calculate corrected energies with polyfit coeffs
+    print("...Calculating corrected energies for pulses in ", inFile)
+    EcorrKeV = auxpy.enerToCalEner(EreconKeV, coeffsFile, alias)
+
+    # close input file
+    f.close()
+    del f[1].data
+
+    # ------------------------------------
+    # --- Create and populate output file
+    # ------------------------------------
+    shutil.copy(inFile, outFile)
+    f = fits.open(outFile, memmap=True, mode='update')
+    hdr = f[0].header
+    hdr['HISTORY'] = ("Updated by convertEnergies.py to correct "
+                      "energies by gainscale")
+    ftab = f[1].data
+    ftab['SIGNAL'] = EcorrKeV
+    f.close()
+    del f[1].data
 
 
 def find_nearest_idx(array, values):
@@ -1272,418 +1560,6 @@ def enerToCalEner(inEner, coeffsFile, alias):
     # return calibrated energies
     # ------------------------------------
     return calEner
-
-
-def RfromItrigger(infile, Icol, current, Rcol, Rmethod, samplingrate):
-    """
-    :param infile: fits input file with current column Icol
-    :param Icol: existing current column name
-    :param current: input current: ADC or AMP (PULSE0000)
-    :param Rcol: new output R column name
-    :param Rmethod: resistance method calculation(R or RALL or RNOL or RFITTED)
-    :param samplingrate: sampling rate (Hz-1)
-    #:param xml: XML file with pixel description and parameters
-    :return: infile transformed with a new column in resistance space (Rcol)
-
-    R = R0 -R0*((abs(AMP -I0)/I0)/(1 + abs(AMP-I0)/I0) # Bandler?
-
-    RALL = (V0 - I*RL -L*dI/dt)/I (see PP SPIE paper)
-    RNOL = (V0 - I*RL)/I (see PP SPIE paper)
-    RFITTED = V0/(Ifit + I) (see PP SPIE paper)
-    I=I0-AMP
-    V0 = I0 * (R0+RL)
-    L = LFILTER/(TTR*TTR)
-    RL = RPARA/(TTR*TTR)
-    Ifit = 45.3E-6 AMP
-
-    """
-    # read xifusim simulated file for TES parameters
-    hdul = fits.open(infile)
-    exts = []
-    for hdu in range(1, len(hdul)):
-        exts.append(hdul[hdu].header['EXTNAME'])
-        if hdul[hdu].header['EXTNAME'] == 'TESPARAM':
-                hduData = hdul[hdu].data
-                RPARA = hduData['RPARA']
-                TTR = hduData['TTR']
-                RL = RPARA/(TTR*TTR)
-                I0_START = hduData['I0_START']
-                R0 = hduData['R0']
-        elif hdul[hdu].header['EXTNAME'] == 'ADCPARAM':
-                Imin = hdul[hdu].header['IMIN']
-                Imax = hdul[hdu].header['IMAX']
-                ADUCNV = (Imax-Imin)/65534
-    hdul.close()
-    # read XML file for xifusim detector
-# =============================================================================
-#     xmlpath = os.path.dirname(os.path.abspath(xml))
-#     XMLtree = ET.parse(xml)
-#     XMLroot = XMLtree.getroot()
-#     for elem in XMLroot:
-#         # locate tag "TesArray"
-#         if elem.tag == "TesArray":
-#             for subelem in elem:
-#                 # locate tag "TES"
-#                 if subelem.tag == "TES":
-#                     # read fits and HDU
-#                     hdunameTES = subelem.attrib['hduname']
-#                     detf = subelem.attrib['filename']
-#                     detf = xmlpath + "/" + detf
-#         elif elem.tag == "ADC":
-#             hdunameADC = subelem.attrib['hduname']
-#
-#     # read detector constants from detf+hdu
-#     hdul = fits.open(detf)
-#     nhdus = len(hdul)
-#     for hdu in range(1, nhdus):
-#         if hdul[hdu].header['EXTNAME'] == 'TESPARAM':
-#             if hdul[hdu].header['HDUNAME'] == hdunameTES:
-#                 hduData = hdul[hdu].data
-#                 RPARA = hduData['RPARA']
-#                 TTR = hduData['TTR']
-#                 # LFILTER = hduData['LFILTER']
-#                 I0_START = hduData['I0_START']
-#                 R0 = hduData['R0']
-#         elif hdul[hdu].header['EXTNAME'] == 'ADCPARAM':
-#             if hdul[hdu].header['HDUNAME'] == hdunameADC:
-#                 Imin = hdul[hdu].header['IMIN']
-#                 # Imax = hdul[hdu].header['IMAX']
-#     hdul.close()
-# =============================================================================
-
-    # Ifit = 45.3E-6
-    # fstr = fits.open(infile)
-    # triggsz = fstr[1].header['TRIGGSZ']
-    # fstr.close()
-
-    if current == "ADC":
-        # create col AMP in fits file from ADC column (fcalc does not work)
-        # ftcalc cannot work with variable length columns...convert it!
-
-        # 1) Extract TESRECORDS to temporary file
-        try:
-            comm = ("fextract infile=" + infile + "[TESRECORDS]" +
-                    " outfile=pp1.fits clobber=yes")
-            args = shlex.split(comm)
-            check_call(args, stderr=STDOUT)
-        except RuntimeError:
-            print("Error running fextract to extract TESRECORDS:")
-            print(comm)
-            raise
-
-        # 2) Convert columns to fixed format
-        VLtoFL("pp1.fits", "pp2.fits")
-
-        # 3) Create AMP from ADC
-        try:
-            # comm = ("ftcalc infile=" + infile + " outfile=" + infile +
-            #        " clobber=yes column=AMP expr='" + Icol +
-            #        "*#ADUCNV+#Imin'")
-
-            comm = ("ftcalc infile=pp2.fits['TESRECORDS'] outfile=pp1.fits " +
-                    "clobber=yes column=AMP expr='" +
-                    Icol + "*" + str(ADUCNV) + '+' + str(Imin) + "'")
-            args = shlex.split(comm)
-            check_call(args, stderr=STDOUT)
-        except RuntimeError:
-            print("Error running ftcalc for AMP column calculation:")
-            print(comm)
-            raise
-
-        # 4) Add remaining extensions from infile
-        for ih in range(len(exts)):
-            try:
-                comm = ("fappend infile=" + infile + "[" + exts[ih] + "]" +
-                        " outfile=pp1.fits pkeywds+")
-                args = shlex.split(comm)
-                check_call(args, stderr=STDOUT)
-            except RuntimeError:
-                print("Error appending original extension (", exts[ih],
-                      ") from ", infile)
-                print(comm)
-                raise
-        os.rename("pp1.fits", infile)
-        os.remove("pp2.fits")
-        Icol = "AMP"
-
-    if Rmethod == "R":
-        try:
-            # comm = ("fcalc infile=" + infile + " outfile=" + infile +
-            #        " clobber=yes clname=" + Rcol +
-            #        " expr='#R0 - #R0*((abs(" + Icol +
-            #        "-#I0_START)/#I0_START)" +
-            #        "/(1 + abs(" + Icol + "-#I0_START)/#I0_START))'")
-            comm = ("fcalc infile=" + infile + "['TESRECORDS'] outfile=" +
-                    infile + " clobber=yes clname=" + Rcol +
-                    " expr='" + str(R0) + "-" + str(R0) + "*((abs(" + Icol +
-                    "-" + str(I0_START) + ")/" + str(I0_START) +
-                    ")/(1 + abs(" + Icol + "-" + str(I0_START) + ")/" +
-                    str(I0_START) + "))'")
-
-            args = shlex.split(comm)
-            check_call(args, stderr=STDOUT)
-        except RuntimeError:
-            print("Error running ftool for R calculation:")
-            print(comm)
-            raise
-    elif Rmethod == "RALL":
-        print("Unavailable method for Resistance space")
-        exit()  # sys.exit()
-    #    try:
-    #        comm = ("fcalc infile=" + infile + " outfile=" + infile +
-    #                " clobber=yes clname=I expr='#I0_START-" +
-    #                Icol + "'")
-    #        args = shlex.split(comm)
-    #        check_call(args, stderr=STDOUT)
-    #        comm = ("fcalc infile=" + infile + " outfile=" + infile +
-    #                " clobber=yes clname=DER expr='seqdiff(I)'")
-    #        args = shlex.split(comm)
-    #        check_call(args, stderr=STDOUT)
-    #        comm = ("fcalc infile=" + infile + " outfile=" + infile +
-    #                " clobber=yes clname=UNOS expr=1")
-    #        args = shlex.split(comm)
-    #        check_call(args, stderr=STDOUT)
-    #        comm = ("fcollen infile=" + infile + " colname=UNOS collen="
-    #                + str(triggsz))
-    #        args = shlex.split(comm)
-    #        check_call(args, stderr=STDOUT)
-    #        comm = ("fcalc infile=" + infile + " outfile=" + infile +
-    #                " clobber=yes clname=DER1COL expr=DER")
-    #        args = shlex.split(comm)
-    #        check_call(args, stderr=STDOUT)
-    #        comm = ("fcollen infile=" + infile + " colname=DER1COL collen=1")
-    #        args = shlex.split(comm)
-    #        check_call(args, stderr=STDOUT)
-    #        comm = ("fcollen infile=" + infile + " colname=DER1COL collen="
-    #                + str(triggsz))
-    #        args = shlex.split(comm)
-    #        check_call(args, stderr=STDOUT)
-    #        comm = ("fcalc infile=" + infile + " outfile=" + infile +
-    #                " clobber=yes clname=DER0COL1 expr='DER-DER1COL'")
-    #        args = shlex.split(comm)
-    #        check_call(args, stderr=STDOUT)
-    #        comm = ("fcalc infile=" + infile + " outfile=" + infile +
-    #                " clobber=yes clname=DER2 expr='UNOS*DER[2]'")
-    #        args = shlex.split(comm)
-    #        check_call(args, stderr=STDOUT)
-    #        comm = ("fcalc infile=" + infile + " outfile=" + infile +
-    #                " clobber=yes clname=DERFINAL expr='DER2+DER0COL1'")
-    #        args = shlex.split(comm)
-    #        check_call(args, stderr=STDOUT)
-    #        comm = ("fcalc infile=" + infile + " outfile=" + infile +
-    #                " clobber=yes clname=DERIT expr='DERFINAL*" +
-    #                str(samplingrate) + "'")
-    #        args = shlex.split(comm)
-    #        check_call(args, stderr=STDOUT)
-    #        comm = ("fdelcol infile=" + infile +
-    #                "+1 colname=UNOS confirm=no proceed=yes")
-    #        args = shlex.split(comm)
-    #        check_call(args, stderr=STDOUT)
-    #        comm = ("fdelcol infile=" + infile +
-    #                "+1 colname=DER confirm=no proceed=yes")
-    #        args = shlex.split(comm)
-    #        check_call(args, stderr=STDOUT)
-    #        comm = ("fdelcol infile=" + infile +
-    #                "+1 colname=DER1COL confirm=no proceed=yes")
-    #        args = shlex.split(comm)
-    #        check_call(args, stderr=STDOUT)
-    #        comm = ("fdelcol infile=" + infile +
-    #                "+1 colname=DER0COL1 confirm=no proceed=yes")
-    #        args = shlex.split(comm)
-    #        check_call(args, stderr=STDOUT)
-    #        comm = ("fdelcol infile=" + infile +
-    #                "+1 colname=DER2 confirm=no proceed=yes")
-    #        args = shlex.split(comm)
-    #        check_call(args, stderr=STDOUT)
-    #        # R = (V0 - I*RL - L*dI/dt)/I
-    #        comm = ("fcalc infile=" + infile + " outfile=" +
-    #                infile + " clobber=yes clname=" + Rcol +
-    #                " expr='((#I0_START*(#R0+" +
-    #                str(RL) + ")) - (I*" + str(RL) + ") - (" +
-    #                str(L) + "*DERIT))/I'")
-    #        args = shlex.split(comm)
-    #        check_call(args, stderr=STDOUT)
-    #    except RuntimeError:
-    #        print("Error running ftool for RALL calculation:")
-    #        print(comm)
-    #        raise
-    elif Rmethod == "RNOL":
-
-        try:
-            # comm = ("fcalc infile=" + infile + " outfile=" + infile +
-            #        " clobber=yes clname=I expr='#I0_START-" +
-            #        Icol + "'")
-            comm = ("fcalc infile=" + infile + "['TESRECORDS'] outfile=" +
-                    infile + " clobber=yes clname=I expr='" +
-                    str(I0_START) + "-" + Icol + "'")
-            args = shlex.split(comm)
-            check_call(args, stderr=STDOUT)
-
-            # R = (V0 - I*RL)/I
-#            comm = ("fcalc infile=" + infile + " outfile=" + infile +
-#                    " clobber=yes clname=" + Rcol +
-#                    " expr='((#I0_START*(#R0+" + str(RL) + ")) - (I*" +
-#                    str(RL) + "))/I'")
-            comm = ("fcalc infile=" + infile + "['TESRECORDS'] outfile=" +
-                    infile + " clobber=yes clname=" + Rcol +
-                    " expr='((" + str(I0_START) + "*(" + str(R0) + "+" +
-                    str(RL) + ")) - (I*" + str(RL) + "))/I'")
-            args = shlex.split(comm)
-            check_call(args, stderr=STDOUT)
-        except RuntimeError:
-            print("Error running ftool for RNOL calculation:")
-            print(comm)
-            raise
-    elif Rmethod == "RFITTED":
-        print("Unavailable method for Resistance space")
-        exit()
-#        try:
-#            # IIF = I + Ifit = (I0 - AMP) + Ifit
-#            comm = ("fcalc infile=" + infile + " outfile=" + infile +
-#                    " clobber=yes clname=IIF expr='#I0_START-" +
-#                    Icol + "+" + str(Ifit) + "'")
-#            args = shlex.split(comm)
-#            check_call(args, stderr=STDOUT)
-#
-#            # R = V0/IIF
-#            comm = ("fcalc infile=" + infile + " outfile=" + infile +
-#                    " clobber=yes clname=" + Rcol +
-#                    " expr='#I0_START*(#R0+" + str(RL) + ")/IIF'")
-#            args = shlex.split(comm)
-#            check_call(args, stderr=STDOUT)
-#        except RuntimeError:
-#            print("Error running ftool for RFITTED calculation:")
-#            print(comm)
-#            raise
-
-    return
-
-
-def RfromIstream(infile, Icol, current, Rcol, Rmethod, samplingrate):
-    # WARNING: NOT REVISED YET !!!!!!!!!!!!!!!!
-    """
-    :param infile: stream fits input file with current column Icol
-    :param Icol: existing current column name
-    :param current: input current: ADC or AMP (PULSE0000)
-    :param Rcol: new output R column name
-    :param Rmethod: resistance method calculation (R or RALL or RNOL)
-    :return: infile transformed with a new column in resistance space (Rcol)
-
-    R = R0 -R0*((abs(AMP -I0)/I0)/(1 + abs(AMP-I0)/I0) # Bandler?
-
-    RALL = (V0 - I*RL -L*dI/dt)/I (see PP SPIE paper)
-    RNOL = (V0 - I*RL)/I (see PP SPIE paper)
-    RFITTED = V0/(Ifit + I) (see PP SPIE paper)
-    I=I0-AMP
-    V0 = I0 * (R0+RL)
-    L = LFILTER/(TTR*TTR)
-    RL = RPARA/(TTR*TTR)
-     AMP
-
-    """
-    Ifit = 45.3E-6
-    comm = ""
-
-    fstr = fits.open(infile)
-    RPARA = fstr[1].header['RPARA']
-    TTR = fstr[1].header['TTR']
-    LFILTER = fstr[1].header['LFILTER']
-    RL = RPARA / (TTR * TTR)
-    L = LFILTER / (TTR * TTR)
-
-    if current == "ADC":
-        # create col AMP in fits file from ADC column (fcalc does not work)
-        try:
-            comm = ("ftcalc infile=" + infile + " outfile=" + infile +
-                    " clobber=yes column=AMP expr='" + Icol +
-                    "*#ADUCNV+#Imin'")
-            args = shlex.split(comm)
-            check_call(args, stderr=STDOUT)
-        except RuntimeError:
-            print("Error running ftcalc for AMP column calculation:")
-            print(comm)
-            raise
-        Icol = "AMP"
-
-    if Rmethod == "R":
-        try:
-            comm = ("fcalc infile=" + infile + " outfile=" + infile +
-                    " clobber=yes clname=" + Rcol +
-                    " expr='#R0 - #R0*((abs(" + Icol +
-                    "-#I0_START)/#I0_START)" +
-                    "/(1 + abs(" + Icol + "-#I0_START)/#I0_START))'")
-            args = shlex.split(comm)
-            check_call(args, stderr=STDOUT)
-        except RuntimeError:
-            print("Error running ftool for R calculation:")
-            print(comm)
-            raise
-    elif Rmethod == "RALL":
-        try:
-            comm = ("fcalc infile=" + infile + " outfile=" + infile +
-                    " clobber=yes clname=I expr='#I0_START-" +
-                    Icol + "'")
-            args = shlex.split(comm)
-            check_call(args, stderr=STDOUT)
-            comm = ("fcalc infile=" + infile + " outfile=" + infile +
-                    " clobber=yes clname=DER expr='seqdiff(I)'")
-            args = shlex.split(comm)
-            check_call(args, stderr=STDOUT)
-            comm = ("fcalc infile=" + infile + " outfile=" + infile +
-                    " clobber=yes clname=DERIT expr='DER*" +
-                    str(samplingrate) + "'")
-            args = shlex.split(comm)
-            check_call(args, stderr=STDOUT)
-            # R = (V0 - I*RL - L*dI/dt)/I
-            comm = ("fcalc infile=" + infile + " outfile=" + infile +
-                    " clobber=yes clname=" + Rcol +
-                    " expr='((#I0_START*(#R0+" + str(RL) + ")) - (I*" +
-                    str(RL) + ") - (" + str(L) + "*DERIT))/I'")
-            args = shlex.split(comm)
-            check_call(args, stderr=STDOUT)
-        except RuntimeError:
-            print("Error running ftool for RALL calculation:")
-            print(comm)
-            raise
-    elif Rmethod == "RNOL":
-        try:
-            comm = ("fcalc infile=" + infile + " outfile=" + infile +
-                    " clobber=yes clname=I expr='#I0_START-" +
-                    Icol + "'")
-            args = shlex.split(comm)
-            check_call(args, stderr=STDOUT)
-            # R = (V0 - I*RL)/I
-            comm = ("fcalc infile=" + infile + " outfile=" + infile +
-                    " clobber=yes clname=" + Rcol +
-                    " expr='((#I0_START*(#R0+" + str(RL) + ")) - (I*" +
-                    str(RL) + "))/I'")
-            args = shlex.split(comm)
-            check_call(args, stderr=STDOUT)
-        except RuntimeError:
-            print("Error running ftool for RNOL calculation:")
-            print(comm)
-            raise
-    elif Rmethod == "RFITTED":
-            try:
-                # IIF = I + Ifit = (I0 - AMP) + Ifit
-                comm = ("fcalc infile=" + infile + " outfile=" + infile +
-                        " clobber=yes clname=IIF expr='#I0_START-" +
-                        Icol + "+" + str(Ifit) + "'")
-                args = shlex.split(comm)
-                check_call(args, stderr=STDOUT)
-
-                # R = V0/IIF
-                comm = ("fcalc infile=" + infile + " outfile=" + infile +
-                        " clobber=yes clname=" + Rcol +
-                        " expr='#I0_START*(#R0+" + str(RL) + ")/IIF'")
-                args = shlex.split(comm)
-                check_call(args, stderr=STDOUT)
-            except RuntimeError:
-                print("Error running ftool for RFITTED calculation:")
-                print(comm)
-                raise
-
-    return
 
 
 def VLtoFL(inputFile, outputFile):

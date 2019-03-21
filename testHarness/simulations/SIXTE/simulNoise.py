@@ -28,7 +28,6 @@ import argparse
 from auxpy import simulNoise
 import tempfile
 
-Ifit = 45.3E-6
 tmpDir = tempfile.mkdtemp()
 tmpFile = tempfile.TemporaryFile()
 os.environ["PFILES"] = tmpDir + ":" + os.environ["PFILES"]

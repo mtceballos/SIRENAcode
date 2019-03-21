@@ -32,9 +32,6 @@ os.environ["PFILES"] = tmpDir + ":" + os.environ["PFILES"]
 os.environ["HEADASNOQUERY"] = ""
 os.environ["HEADASPROMPT"] = "/dev/null/"
 
-pixel = 1
-preBufferSize = 1000
-
 if __name__ == "__main__":
     import argparse
 
@@ -72,6 +69,7 @@ if __name__ == "__main__":
                         Prim & Sec pulses')
     inargs = parser.parse_args()
     assert isinstance(inargs.separations, object)
+
     auxpy.simulPairs(pixName=inargs.pixName,
                      monoEkeV1=inargs.monoEnergy1,
                      monoEkeV2=inargs.monoEnergy2,
@@ -79,8 +77,8 @@ if __name__ == "__main__":
                      samprate=inargs.samprate,
                      jitter=inargs.jitter,
                      noise=inargs.noise,
-                     bbfb=inargs.bbfb,nSimPulses=inargs.nSimPulses,
-                     preBufferSize=preBufferSize,
+                     bbfb=inargs.bbfb,
+                     nSimPulses=inargs.nSimPulses,
                      pulseLength=inargs.pulseLength,
                      dcmt=inargs.decimation,
                      sepsStr=inargs.separations)

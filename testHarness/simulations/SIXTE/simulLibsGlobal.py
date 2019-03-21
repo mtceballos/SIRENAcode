@@ -10,10 +10,6 @@ from __future__ import print_function
 import auxpy
 import argparse
 
-
-# ----GLOBAL VARIABLES -------------
-preBufferSize = 1000
-
 # With triggerTH=20, 0.2 keV pulses trigger 1 sample late (1001 instead
 #                               of 1000), but ALL of them
 #                    0.5 keV : some pulses trigger 1 sample late and some
@@ -78,8 +74,10 @@ if __name__ == "__main__":
     if len1 == 0:
         inargs.tstartPulse1All = [0 for i in range(0, lenE)]
 
-    auxpy.simulLibsGlobal(pixName=inargs.pixName, space=inargs.space,
-                          samprate=inargs.samprate, jitter=inargs.jitter,
+    auxpy.simulLibsGlobal(pixName=inargs.pixName,
+                          space=inargs.space,
+                          samprate=inargs.samprate,
+                          jitter=inargs.jitter,
                           noise=inargs.noise,
                           bbfb=inargs.bbfb,
                           pulseLength=inargs.pulseLength,
@@ -88,8 +86,8 @@ if __name__ == "__main__":
                           tstartPulse1All=inargs.tstartPulse1All,
                           nsamples=inargs.nsamples,
                           nSimPulses=inargs.nSimPulses,
-                          acbias=inargs.acbias, createLib=inargs.createLib,
+                          acbias=inargs.acbias,
+                          createLib=inargs.createLib,
                           noiseMat=inargs.noiseMat,
                           weightMat=inargs.weightMat,
-                          dcmt=inargs.decimation,
-                          preBufferSize=preBufferSize)
+                          dcmt=inargs.decimation)

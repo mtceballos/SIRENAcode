@@ -13,12 +13,10 @@
           array (SPA|LPA1|LPA2|LPA3)
           monoEkeV: monochromatic energy of pulses 1(in keV)
           ACDC: AC or DC
-          samprate: "" or "samprate2"
+          samprate: "" or "samprate2" or "samprate4"
           jitter:  "" or "jitter"
           noise:   "" or "nonoise"
 """
-
-
 #
 # --------- Read input parameters and RUN simulations -----------------
 #
@@ -31,14 +29,6 @@ tmpDir = tempfile.mkdtemp()
 os.environ["PFILES"] = tmpDir + ":" + os.environ["PFILES"]
 os.environ["HEADASNOQUERY"] = ""
 os.environ["HEADASPROMPT"] = "/dev/null/"
-
-#nSimPulses = 20000
-#nSimPulses = 1000
-
-preBufferSize = 1000
-# with these thresholds, 0.2keV pulses are triggered at 999, 0.5keV @999
-# or @1000 and larger pulses @10000
-
 
 if __name__ == "__main__":
     import argparse
@@ -59,28 +49,30 @@ if __name__ == "__main__":
     parser.add_argument('--acbias', choices=['yes', 'no'], default="yes",
                         help='Operating Current (acbias=yes for AC or '
                         'acbias=no for DC)')
-    parser.add_argument('--samprate', default="", choices=['', 'samprate2'],
+    parser.add_argument('--samprate', default="",
+                        choices=['', 'samprate2'],
                         help="baseline, half_baseline")
-    parser.add_argument('--jitter', default="", choices=['', 'jitter'],
+    parser.add_argument('--jitter', default="",
+                        choices=['', 'jitter'],
                         help="no jitter, jitter")
-    parser.add_argument('--noise', default="", choices=['', 'nonoise'],
+    parser.add_argument('--noise', default="",
+                        choices=['', 'nonoise'],
                         help="noise, no_noise")
-    parser.add_argument('--bbfb', default="", choices=['', 'bbfb'],
+    parser.add_argument('--bbfb', default="",
+                        choices=['', 'bbfb'],
                         help="non-bbfb, bbfb")
     parser.add_argument('--decimation', type=int, default=1,
                         help='Decimation factor for xifusim jitter simuls')
 
     inargs = parser.parse_args()
-    if inargs.samprate == "":
-        # separation from secondary-->primary for next record
-        singleSeparation = 40000
-    else:
-        singleSeparation = 20000
 
-    auxpy.simulSingles(pixName=inargs.pixName, monoEkeV=inargs.monoEnergy,
-                       acbias=inargs.acbias, samprate=inargs.samprate,
-                       jitter=inargs.jitter, noise=inargs.noise,
-                       bbfb=inargs.bbfb, nSimPulses=inargs.nSimPulses,
-                       singleSeparation=singleSeparation,
-                       preBufferSize=preBufferSize,
-                       pulseLength=inargs.pulseLength, dcmt=inargs.decimation)
+    auxpy.simulSingles(pixName=inargs.pixName,
+                       monoEkeV=inargs.monoEnergy,
+                       acbias=inargs.acbias,
+                       samprate=inargs.samprate,
+                       jitter=inargs.jitter,
+                       noise=inargs.noise,
+                       bbfb=inargs.bbfb,
+                       nSimPulses=inargs.nSimPulses,
+                       pulseLength=inargs.pulseLength,
+                       dcmt=inargs.decimation)
