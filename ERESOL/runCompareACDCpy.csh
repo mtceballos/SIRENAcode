@@ -4,41 +4,37 @@
 #
 #  Option 1: calculate reconstructed energies and set coefficients table for gain scale curves
 #  Option 2: with the Erec vs. Ecal coeffs, calculate FWHM corrected curves
-#  Option 3: With the Erecons vs. Ecalc coeffs, calculate FWHM corrected curves for different record lengths (in previous version)
-#  Option 4: With the Erecons vs. Ecalc coeffs, calculate FWHM/Ebias corrected curves for different separations @ 7keV (in previous versions)
 
 set option=$1
 set instrument="LPA75um" #"LPA2shunt"
 
-# BBFB and Jitter
+# ----------------------------------------------------------------------------------------------------------------------
+# BBFB and NOISE and Jitter and samprate
 set bbfbStr="_bbfb" # "" or "_bbfb"
 set jitterStr="_jitter"
+set noiseStr="" # "" or"_nonoise"
+set smpStr = "" # "" for samprate (156.25kHz)  or "_samprate2" for 78125Hz or "_samprate4" for 39062.5Hz
+#set smpStr = ""
+# ----------------------------------------------------------------------------------------------------------------------
+
 set jitterParam=""
 set bbfbParam=""
 set dcmt=100
 if($bbfbStr == "_bbfb")  then
     set bbfbParam="--bbfb bbfb"
     set jitterParam="--jitter jitter"
-    set dcmt=0
+    set dcmt=1
 endif
 if($jitterStr == "_jitter" && $dcmt > 1)  then 
     set jitterParam="--jitter jitter --decimation $dcmt"
     set jitterStr="_jitter_dcmt$dcmt"
 endif
-# NOISE
-set noiseStr="_nonoise" # "" or"_nonoise"
-set noiseStr=""
 set noiseParam=""
 if($noiseStr == "_nonoise")  set noiseParam="--noise nonoise"
 
-# SAMPRATE
+#########################################################
 set detMethod="AD"
 set detMethod="STC"
-set smpStr = "" # "" for samprate = 156.25kHz  or "_samprate2" for 78125Hz or "_samprate4" for 39062.5Hz
-#set smpStr = ""
-
-#########################################################
-
 set samplesUp=0
 set samplesDown=0
 set nSigmas=0
@@ -85,13 +81,14 @@ if($smpStr == "_samprate4")  then
     endif
 endif
 
-echo "Using det=$detMethod nSgms=$nSgms smplsUp=$samplesUp smplsDown=$samplesDown smpParam=$smpParam jitterParam=$jitterParam noiseParam=$noiseParam bbfb=$bbfbParam "
-#exit
+echo "Using det=$detMethod nSgms=$nSgms smplsUp=$samplesUp smplsDown=$samplesDown "
+echo "smpParam: $smpParam \njitterParam=$jitterParam \nnoiseParam=$noiseParam \nbbfb=$bbfbParam "
 
-set fixedlib6OF_OPTFILT=0
+
+set fixedlib6OF_OPTFILT=1
 set fixedlib6OF_OPTFILTNM=0
 set fixedlib6OF_I2R=1
-set fixedlib6OF_I2RNOL=0
+set fixedlib6OF_I2RNOL=1
 set fixedlib6OF_I2RFITTED=0
 set multilibOF_WEIGHTN=0
 set multilib_WEIGHTN=0
@@ -124,7 +121,7 @@ endif
 if ($fixedlib6OF_I2RNOL == 1) then
     # Global OPTFILT I2RNOL fixedlib6  --OFLib yes 
     # ---------------------------------------------------
-    set lib="fixedlib1OF"
+    set lib="fixedlib6OF"
     set meth="I2RNOL"
     set nSimPulsesLib=20000
 endif
@@ -132,7 +129,7 @@ endif
 if ($fixedlib6OF_I2RFITTED == 1) then
     # Global OPTFILT I2RFITTED fixedlib6  --OFLib yes 
     # -------------------------------------------------------
-    set lib="fixedlib1OF"
+    set lib="fixedlib6OF"
     set meth="I2RFITTED"
     set nSimPulsesLib=20000
 endif
@@ -161,21 +158,18 @@ if ($multilibOF_WEIGHTN == 1) then
     set nSimPulsesLib=200000
 endif
 
+set energies=(0.2 0.5 1 2 3 4 5 6 7 8)
+set energies=(1 2 3 4 5 6 7 8)
+set nenergies=$#energies
+set lags=(1 1 1 1 1 1 1 1 1 1) # 0.2 and 0.5 keV still difficult to locate
+set nSimPulses=20000
+set nSimPulses=5000
 
 if ($option == 1) then
 	# =================================================
 	# To create gain scale curves & coefficients table
 	# =================================================
 	# All methods can be run OFLib=yes because length to be used is maximum (pulseLength=largeFilter)
-	
-	set energies=(0.2 0.5 1 2 3 4 5 6 7 8)
-	#set energies=(1 2 3 4 5 6 7 8)
-
-	set nenergies=$#energies
-	set nSimPulses=20000
-	set nSimPulses=5000
-	
-	set lags=(1 1 1 1 1 1 1 1 1 1) # 0.2 and 0.5 keV still difficult to locate
 	#set tstartPulse1All=(999 999 1000 1000 1000 1000 1000 1000 1000 1000) # default 0 in getEresolCurves
         #set tstartPulse1All=(0 0 0 0 0 0 0 0 0 0) # default 0 in getEresolCurves
 	
@@ -191,7 +185,7 @@ if ($option == 1) then
 		                
                 echo "Launching $meth $lib for $mono1EkeV "
                 set logf="${instrument}_$meth${lib}_${detMethod}_${mono1EkeV}${smpStr}${jitterStr}${noiseStr}${bbfbStr}.log"
-                set command="getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod --nSgms $nSgms --samplesUp ${samplesUp} --samplesDown ${samplesDown} --filterLength $pulseLength $smpParam --resultsDir gainScale ${jitterParam} ${noiseParam} ${bbfbParam}"
+                set command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod --nSgms $nSgms --samplesUp ${samplesUp} --samplesDown ${samplesDown} --filterLength $pulseLength $smpParam --resultsDir gainScale ${jitterParam} ${noiseParam} ${bbfbParam} "
                 echo "Command=python $command >& $logf" 
                 nohup python $command >>& $logf &
 	end
@@ -212,7 +206,7 @@ if ($option == 2) then
 		                
                 echo "Launching $meth $lib for $mono1EkeV "
                 set logf="${instrument}_$meth${lib}_${detMethod}_${mono1EkeV}${smpStr}${jitterStr}${noiseStr}${bbfbStr}.log"
-                set command="getEresolCurves_manySeps.py --pixName ${instrument} --lib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod --nSgms $nSgms --samplesUp ${samplesUp} --samplesDown ${samplesDown} --filterLength $pulseLength $smpParam $jitterParam ${noiseParam}  --coeffsFile coeffs_polyfit.dat"
+                set command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod --nSgms $nSgms --samplesUp ${samplesUp} --samplesDown ${samplesDown} --filterLength $pulseLength ${smpParam} ${jitterParam} ${noiseParam}  ${bbfbParam} --coeffsFile coeffs_polyfit.dat"
                 echo "Command=python $command >& $logf" 
                 nohup python $command >>& $logf &
 	end

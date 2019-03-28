@@ -64,9 +64,6 @@ if __name__ == "__main__":
                         help='Param samplesUp for gennoise [def %(default)s]')
     parser.add_argument('--nSgms', default=5., type=float,
                         help='Param nSgms for gennoise [default %(default)s]')
-    parser.add_argument('--simTimeN', default=100,
-                        help='Simulation time (s) for noise spectra\
-                        calculation [default %(default)s]')
     parser.add_argument('--nintervals', default=1000, type=int,
                         help='Number of intervals in gennoisespec for spectra\
                         calculation [default %(default)s]')
@@ -81,6 +78,6 @@ if __name__ == "__main__":
                space=inargs.space, acbias=inargs.acbias,
                scaleFactor=inargs.scaleFactor,
                samplesUp=inargs.samplesUp,
-               nSgms=inargs.nSgms, nintervals=inargs.nintervals,
-               simTimeN=inargs.simTimeN,
+               nSgms=inargs.nSgms,
+               nintervals=inargs.nintervals,
                dcmt=inargs.decimation)

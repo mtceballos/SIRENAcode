@@ -22,7 +22,7 @@ XMLsixte = (SIXTEinst +
 sampfreqs = (156250., 78125, 39062.5)  # Hz
 sampids = ("", "samprate2", "samprate4")
 sampStrs = ("", "_samprate2", "_samprate4")
-separations = (40000, 20000, 10000)
+separations = ('40000', '20000', '10000')
 samplesUps = (3, 2, 2)
 samplesDowns = (4, 3, 3)
 nSigmss = (3, 4, 4)
@@ -80,7 +80,7 @@ def tsfn(i, nproc, comm, simTimeN):
 
 def simulNoise(pixName, samprate, jitter, bbfb, pulseLength,
                space, acbias, scaleFactor, samplesUp, nSgms,
-               nintervals, simTimeN, dcmt):
+               nintervals, dcmt):
     """ simulate data in input parameter space, calculate the data baseline
             and create Noise file to be ingested in SIRENA processing tasks
 
@@ -101,7 +101,6 @@ def simulNoise(pixName, samprate, jitter, bbfb, pulseLength,
           :param nSgms : Param nSgms for gennoise tool
           :param nintervals : Number of intervals for gennoisespec
                   noise calculation
-          :param simTimeN : Simulation time (s) for noise spectra calculation
           :param dcmt: decimation factor for xifusim jitter simulation
           :return fits file with Noise spectra in specified space and sampling
 
@@ -115,13 +114,16 @@ def simulNoise(pixName, samprate, jitter, bbfb, pulseLength,
     diffth = 0
 
     # ---- param dependent variables
-    triggerSize = max(10000, pulseLength)
+    triggerSize = pulseLength + 10
 
     # samprate
     smprtStr = ""
     idxsmp = sampids.index(samprate)
     smprtStr = sampStrs[idxsmp]
-    samplingrate = str(sampfreqs[idxsmp])
+    samplingrate = sampfreqs[idxsmp]
+
+    # set simulation time based on number of intervals required
+    simTimeN = math.ceil(nintervals * triggerSize / samplingrate)
 
     # jitter
     jitterStr = ""
@@ -144,17 +146,17 @@ def simulNoise(pixName, samprate, jitter, bbfb, pulseLength,
         bbfbStr = "_bbfb"
 
     # energyMethod
-    energyMethod = "NONE"
+    spacePar = "NONE"
     if space == "R":
-        energyMethod = " EnergyMethod=I2R"
+        spacePar = "I2R=I2R"
     elif space == "RALL":
-        energyMethod = " EnergyMethod=I2RALL"
+        spacePar = "I2R=RALL"
     elif space == "RNOL":
-        energyMethod = " EnergyMethod=I2RNOL"
+        spacePar = "I2R=RNOL"
     elif space == "RFITTED":
-        energyMethod = " EnergyMethod=I2RFITTED"
+        spacePar = "I2R=RFITTED"
     elif space == "ADC":
-        energyMethod = " EnergyMethod=OPTFILT"
+        spacePar = "I2R=I"
 
     xifusim = "xifusim" + pixName
     wdir = simSIXTEdir + "/NOISE/" + xifusim
@@ -162,7 +164,7 @@ def simulNoise(pixName, samprate, jitter, bbfb, pulseLength,
 
     # define files
     rootN = ("forNoise" + str(pulseLength) + "samples_" + xifusim +
-             "_" + str(simTimeN) + "s_pairscps_" + space)
+             "_" + str(simTimeN) + "s")
     noiseFile = ("noise" + str(pulseLength) + "samples_" + xifusim + "_B0_" +
                  space + smprtStr + jitterStr + bbfbStr + ".fits")
     pixFileN = rootN + smprtStr + jitterStrPix + ".piximpact"
@@ -174,9 +176,9 @@ def simulNoise(pixName, samprate, jitter, bbfb, pulseLength,
     if not os.path.isfile(pixFileN):
         print("\nTESCONSPILEUP: Generating no-events file for NOISE...")
         comm = ("tesconstpileup PixImpList=" + pixFileN +
-                " sample_freq=" + samplingrate +
+                " sample_freq=" + str(samplingrate) +
                 " XMLFile=" + XMLsixte +
-                " tstop=" + simTimeN + offset +
+                " tstop=" + str(simTimeN) + offset +
                 " energy=0 pulseDistance=1 TriggerSize=" +
                 str(triggerSize) + " clobber=yes")
         args = shlex.split(comm)
@@ -198,7 +200,7 @@ def simulNoise(pixName, samprate, jitter, bbfb, pulseLength,
 
         comm = ("xifusim PixImpList=" + pixFileN +
                 " Streamfile=" + fitsFileN +
-                " sample_rate=" + samplingrate +
+                " sample_rate=" + str(samplingrate) +
                 " tstart=" + str(tstart) + " tstop=" + str(tstop) +
                 " trig_reclength=" + str(triggerSize) +
                 " trig_n_pre=" + str(preBuffer) +
@@ -221,18 +223,18 @@ def simulNoise(pixName, samprate, jitter, bbfb, pulseLength,
         print("xifusim: ................................END")
         # sys.exit()
 
-        try:
-            # rm first record in fits file (noisy)
-            print("rm first record in fits file (noisy)")
-            rmLastAndFirst(fitsFileN, 'TESRECORDS', 0)
-            updateHISTORY(fitsFileN, comm)
-        except RuntimeError:
-            print("Error making up trigger file  (NOISE):")
-            os.chdir(cwd)
-            rmtree(tmpDir)
-            raise
+        # it seems (27/03/2019) that there are no problems now
+#        try:
+#            # rm first record in fits file (noisy)
+#            print("rm first record in fits file (noisy)")
+#            rmLastAndFirst(fitsFileN, 'TESRECORDS', 0)
+#            updateHISTORY(fitsFileN, comm)
+#        except RuntimeError:
+#            print("Error making up trigger file  (NOISE):")
+#            os.chdir(cwd)
+#            rmtree(tmpDir)
+#            raise
 
-        # Modify EXTNAME if not EXTNAME=RECORDS in empty trigger file
         # and Add TRIGGSZ to xifusim simulated file
         fN = fits.open(fitsFileN, mode='update')
         # fNhdr = fN[1].header
@@ -246,7 +248,7 @@ def simulNoise(pixName, samprate, jitter, bbfb, pulseLength,
     print("\nGENNOISESPEC: Generating NOISE spectrum file "
           "in (", space, " space)")
     comm = ("gennoisespec --inFile=" + fitsFileN +
-            " --" + energyMethod +
+            " --" + spacePar +
             " --outFile=" + noiseFile +
             " --intervalMinSamples=" + str(pulseLength) +
             " --nintervals=" + str(nintervals) +
@@ -255,6 +257,7 @@ def simulNoise(pixName, samprate, jitter, bbfb, pulseLength,
             " --nSgms=" + str(nSgms) +
             " --pulse_length=" + str(pulseLength) +
             " --clobber=yes verbosity=0")
+    print("             ", comm)
     args = shlex.split(comm)
     try:
         check_call(args, stderr=STDOUT)
@@ -307,7 +310,7 @@ def simulSingles(pixName, monoEkeV, acbias, samprate, jitter, noise,
 
     # added to solve floating point inaccu. due to sampling rate
     # (Christian's mail 31/03/2017)
-    tstart = 0.5 / float(samplingrate)
+    tstart = 0.5 / samplingrate
 
     # jitter
     jitterStr = ""
@@ -346,7 +349,7 @@ def simulSingles(pixName, monoEkeV, acbias, samprate, jitter, noise,
 
     # calculate sim time to have at least nSimPulses pulses:
     #   simTime= (nSimPulses/2)recs * (triggerSize sam/rec)/(samprate sam/s)
-    simTime = nSimPulses/2. * triggerSizeTC/float(samplingrate)
+    simTime = nSimPulses / 2. * triggerSizeTC / samplingrate
     simTime = '{0:0.0f}'.format(simTime)
 
     # for piximpact:
@@ -369,7 +372,7 @@ def simulSingles(pixName, monoEkeV, acbias, samprate, jitter, noise,
                 " tstop=" + str(simTime) + " energy=" + str(monoEkeV) +
                 offset + " pulseDistance=" + str(singleSeparation) +
                 " TriggerSize=" + str(triggerSizeTC) + " clobber=yes" +
-                " sample_freq=" + samplingrate)
+                " sample_freq=" + str(samplingrate))
 
         print("\n##### Runing tesconstpileup #########")
         print(comm, "\n")
@@ -401,7 +404,7 @@ def simulSingles(pixName, monoEkeV, acbias, samprate, jitter, noise,
                        " trig_thresh=" + str(diffth) +
                        " trig_n_suppress=" + triggerSuppXF +
                        " acbias=" + acbias + " sample_rate=" +
-                       samplingrate + simnoise + dobbfb +
+                       str(samplingrate) + simnoise + dobbfb +
                        " decimate_factor=" + str(dcmt) +
                        " XMLfilename=" + XMLxifusim)
 
@@ -489,10 +492,10 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, samprate, jitter,
 
     # deal with record separations from definitions above
     recordSeparation = separations[idxsmp]
-    
+
     # added to solve floating point inaccu. due to sampling rate
     # (Christian's mail 31/03/2017)
-    tstart = 0.5 / float(samplingrate)
+    tstart = 0.5 / samplingrate
 
     # jitter
     jitterStr = ""
@@ -532,7 +535,7 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, samprate, jitter,
 
         # calculate sim time to have at least nSimPulses pulses:
         #  simTime= (nSimPulses/2)recs * (triggerSize sam/rec)/(samprate sam/s)
-        simTime = nSimPulses/2. * triggerSizeTC/float(samplingrate)
+        simTime = nSimPulses / 2. * triggerSizeTC / samplingrate
         simTime = '{0:0.0f}'.format(simTime)
 
         # for piximpact:
@@ -556,7 +559,8 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, samprate, jitter,
                     " tstop=" + str(simTime) + " energy=" + monoEkeV1 +
                     " energy2=" + monoEkeV2 + offset + " clobber=yes" +
                     " pulseDistance=" + str(sep12) + " sample_freq=" +
-                    samplingrate + " TriggerSize=" + str(triggerSizeTC))
+                    str(samplingrate) + " TriggerSize=" +
+                    str(triggerSizeTC))
             print("\n##### Runing tesconstpileup #########")
             print(comm, "\n")
             try:
@@ -587,7 +591,7 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, samprate, jitter,
                            " trig_thresh=" + str(diffth) +
                            " trig_n_suppress=" + triggerSuppXF +
                            " acbias=" + acbias +
-                           " sample_rate=" + samplingrate + simnoise +
+                           " sample_rate=" + str(samplingrate) + simnoise +
                            " decimate_factor=" + str(dcmt) +
                            " XMLfilename=" + XMLxifusim)
 
@@ -698,7 +702,7 @@ def simulLibsGlobal(pixName, space, samprate, jitter, noise, bbfb,
     samplingrate = sampfreqs[idxsmp]
 
     # deal with separations from definitions above
-    separation = separations[idxsmp]
+    separation = int(separations[idxsmp])
 
     # Sigmas and Samples and scaleFactor for Detection
     maxFilterLength = pulseLength
@@ -756,7 +760,7 @@ def simulLibsGlobal(pixName, space, samprate, jitter, noise, bbfb,
 
     # added to solve floating point inaccuracies due to sampling rate
     # (Christian's mail 31/03/2017):
-    tstart = 0.5/float(samplingrate)
+    tstart = 0.5/samplingrate
 
     # Calibration energies and Tstarts of pulses
     tstartPulse1 = dict(zip(libEnergies, tstartPulse1All))
@@ -817,7 +821,7 @@ def simulLibsGlobal(pixName, space, samprate, jitter, noise, bbfb,
                     " tstop=" + str(tstop) + " energy=" + str(monoEkeV) +
                     " pulseDistance=" + str(separation) + offset +
                     " TriggerSize=" + str(triggerSizeTC) + " clobber=yes" +
-                    " sample_freq= " + samplingrate)
+                    " sample_freq= " + str(samplingrate))
             print("Generating PIXIMPACT ", pixFile, " running:\n", comm)
             try:
                 args = shlex.split(comm)
@@ -837,7 +841,7 @@ def simulLibsGlobal(pixName, space, samprate, jitter, noise, bbfb,
                            " trig_thresh=" + str(diffth) +
                            " trig_n_suppress=" + triggerSuppXF +
                            " acbias=" + acbias +
-                           " sample_rate=" + samplingrate +
+                           " sample_rate=" + str(samplingrate) +
                            " decimate_factor=" + str(dcmt) + simnoise +
                            " XMLfilename=" + XMLxifusim)
 
@@ -1093,12 +1097,12 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb,
             tstartPulse2 = tstartPulse1 + int(sep)
 
         inFile = (simDir + "/sep" + sep12 + "sam_" + str(nSimPulses) +
-                  "p_" + mono1EkeV + "keV_" + mono2EkeV + "keV" +
+                  "p_" + str(mono1EkeV) + "keV_" + str(mono2EkeV) + "keV" +
                   smprtStr + jitterStr + noiseStr + bbfbStr +
                   ".fits")
         if mono2EkeV == "0":  # for single Pulses
             inFile = (simDir + "/sep" + sep12 + "sam_" + str(nSimPulses) +
-                      "p_" + mono1EkeV + "keV" +
+                      "p_" + str(mono1EkeV) + "keV" +
                       smprtStr + jitterStr + noiseStr + bbfbStr +
                       ".fits")
 
@@ -1107,6 +1111,7 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb,
                 jitterStr + noiseStr + bbfbStr + ".fits",
                 libTmpl + jitterStr + noiseStr + bbfbStr + ".fits")
         print("=============================================")
+        print("RECONSTRUCTING ENERGIES.....................")
         print("Working in:", outDir)
         print("Using file: ", inFile)
         print("Using library: ", libFile)
@@ -1196,7 +1201,7 @@ def convertEnergies(inFile, outFile, coeffsFile, alias):
 
     # calculate corrected energies with polyfit coeffs
     print("...Calculating corrected energies for pulses in ", inFile)
-    EcorrKeV = auxpy.enerToCalEner(EreconKeV, coeffsFile, alias)
+    EcorrKeV = enerToCalEner(EreconKeV, coeffsFile, alias)
 
     # close input file
     f.close()
@@ -1205,7 +1210,7 @@ def convertEnergies(inFile, outFile, coeffsFile, alias):
     # ------------------------------------
     # --- Create and populate output file
     # ------------------------------------
-    shutil.copy(inFile, outFile)
+    copy(inFile, outFile)
     f = fits.open(outFile, memmap=True, mode='update')
     hdr = f[0].header
     hdr['HISTORY'] = ("Updated by convertEnergies.py to correct "
