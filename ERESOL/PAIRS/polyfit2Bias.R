@@ -9,6 +9,8 @@ library(gridExtra)
 library(Hmisc)
 library(rjson)
 library(FITSio)
+library("RColorBrewer")
+
 dcmt<- 100
 dcmt<- 1
 if (dcmt > 1){
@@ -37,108 +39,164 @@ polyCurve <- function(x,coeffs) {
 # samprate = 156250 Hz
 # OF
 fixed6OFsmprtAD <-   
-    list(name="AD_fixedlib6OF_OPTFILT8192_jitter", nSamples=8192,
-        samprateStr="", jitterStr="_jitter", detMethod="AD",
+    list(name="AD_F0F_fixedlib6OF_OPTFILT8192_jitter", nSamples=8192,
+        samprateStr="", jitterStr="_jitter", detMethod="AD", ofLength=8192,
         lib="fixedlib6OF_OPTFILT",color="blue", point=1, ltype=1,
-        lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate) AD")
+        lab=paste("OF_ADC (6keV, AD, s1",  jitterStr,")",sep=""))
 fixed6OFsmprtSTC <-
-    list(name=paste("STC_fixedlib6OF_OPTFILT8192",jitterStr,sep=""), 
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT8192",jitterStr,sep=""), 
          nSamples=8192, samprateStr="", jitterStr=jitterStr, detMethod="STC",
-         noiseStr="", bbfbStr="", lib="fixedlib6OF_OPTFILT",
+         noiseStr="", bbfbStr="", lib="fixedlib6OF_OPTFILT",  ofLength=8192,
          color="blue", point=0, ltype=2,
-         lab=paste("OPTIMAL FILTERING (fixed OF 6keV filter samprate) STC",
-                   jitterStr,sep=""))
+         lab=paste("OF_ADC (6keV, STC, s1", jitterStr,")",sep=""))
 # OF NN
 fixed6OFsmprtSTCnn <-
-    list(name=paste("STC_fixedlib6OF_OPTFILT8192",jitterStr,"_nonoise",sep=""),
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT8192",jitterStr,"_nonoise",sep=""),
          nSamples=8192,samprateStr="", jitterStr=jitterStr, noiseStr="_nonoise",
-         bbfbStr="", detMethod="STC", lib="fixedlib6OF_OPTFILT",
+         bbfbStr="", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
          color="blue", point=4, ltype=2,
-         lab=paste("OPTIMAL FILTERING (fixed OF 6keV filter samprate) STC, nonoise",
-                   jitterStr,sep=""))
+         lab=paste("OF_ADC (6keV, AD, s1",jitterStr,", nonoise)",sep=""))
 # OF BBFB
-fixed6OFsmprtSTCBbfb <-
-    list(name=paste("STC_fixedlib6OF_OPTFILT8192_jitter_bbfb",sep=""),
+adccols = rev(brewer.pal(n = 9, name = "YlGnBu"))
+adccols = rev(brewer.pal(n = 9, name = "Blues"))
+#adccols = rainbow(6)
+adccols=c("blue4", "blue", "cornflowerblue","cadetblue","blueviolet","darkmagenta")
+fixed6OF8192smprtSTCBbfb <-
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT8192_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",
-         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT",
-         color="blue", point=1, ltype=1,
-         lab=paste("OPTIMAL FILTERING (fixed OF 6keV filter samprate) STC, bbfb",
-                   sep=""))
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
+         color=adccols[1], point=1, ltype=1,
+         lab="OF_ADC (8192,6keV, STC, s1, bbfb)")
+fixed6OF4096smprtSTCBbfb <-
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT4096_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=4096,
+         color=adccols[2], point=2, ltype=2,
+         lab="OF_ADC (4096,6keV, STC, s1, bbfb)")
+fixed6OF1024smprtSTCBbfb <-
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT1024_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=1024,
+         color=adccols[3], point=3, ltype=2,
+         lab="OF_ADC (1024,6keV, STC, s1, bbfb)")
+fixed6OF512smprtSTCBbfb <-
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT512_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=512,
+         color=adccols[4], point=4, ltype=2,
+         lab="OF_ADC (512,6keV, STC, s1, bbfb)")
+fixed6OF256smprtSTCBbfb <-
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT256_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=256,
+         color=adccols[5], point=5, ltype=2,
+         lab="OF_ADC (256,6keV, STC, s1, bbfb)")
+fixed6OF128smprtSTCBbfb <-
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT128_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=128,
+         color=adccols[6], point=6, ltype=2,
+         lab="OF_ADC (128,6keV, STC, s1, bbfb)")
+
+# OFNM BBFB
+fixed6OF8192NM50000smprtSTCBbfb <-
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT8192NM50000_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
+         color="cornflowerblue", point=2, ltype=0,
+         lab="OF_ADC_NM(8192,50000int,6keV,STC,s1,bbfb)")
+fixed6OF4096NM50000smprtSTCBbfb <-
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT4096NM50000_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=4096,
+         color=adccols[2], point=17, ltype=0,
+         lab="OF_ADC_NM(4096,50000int,6keV,STC,s1,bbfb)")
+
+fixed6I2R8192NM150000smprtSTCBbfb <-
+    list(name=paste("STC_F0F_fixedlib6OF_I2R8192NM150000_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
+         color="red", point=2, ltype=0,
+         lab="OF_R_NM(8192,150000int,6keV,STC,s1,bbfb)")
+fixed6I2R4096NM150000smprtSTCBbfb <-
+    list(name=paste("STC_F0F_fixedlib6OF_I2R4096NM150000_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=4096,
+         color="orange", point=17, ltype=0,
+         lab="OF_R_NM(4096,150000int,6keV,STC,s1,bbfb)")
+fixed6I2R2048NM150000smprtSTCBbfb <-
+    list(name=paste("STC_F0F_fixedlib6OF_I2R2048NM150000_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=2048,
+         color="orange", point=2, ltype=0,
+         lab="OF_R_NM(2048,150000int,6keV,STC,s1,bbfb)")
+
 # OF BBFB NN
 fixed6OFsmprtSTCnnBbfb <-
-    list(name=paste("STC_fixedlib6OF_OPTFILT8192_jitter_nonoise_bbfb",sep=""),
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT8192_jitter_nonoise_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="_nonoise", 
-         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
          color="blue", point=1, ltype=1,
-         lab=paste("OPTIMAL FILTERING (fixed OF 6keV filter samprate) STC, nonoise, bbfb",
-                   sep=""))
+         lab="OF_ADC (6keV, STC, s1, nonoise, bbfb)")
 # I2R BBFB
-fixed6OFI2RsmprtSTCBbfb <-
-    list(name="STC_fixedlib6OF_I2R8192_jitter_bbfb", 
+fixed6I2R8192smprtSTCBbfb <-
+    list(name="STC_F0F_fixedlib6OF_I2R8192_jitter_bbfb", 
          nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",
-         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R",
-         color="orange", point=0, ltype=2,
-         lab=paste("OPTIMAL FILTERING I2R (fixed OF 6keV filter samprate) STC, bbfb",
-                   jitterStr,sep=""))
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
+         color="orange", point=0, ltype=1,
+         lab="OF_R (8192,6keV, STC, s1, bbfb)")
 # I2RNOL BBFB
-fixed6OFI2RNOLsmprtSTCBbfb <-
-    list(name="STC_fixedlib6OF_I2RNOL8192_jitter_bbfb", 
+fixed6I2RNOL8192smprtSTCBbfb <-
+    list(name="STC_F0F_fixedlib6OF_I2RNOL8192_jitter_bbfb", 
          nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",
-         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2RNOL",
-         color="brown1", point=0, ltype=2,
-         lab=paste("OPTIMAL FILTERING I2RNOL (fixed OF 6keV filter samprate) STC, bbfb",
-                   jitterStr,sep=""))
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2RNOL", ofLength=8192,
+         color="brown1", point=0, ltype=1,
+         lab="OF_RNOL (6keV, STC, s1, bbfb)")
 
 # samprate2 = 78125 Hz
 fixed6OFsmprt2AD <- 
-    list(name="AD_fixedlib6OF_OPTFILT4096_samprate2_jitter", nSamples=4096, 
+    list(name="AD_F0F_fixedlib6OF_OPTFILT4096_samprate2_jitter", nSamples=4096, 
          samprateStr="_samprate2", jitterStr="_jitter",detMethod="AD",
-         lib="fixedlib6OF_OPTFILT",color="cyan", point=1, ltype=1,
-         lab="OPTIMAL FILTERING (fixed OF 6keV filter samprate2) AD")
+         lib="fixedlib6OF_OPTFILT",color="cyan", point=1, ltype=1, ofLength=4096,
+         lab=paste("OF_ADC (6keV, AD, s2", jitterStr,")",sep=""))
 fixed6OFsmprt2STC <-
-    list(name=paste("STC_fixedlib6OF_OPTFILT4096_samprate2", jitterStr,sep=""),
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT4096_samprate2", jitterStr,sep=""),
          nSamples=4096, samprateStr="_samprate2", jitterStr=jitterStr, detMethod="STC",
-         noiseStr="",bbfbStr="", lib="fixedlib6OF_OPTFILT",
+         noiseStr="",bbfbStr="", lib="fixedlib6OF_OPTFILT", ofLength=4096,
          color="blue", point=0, ltype=2,
-         lab=paste("OPTIMAL FILTERING (fixed OF 6keV filter samprate2) STC",
-                   jitterStr,sep=""))
+         lab=paste("OF_ADC (6keV, STC, s2",jitterStr,sep=""))
 fixed6OFsmprt2STCBbfb <-
-    list(name=paste("STC_fixedlib6OF_OPTFILT4096_samprate2_jitter_bbfb",sep=""),
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT4096_samprate2_jitter_bbfb",sep=""),
          nSamples=4096, samprateStr="_samprate2", jitterStr="_jitter", noiseStr="",
-         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=4096,
          color="blue", point=1, ltype=1,
-         lab=paste("OPTIMAL FILTERING (fixed OF 6keV filter samprate2) STC, bbfb",
-                   sep=""))
+         lab="OF_ADC (6keV, STC, s2, bbfb")
 fixed6OFsmprt2STCnn <-
-        list(name=paste("STC_fixedlib6OF_OPTFILT4096_samprate2",jitterStr,"_nonoise",sep=""),
+        list(name=paste("STC_F0F_fixedlib6OF_OPTFILT4096_samprate2",jitterStr,"_nonoise",sep=""),
          nSamples=4096, samprateStr="_samprate2",jitterStr=jitterStr, noiseStr="_nonoise",
-         bbfbStr="",detMethod="STC", lib="fixedlib6OF_OPTFILT",
+         bbfbStr="",detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=4096,
          color="blue", point=4, ltype=2,
-         lab=paste("OPTIMAL FILTERING (fixed OF 6keV filter samprate2) STC, nonoise",
-                   jitterStr,sep=""))
+         lab=paste("OF_ADC (6keV, AD, s2", jitterStr,", nonoise)",sep=""))
 fixed6OFsmprt2STCnnBbfb <-
-        list(name=paste("STC_fixedlib6OF_OPTFILT4096_samprate2_jitter_nonoise_bbfb",sep=""),
+        list(name=paste("STC_F0F_fixedlib6OF_OPTFILT4096_samprate2_jitter_nonoise_bbfb",sep=""),
          nSamples=4096, samprateStr="_samprate2", jitterStr="_jitter", noiseStr="_nonoise",
-         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=4096,
          color="blue", point=1, ltype=1,
-         lab=paste("OPTIMAL FILTERING (fixed OF 6keV filter samprate2) STC, nonoise, bbfb",
-                   sep=""))
+         lab="OF (6keV, STC, s2, nonoise, bbfb")
 
 # samprate4: 39062.5 Hz
 fixed6OFsmprt4STCBbfb <-
-    list(name=paste("STC_fixedlib6OF_OPTFILT2048_samprate4_jitter_bbfb",sep=""),
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT2048_samprate4_jitter_bbfb",sep=""),
          nSamples=2048, samprateStr="_samprate4", jitterStr="_jitter", noiseStr="",
-         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", pLength=2048,
          color="blue", point=1, ltype=1,
-         lab=paste("OPTIMAL FILTERING (fixed OF 6keV filter samprate4) STC, bbfb",
-                   sep=""))
+         lab="OF_ADC (6keV, STC, s4, bbfb")
 fixed6OFsmprt4STCnnBbfb <-
-    list(name="STC_fixedlib6OF_OPTFILT2048_samprate4_jitter_bbfb",
+    list(name="STC_F0F_fixedlib6OF_OPTFILT2048_samprate4_jitter_bbfb",
          nSamples=2048, samprateStr="_samprate4",jitterStr="_jitter", noiseStr="_nonoise",
-         bbfbStr="_bbfb",detMethod="STC", lib="fixedlib6OF_OPTFILT",
+         bbfbStr="_bbfb",detMethod="STC", lib="fixedlib6OF_OPTFILT", pLength=2048,
          color="blue", point=4, ltype=2,
-         lab=paste("OPTIMAL FILTERING (fixed OF 6keV filter samprate4) STC, nonoise",
-                   jitterStr,sep=""))
+         lab="OF (6keV, STC, s4, nonoise, bbfb")
 
 # 
 # weight          <- list(name="multilib_WEIGHT",     color="darkgreen", point=15, ltype=1,
@@ -148,20 +206,36 @@ fixed6OFsmprt4STCnnBbfb <-
 # weightnOF       <- list(name="multilibOF_WEIGHTN", color="darkgreen", point=1, ltype=2,
 #                         lab="COVARIANCE MATRICES OF (0(n))")
 # 
-save(fixed6OFsmprtSTCnn,fixed6OFsmprtSTC,
-     fixed6OFsmprtSTCBbfb,fixed6OFsmprtSTCnnBbfb,
-     fixed6OFI2RsmprtSTCBbfb,fixed6OFI2RsmprtSTCBbfb,
+save(fixed6OFsmprtSTCnn,
+     fixed6OF8192smprtSTCBbfb,fixed6OFsmprtSTCnnBbfb,
+     fixed6OF4096smprtSTCBbfb,fixed6OF1024smprtSTCBbfb,
+     fixed6OF512smprtSTCBbfb,fixed6OF256smprtSTCBbfb,
+     fixed6OF128smprtSTCBbfb,fixed6OF8192NM50000smprtSTCBbfb,fixed6OF4096NM50000smprtSTCBbfb,
+     fixed6I2R8192smprtSTCBbfb,fixed6I2R8192NM150000smprtSTCBbfb,fixed6I2R4096NM150000smprtSTCBbfb,
+     fixed6I2RNOL8192smprtSTCBbfb,fixed6I2R2048NM150000smprtSTCBbfb,
      fixed6OFsmprt2STCnn,fixed6OFsmprt2STC,
      fixed6OFsmprt2STCBbfb,fixed6OFsmprt2STCnnBbfb,
      fixed6OFsmprt4STCBbfb,fixed6OFsmprt4STCnnBbfb,
      file="/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat")
 #===========================================================================================
-methods <- list(fixed6OFsmprtSTCnnBbfb, fixed6OFsmprtSTCBbfb, 
-                fixed6OFsmprt2STCnnBbfb, fixed6OFsmprt2STCBbfb,
-                fixed6OFsmprt4STCnnBbfb, fixed6OFsmprt4STCBbfb)
 
-methods <- list(fixed6OFsmprtSTCBbfb, fixed6OFI2RsmprtSTCBbfb, 
-                fixed6OFI2RNOLsmprtSTCBbfb)
+methods <- list(fixed6OF8192smprtSTCBbfb, fixed6OF4096smprtSTCBbfb,
+                fixed6OF1024smprtSTCBbfb, fixed6OF512smprtSTCBbfb,
+                fixed6OF256smprtSTCBbfb, fixed6OF128smprtSTCBbfb,
+                fixed6OF8192NM50000smprtSTCBbfb,
+                fixed6I2R8192smprtSTCBbfb, fixed6I2R8192NM150000smprtSTCBbfb
+                )
+methods <- list(fixed6OF8192smprtSTCBbfb, fixed6OF4096smprtSTCBbfb,
+                fixed6OF1024smprtSTCBbfb, fixed6OF512smprtSTCBbfb,
+                fixed6OF256smprtSTCBbfb, fixed6OF128smprtSTCBbfb,
+                fixed6I2R8192smprtSTCBbfb, fixed6I2RNOL8192smprtSTCBbfb,
+                fixed6OF4096NM50000smprtSTCBbfb,fixed6I2R4096NM150000smprtSTCBbfb,
+                fixed6I2R2048NM150000smprtSTCBbfb
+)
+#methods <- list(fixed6OF8192smprtSTCBbfb,
+#                fixed6I2R8192smprtSTCBbfb,
+#                fixed6I2RNOL8192smprtSTCBbfb,
+#                fixed6I2R8192NM150000smprtSTCBbfb)
 
 nmethods <- length(methods)
 
@@ -177,9 +251,9 @@ array <- "LPA75um" #"LPA2shunt"
 nSimPulses <- "5000" # "20000"
 separation <- 40000 #for samprate (corrected below for samprate2)
 
-#EkeV <- c(0.2,0.5,1,2,3,4,5,6,7,8)
-EkeV <- c(1,2,3,4,5,6,7,8)
-nIntervals <- 150000
+EkeV <- c(0.2,0.5,1,2,3,4,5,6,7,8)
+#EkeV <- c(1,2,3,4,5,6,7,8)
+#nIntervals <- 50000
 nIntervals <- 0
 noiseMat<-""
 if(nIntervals >0) noiseMat <-paste("_noiseMat",nIntervals,"i",sep="")
@@ -196,6 +270,7 @@ for (ie in 1:length(EkeV)){
     for (im in 1:nmethods){
         nSamples <- methods[[im]]$nSamples
         pulseLength <- methods[[im]]$nSamples
+        ofLength <- methods[[im]]$ofLength
         TRIGG <- methods[[im]]$detMethod
         samprateStr <-methods[[im]]$samprateStr
         jitterStr <- methods[[im]]$jitterStr
@@ -205,13 +280,17 @@ for (ie in 1:length(EkeV)){
         separation <- 40000
         if(samprateStr == "_samprate2") separation <- 20000
         if(samprateStr == "_samprate4") separation <- 10000
+        #eresolFile <- paste("gainScale/eresol_",nSimPulses,"p_SIRENA",nSamples,
+        #                    "_pL",pulseLength,"_", EkeV[ie],"keV_",TRIGG,"_F0F_", 
+        #                    lib,ofLength,samprateStr,jitterStr,noiseStr,bbfbStr,".json",sep="")
         eresolFile <- paste("gainScale/eresol_",nSimPulses,"p_SIRENA",nSamples,
-                            "_pL",pulseLength,"_", EkeV[ie],"keV_",TRIGG,"_F0F_", 
-                            lib,nSamples,samprateStr,jitterStr,noiseStr,bbfbStr,".json",sep="")
-        eventsFile <- paste("gainScale/events_sep",separation,"sam_",nSimPulses,"p_SIRENA",nSamples,
-                            "_pL",pulseLength,"_", EkeV[ie],"keV_",TRIGG,"_F0F_", 
-                            lib,nSamples,samprateStr,jitterStr,noiseStr,bbfbStr,"_HR.fits",sep="")
-        
+                    "_pL",pulseLength,"_", EkeV[ie],"keV_",methods[[im]]$name,".json",sep="")
+        #eventsFile <- paste("gainScale/events_sep",separation,"sam_",nSimPulses,"p_SIRENA",nSamples,
+        #                    "_pL",pulseLength,"_", EkeV[ie],"keV_",TRIGG,"_F0F_", 
+        #                    lib,ofLength,samprateStr,jitterStr,noiseStr,bbfbStr,"_HR.fits",sep="")
+        eventsFile <- paste("gainScale/events_sep",separation,"sam_",nSimPulses,"p_SIRENA",
+                            nSamples,"_pL",pulseLength,"_", EkeV[ie],"keV_",
+                            methods[[im]]$name,"_HR.fits",sep="")
         if(file.exists(eresolFile)){
             #data <- read.table(eresolFile,header=TRUE)
             # use data for selected separation (see initial definitions)

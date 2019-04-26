@@ -1,9 +1,9 @@
 #
 # Plot energy resolution for:
-#        a given array (SPA, LPA1, LPA2, LPA3)  
-#        @ different energies (0.5,1,2,3,4,6,9) keV
+#        a given array (SPA, LPA1, LPA2, LPA3, LPA75)  
+#        @ different energies (0.2,0.5,1,2,3,4,5,6,7,8) keV
 #        for different methods  (fixed and multilib): OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED
-# calculated with pulses separated by 40000 samples      
+# calculated with pulses separated by 40000 samples (samprate 156250Hz)
 
 library(rjson)
 library(Hmisc)
@@ -29,7 +29,7 @@ subtitle <- "FIXEDLIB6OF"
 #subtitle <- "WEIGHTS"
 #subtitle <- "MULTILIB"
 #subtitle <- "PERF"
-#subtitle <- "OPTFILT"
+subtitle <- "OPTFILT"
 #subtitle <- "RSPACE"
 #subtitle <- "SPIE2016" # SPIE2016/SPIE2016PP (to plot also PP points)
 plttype="b"
@@ -40,13 +40,13 @@ par(pty="s")
 separation <- "40000"
 
 array <- "LPA2shunt"
-nSimPulses <- "20000"
+array <- "LPA75um"
+nSimPulses <- "2000"
 nIntervals <- "150000"
 noiseMat <-paste("_noiseMat",nIntervals,sep="")
 noiseMat=""
-#nSamples <- "4096" # samples for the noise (also pulseLength in library)
-#pulseLength <- "4096" # pulse(record) length
 invalids <- 1234
+bbfb <-"_bbfb"
 
 outPDF <- paste("./PDFs/",pdfName,"_",subtitle,noiseMat,".pdf",sep="")
 setwd(paste("/home/ceballos/INSTRUMEN/EURECA/ERESOL/PAIRS/eresol",array,sep=""))
@@ -77,9 +77,15 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                         fixed1, fixed1_I2R, fixed1_I2RNOL, fixed1_I2RFITTED, weightnOF,  weight)        
         #methods <- list(fixed1, fixed1OFNM, fixed1_I2R, fixed1_I2RNOL, fixed1_I2RFITTED)        
     }else if(subtitle == "OPTFILT"){
-        methods <- list(fixed1,fixed1OF,multi)
+        methods <- list(fixed6OF8192smprtSTCBbfb, fixed6OF4096smprtSTCBbfb,
+                        fixed6OF1024smprtSTCBbfb, fixed6OF512smprtSTCBbfb,
+                        fixed6OF256smprtSTCBbfb, fixed6OF128smprtSTCBbfb,
+                        fixed6I2R8192smprtSTCBbfb,fixed6OF4096NM50000smprtSTCBbfb,
+                        fixed6I2R4096NM150000smprtSTCBbfb,fixed6I2R2048NM150000smprtSTCBbfb
+                        )
     }else if(subtitle == "RSPACE"){
-        methods <- list(fixed1_I2R,fixed1_I2RALL, fixed1_I2RNOL, fixed1_I2RFITTED)
+        methods <- list(fixed6OF8192smprtSTCBbfb, fixed6I2R8192smprtSTCBbfb, 
+                        fixed6I2RNOL8192smprtSTCBbfb,fixed6OF8192NM50000smprtSTCBbfb)
     }else if(subtitle == "WEIGHTS"){
         methods <- list(weight,weightn)#,weightnOF)
     }
@@ -95,9 +101,10 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
         Emin <- 0.1
         Emax <- 9.
         FWmin<-1.7
-        FWmax<-16
+        FWmax<-50
         coeffsFile <- "coeffs_polyfit.dat"
         EkeV <- c(0.2,0.5,1,2,3,4,5,6,7,8) # CALIBRATION
+        #EkeV <- c(1,2,3,4,5,6,7,8) # CALIBRATION
         
         # INITIALIZE MATRICES #
         # =======================
@@ -117,13 +124,19 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
             for (im in 1:nmethods){
                 nSamples = methods[[im]]$nSamples
                 pulseLength = methods[[im]]$nSamples
+                ofLength = methods[[im]]$ofLength
                 TRIGG <- methods[[im]]$detMethod
                 samprateStr <-methods[[im]]$samprateStr
                 jitterStr <- methods[[im]]$jitterStr
+                bbfbStr <- methods[[im]]$bbfbStr
                 lib <- methods[[im]]$lib
+                #eresolFile <- paste("eresol_",nSimPulses,"p_SIRENA",nSamples,
+                #                    "_pL",pulseLength,"_", EkeV[ie],"keV_",
+                #                    TRIGG,"_F0F_",lib,samprateStr,
+                #                    jitterStr,bbfbStr,".json",sep="")
                 eresolFile <- paste("eresol_",nSimPulses,"p_SIRENA",nSamples,
-                                    "_pL",pulseLength,"_", EkeV[ie],"keV_",TRIGG,"_F0F_", 
-                                    lib,nSamples,samprateStr,jitterStr,".json",sep="")
+                                    "_pL",pulseLength,"_", EkeV[ie],"keV_",
+                                    methods[[im]]$name,".json",sep="")
                 if(file.exists(eresolFile)){
                     # use data for selected separation (see initial definitions)
                     cat("Reading file ",eresolFile,"\n")
@@ -151,11 +164,10 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
         if(plotFWHM_GAINCORRS){
             # PLOT ENERGY RESOLUTION CORRECTED HERE FROM POLYFIT coefficientes (APPROX??)
             #==============================================================================
-                
             plot(seq(Emin,Emax,length.out=20),seq(FWmin,FWmax,length.out=20),type="n",cex=2,
                  xlab="Input Energy (keV)", ylab="Energy Resolution FWHM (eV)",
-                 main="ENERGY RESOLUTION: GAINCORRS (Hres pulses, jitter)",
-                 sub="(Calibration Points marked)",pty="s")
+                 main=paste("ENERGY RESOLUTION (",array,
+                            ")\n(Calculated from error derivation)",sep=""))
             axis(4,labels=FALSE)
             minor.tick(nx=5,ny=5,tick.ratio=0.5)
             #title(main="Comparison of reconstruction methods \n for monochromatic sources")     
@@ -197,7 +209,6 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                     
                 # get coefficients for method
                 alias <- methods[[im]]$name
-                #alias <- gsub("OF","",alias) # coeffs are equal for OFLib=yes & OFLib=no methods
                 methodTable <- coeffsTable[coeffsTable$ALIAS==alias,]
                 a0 <- methodTable$a0
                 a1 <- methodTable$a1
@@ -225,8 +236,8 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                        pty="s")
             }
             
-            legend("topleft", legend=labs, col=colors, pch=points, cex=0.6,
-                   text.col=colors, bty="n",y.intersp=2, lty=ltys)
+            legend("topleft", legend=labs, col=colors, pch=points, cex=0.8,
+                   text.col=colors, bty="n",y.intersp=1., lty=ltys)
         }
             
         if(plotFWHM_GAINCORRE){ 
@@ -235,8 +246,8 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
             
             plot(seq(Emin,Emax,length.out=20),seq(FWmin,FWmax,length.out=20),type="n",cex=2,
                  xlab="Input Energy (keV)", ylab="Energy Resolution FWHM (eV)",
-                 main="ENERGY RESOLUTION: GAINCORRE (Hres pulses, jitter)",
-                 sub="(Calibration Points marked)")
+                 main=paste("ENERGY RESOLUTION (",array,
+                            ")\n(Calculated from calibrated energies)",sep=""))
             minor.tick(nx=5,ny=5,tick.ratio=0.5)
             axis(4,label=FALSE)
             grid(nx=NA,ny=NULL)
@@ -273,8 +284,8 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                 points(2,1.86,pch=8,col=methods[[4]]$color) # WEIGHT
                 points(2,1.82,pch=8,col=methods[[5]]$color) # WEIGHTN 
             }
-            legend("topleft", legend=labs, col=colors, pch=points, cex=0.6,
-                   text.col=colors, bty="n",y.intersp=2, lty=ltys)
+            legend("topleft", legend=labs, col=colors, pch=points, cex=0.8,
+                   text.col=colors, bty="n",y.intersp=1., lty=ltys)
         }
     } # if plotFWHM_GAINCORRS/plotFWHM_GAINCORRE
         
@@ -347,7 +358,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                    add=TRUE,errbar.col=methods[[im]]$color)
             
         }
-        legend("topright", legend=labs, col=colors, pch=points, cex=0.5,
+        legend("topright", legend=labs, col=colors, pch=points, cex=1,
                text.col=colors, bty="n",y.intersp=2, lty=ltys)
         
         # Plot also Erecons vs Rlength for OPTFILT and OPTFILTNM and WEIGHTNOF
@@ -376,7 +387,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
             #points(rlens,ebiasRecons[,im]/1000.+EkeV_rl,pch=methods[[im]]$point,col=methods[[im]]$color,
             #       type=plttype,lty=methods[[im]]$ltype)
         }
-        legend("topright", legend=labs[ims], col=colors[ims], pch=points[ims], cex=0.6,
+        legend("topright", legend=labs[ims], col=colors[ims], pch=points[ims], cex=1,
                text.col=colors[ims], bty="n",y.intersp=2, lty=ltys[ims])
     }
         
@@ -447,7 +458,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
             points(seps,abs(ebiasCorrSec[,im]),pch=methods[[im]]$point,col=methods[[im]]$color,
                    type=plttype,lty=methods[[im]]$ltype)
         }
-        legend("topright",legend=labs, col=colors, pch=points,cex=0.6,
+        legend("topright",legend=labs, col=colors, pch=points,cex=1,
                text.col=colors, bty="n", lty=ltys)
         
         #Plot also FWHM as a function of Time separation
@@ -467,7 +478,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
             points(seps,fwhmPrimGAINCORRE[,im],pch=methods[[im]]$point,col=methods[[im]]$color,
                    type=plttype,lty=methods[[im]]$ltype)
         }
-        legend("topright",legend=labs, col=colors, pch=points,cex=0.6,
+        legend("topright",legend=labs, col=colors, pch=points,cex=1,
                text.col=colors, bty="n", lty=ltys)
         
         # For SECONDARIES...
@@ -486,7 +497,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
             points(seps,fwhmSecGAINCORRE[,im],pch=methods[[im]]$point,col=methods[[im]]$color,
                    type=plttype,lty=methods[[im]]$ltype)
         }
-        legend("topright",legend=labs, col=colors, pch=points,cex=0.6,
+        legend("topright",legend=labs, col=colors, pch=points,cex=1,
                text.col=colors, bty="n", lty=ltys)
     } # if plotBias
     
