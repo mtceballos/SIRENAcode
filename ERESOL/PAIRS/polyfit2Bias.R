@@ -71,31 +71,31 @@ fixed6OF4096smprtSTCBbfb <-
     list(name=paste("STC_F0F_fixedlib6OF_OPTFILT4096_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=4096,
-         color=adccols[2], point=2, ltype=2,
+         color=adccols[2], point=2, ltype=1,
          lab="OF_ADC (4096,6keV, STC, s1, bbfb)")
 fixed6OF1024smprtSTCBbfb <-
     list(name=paste("STC_F0F_fixedlib6OF_OPTFILT1024_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=1024,
-         color=adccols[3], point=3, ltype=2,
+         color=adccols[3], point=3, ltype=1,
          lab="OF_ADC (1024,6keV, STC, s1, bbfb)")
 fixed6OF512smprtSTCBbfb <-
     list(name=paste("STC_F0F_fixedlib6OF_OPTFILT512_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=512,
-         color=adccols[4], point=4, ltype=2,
+         color=adccols[4], point=4, ltype=1,
          lab="OF_ADC (512,6keV, STC, s1, bbfb)")
 fixed6OF256smprtSTCBbfb <-
     list(name=paste("STC_F0F_fixedlib6OF_OPTFILT256_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=256,
-         color=adccols[5], point=5, ltype=2,
+         color=adccols[5], point=5, ltype=1,
          lab="OF_ADC (256,6keV, STC, s1, bbfb)")
 fixed6OF128smprtSTCBbfb <-
     list(name=paste("STC_F0F_fixedlib6OF_OPTFILT128_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=128,
-         color=adccols[6], point=6, ltype=2,
+         color=adccols[6], point=6, ltype=1,
          lab="OF_ADC (128,6keV, STC, s1, bbfb)")
 
 # OFNM BBFB
@@ -132,12 +132,12 @@ fixed6I2R2048NM150000smprtSTCBbfb <-
          lab="OF_R_NM(2048,150000int,6keV,STC,s1,bbfb)")
 
 # OF BBFB NN
-fixed6OFsmprtSTCnnBbfb <-
+fixed6OF8192smprtSTCnnBbfb <-
     list(name=paste("STC_F0F_fixedlib6OF_OPTFILT8192_jitter_nonoise_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="_nonoise", 
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
-         color="blue", point=1, ltype=1,
-         lab="OF_ADC (6keV, STC, s1, nonoise, bbfb)")
+         color="blue", point=19, ltype=1,
+         lab="OF_ADC (8192,6keV, STC, s1, nonoise, bbfb)")
 # I2R BBFB
 fixed6I2R8192smprtSTCBbfb <-
     list(name="STC_F0F_fixedlib6OF_I2R8192_jitter_bbfb", 
@@ -154,6 +154,24 @@ fixed6I2RNOL8192smprtSTCBbfb <-
          lab="OF_RNOL (6keV, STC, s1, bbfb)")
 
 # samprate2 = 78125 Hz
+fixed6OF4096smprt2STCnnBbfb <-
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT4096_samprate2_jitter_nonoise_bbfb",sep=""),
+         nSamples=4096, samprateStr="_samprate2", jitterStr="_jitter", noiseStr="_nonoise",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=4096,
+         color="blue", point=1, ltype=2,
+         lab="OF_ADC (4096,6keV, STC, s2, nonoise, bbfb)")
+fixed6OF4096smprt2STCBbfb <-
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT4096_samprate2_jitter_bbfb",sep=""),
+         nSamples=4096, samprateStr="_samprate2", jitterStr="_jitter", noiseStr="",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=4096,
+         color="blue", point=1, ltype=2,
+         lab="OF_ADC (4096,6keV, STC, s2, bbfb)")
+
+
+
+
+
+
 fixed6OFsmprt2AD <- 
     list(name="AD_F0F_fixedlib6OF_OPTFILT4096_samprate2_jitter", nSamples=4096, 
          samprateStr="_samprate2", jitterStr="_jitter",detMethod="AD",
@@ -165,24 +183,12 @@ fixed6OFsmprt2STC <-
          noiseStr="",bbfbStr="", lib="fixedlib6OF_OPTFILT", ofLength=4096,
          color="blue", point=0, ltype=2,
          lab=paste("OF_ADC (6keV, STC, s2",jitterStr,sep=""))
-fixed6OFsmprt2STCBbfb <-
-    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT4096_samprate2_jitter_bbfb",sep=""),
-         nSamples=4096, samprateStr="_samprate2", jitterStr="_jitter", noiseStr="",
-         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=4096,
-         color="blue", point=1, ltype=1,
-         lab="OF_ADC (6keV, STC, s2, bbfb")
 fixed6OFsmprt2STCnn <-
         list(name=paste("STC_F0F_fixedlib6OF_OPTFILT4096_samprate2",jitterStr,"_nonoise",sep=""),
          nSamples=4096, samprateStr="_samprate2",jitterStr=jitterStr, noiseStr="_nonoise",
          bbfbStr="",detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=4096,
          color="blue", point=4, ltype=2,
          lab=paste("OF_ADC (6keV, AD, s2", jitterStr,", nonoise)",sep=""))
-fixed6OFsmprt2STCnnBbfb <-
-        list(name=paste("STC_F0F_fixedlib6OF_OPTFILT4096_samprate2_jitter_nonoise_bbfb",sep=""),
-         nSamples=4096, samprateStr="_samprate2", jitterStr="_jitter", noiseStr="_nonoise",
-         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=4096,
-         color="blue", point=1, ltype=1,
-         lab="OF (6keV, STC, s2, nonoise, bbfb")
 
 # samprate4: 39062.5 Hz
 fixed6OFsmprt4STCBbfb <-
@@ -207,14 +213,14 @@ fixed6OFsmprt4STCnnBbfb <-
 #                         lab="COVARIANCE MATRICES OF (0(n))")
 # 
 save(fixed6OFsmprtSTCnn,
-     fixed6OF8192smprtSTCBbfb,fixed6OFsmprtSTCnnBbfb,
+     fixed6OF8192smprtSTCBbfb,fixed6OF8192smprtSTCnnBbfb,
      fixed6OF4096smprtSTCBbfb,fixed6OF1024smprtSTCBbfb,
      fixed6OF512smprtSTCBbfb,fixed6OF256smprtSTCBbfb,
      fixed6OF128smprtSTCBbfb,fixed6OF8192NM50000smprtSTCBbfb,fixed6OF4096NM50000smprtSTCBbfb,
      fixed6I2R8192smprtSTCBbfb,fixed6I2R8192NM150000smprtSTCBbfb,fixed6I2R4096NM150000smprtSTCBbfb,
      fixed6I2RNOL8192smprtSTCBbfb,fixed6I2R2048NM150000smprtSTCBbfb,
      fixed6OFsmprt2STCnn,fixed6OFsmprt2STC,
-     fixed6OFsmprt2STCBbfb,fixed6OFsmprt2STCnnBbfb,
+     fixed6OF4096smprt2STCBbfb,fixed6OF4096smprt2STCnnBbfb,
      fixed6OFsmprt4STCBbfb,fixed6OFsmprt4STCnnBbfb,
      file="/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat")
 #===========================================================================================
@@ -230,7 +236,9 @@ methods <- list(fixed6OF8192smprtSTCBbfb, fixed6OF4096smprtSTCBbfb,
                 fixed6OF256smprtSTCBbfb, fixed6OF128smprtSTCBbfb,
                 fixed6I2R8192smprtSTCBbfb, fixed6I2RNOL8192smprtSTCBbfb,
                 fixed6OF4096NM50000smprtSTCBbfb,fixed6I2R4096NM150000smprtSTCBbfb,
-                fixed6I2R2048NM150000smprtSTCBbfb
+                fixed6I2R2048NM150000smprtSTCBbfb,
+                fixed6OF8192smprtSTCnnBbfb,
+                fixed6OF4096smprt2STCnnBbfb,fixed6OF4096smprt2STCBbfb
 )
 #methods <- list(fixed6OF8192smprtSTCBbfb,
 #                fixed6I2R8192smprtSTCBbfb,
@@ -252,7 +260,7 @@ nSimPulses <- "5000" # "20000"
 separation <- 40000 #for samprate (corrected below for samprate2)
 
 EkeV <- c(0.2,0.5,1,2,3,4,5,6,7,8)
-#EkeV <- c(1,2,3,4,5,6,7,8)
+EkeV <- c(1,2,3,4,5,6,7,8)
 #nIntervals <- 50000
 nIntervals <- 0
 noiseMat<-""
