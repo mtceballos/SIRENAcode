@@ -12,8 +12,7 @@ python recon_resol.py
 
 !!!!!!! Things to review evry time it is run (they can change):
         =======================================================
-        ** Check resultsDir (nodetSP in case secondaries are not detected)
-                            (detSP in case secondaries are also detected
+        ** Check resultsDir (nodetSP in case secondaries are not detected,
                            gainScale in case results are for gain scale curves)
 
         ** SINCE NEWSIMULATIONS (Feb2018): library is always the jitter one
@@ -28,11 +27,10 @@ import shlex
 import shutil
 import sys
 import tempfile
-import numpy as np
 import json
 import auxpy
 from astropy.io import fits
-from subprocess import check_call, STDOUT
+from subprocess import check_call
 import xml.etree.ElementTree as ET
 
 
@@ -81,11 +79,9 @@ if __name__ == "__main__":
                         help='Monochromatic energy (keV) of\
                         input secondary simulated pulse')
     parser.add_argument('--reconMethod', default='OPTFILT',
-                        choices=['OPTFILT', 'OPTFILTNM', 'WEIGHT', 'WEIGHTN',
-                                 'I2R', 'I2RALL', 'I2RNOL', 'I2RFITTED'],
                         help='Energy reconstruction Method (OPTFILT,\
-                        OPTFILTNM, WEIGHT, WEIGHTN, I2R, I2RALL,\
-                        I2RNOL, I2RFITTED)')
+                        OPTFILTNMnnnn, WEIGHT, WEIGHTN, I2R, I2RNMnnnn,\
+                        I2RALL, I2RNOL, I2RFITTED)')
     parser.add_argument('--filter', default='F0',
                         choices=['F0', 'B0'],
                         help='Optimal Filtering Method (F0, B0)\
@@ -139,6 +135,9 @@ if __name__ == "__main__":
     parser.add_argument('--bbfb', default="",
                         choices=['', 'bbfb'],
                         help="dobbfb=n, dobbfb=y")
+    parser.add_argument('--detSP', type=int, default=1,
+                        help='Detect secondary pulses? (1=Y, 0=N)\
+                        [default %(default)s]')
 
     inargs = parser.parse_args()
 
@@ -174,6 +173,7 @@ if __name__ == "__main__":
     libTmpl = inargs.libTmpl
     resultsDir = inargs.resultsDir
     sepsStr = inargs.separations
+    detSP = inargs.detSP
 
     # general definitions
     EURECAdir = "/dataj6/ceballos/INSTRUMEN/EURECA/"
@@ -203,6 +203,7 @@ if __name__ == "__main__":
             factor = auxpy.sampfreqs[idxsmp]/auxpy.sampfreqs[0]
             Hres = int(int(Hres) * factor)
             invalid = int(int(invalid) * factor)
+    Hres = filterLength  # to be able to use shorter filters in the FWHM curve
 
     # 1) Reconstruct energies
     # ------------------------
@@ -212,7 +213,7 @@ if __name__ == "__main__":
                           filterMeth, filterLength, nsamples, pulseLength,
                           nSimPulses, fdomain, detMethod, tstartPulse1,
                           tstartPulse2, nSimPulsesLib, coeffsFile,
-                          libTmpl, resultsDir, sepsStr)
+                          libTmpl, resultsDir, detSP, sepsStr)
 
     # 2) Calibrate (AND/OR) extract Energy resolution info to .json files
     # --------------------------------------------------------------------
@@ -295,8 +296,12 @@ if __name__ == "__main__":
             fwhmEreal = 0
             fwhmEreal_err = 0
             biasEreal = 0
+            
+            print("evt, SIGNALsigma=", evt,SIGNALsigma)
 
             fwhm = SIGNALsigma * 2.35 * 1000.
+            print("evt, fwhm=", evt,fwhm)
+
             # FWHM for reconstructed events in eV:
             fwhmErecons = '{0:0.5f}'.format(fwhm)
             # EBIAS = <Erecons> - monoEeV
@@ -318,13 +323,20 @@ if __name__ == "__main__":
                 evtcalib = evt.replace(".fits", ".calib")
                 # locate coefficients in coeffs table
                 # ------------------------------------
-                alias = (detMethod + "_" + labelLib + "_" + reconMethod +
-                         str(pulseLength) + smprtStr + jitterStr + noiseStr +
-                         bbfbStr)
-                if 'fixedlib' in labelLib and 'OF' not in labelLib:
-                    alias = (detMethod + "_" + labelLib + "OF_" + "_" +
-                             reconMethod + str(pulseLength) + smprtStr +
+                alias = (detMethod + "_" + filterMeth + fdomain + "_" +
+                         labelLib + "_" + reconMethod + str(filterLength) +
+                         smprtStr + jitterStr + noiseStr + bbfbStr)
+                if "NM" in reconMethod:
+                    alias = (detMethod + "_" + filterMeth + fdomain + "_" +
+                             labelLib + "_" + reconMethod.split("NM")[0] +
+                             str(filterLength) + "NM" +
+                             reconMethod.split("NM")[1] + smprtStr +
                              jitterStr + noiseStr + bbfbStr)
+                # unchecked option...
+                # if 'fixedlib' in labelLib and 'OF' not in labelLib:
+                #    alias = (detMethod + "_" + labelLib + "OF_" + "_" +
+                #             reconMethod + str(pulseLength) + smprtStr +
+                #             jitterStr + noiseStr + bbfbStr)
                 print("Using alias=", alias)
                 auxpy.convertEnergies(evt, evtcalib, coeffsFile, alias)
 
@@ -341,7 +353,7 @@ if __name__ == "__main__":
                 print("=============================================")
                 print("EXTRACTING corrected FWHMs...................")
                 print("=============================================")
-                print("Output eresolFile: ", eresolFile)
+                print("Output eresolFile: ", eresolFile, "\n")
 
                 fwhm = ErealKeVsigma * 2.35 * 1000.
                 fwhm_err = fwhm / math.sqrt(2 * nrows - 2)
