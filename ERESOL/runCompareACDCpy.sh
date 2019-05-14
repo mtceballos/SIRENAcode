@@ -11,15 +11,18 @@ instrument="LPA75um" #"LPA2shunt"
 # ----------------------------------------------------------------------------------------------------------------------
 # BBFB and NOISE and Jitter and samprate
 bbfbStr="_bbfb" # "" or "_bbfb"
+Lc=0.35 # inductance with respect to lcrit "1" or '0.35' or '0.5' or '0.7' 
 jitterStr="_jitter"
 noiseStr="" # "" or"_nonoise"
-smpStr="" # "" for samprate (156.25kHz)  or "_samprate2" for 78125Hz or "_samprate4" for 39062.5Hz
-#smpStr=""
+LcStr="" #  '_0.35Lc' or '_0.5Lc' or '_0.7Lc'
+smpStr="_samprate2" # "" for samprate (156.25kHz)  or "_samprate2" for 78125Hz or "_samprate4" for 39062.5Hz
+smpStr=""
 # ----------------------------------------------------------------------------------------------------------------------
 
 jitterParam=""
 bbfbParam=""
 dcmt=100
+LcParam=""
 if [ "$bbfbStr"  ==  "_bbfb" ];  then
     bbfbParam="--bbfb bbfb"
     jitterParam="--jitter jitter"
@@ -33,7 +36,13 @@ noiseParam=""
 if [ "$noiseStr"  ==  "_nonoise" ];  then
     noiseParam="--noise nonoise"
 fi
-
+if [ "$(echo ${Lc} '==' 0.7 | bc -l)" -eq 1 ] || [  "$(echo ${Lc} '==' 0.5 | bc -l)" -eq 1 ]   || [ "$(echo ${Lc} '==' 0.35 | bc -l)" -eq 1 ]; then
+    LcParam="--Lc ${Lc}"
+    LcStr="_${Lc}Lc"
+elif [ ! "$(echo ${Lc} '==' 1 | bc -l)" -eq 1 ]; then
+    echo "Error in inductance (L) value selection nLc=${Lc}Lc (nor 0.35Lc, 0.5Lc, 0.7Lc or 1Lc values given)"
+    exit
+fi
 #########################################################
 detMethod="AD"
 detMethod="STC"
@@ -47,14 +56,14 @@ if [ "$smpStr"  ==  "_samprate2" ];  then
     pulseLength=4096
     nSamples=4096
     largeFilter=4096
-    flengths=(4096 256 128)
     if [ ${detMethod}  ==  "AD" ];  then
         nSgms=12 # BE CAREFUL!!! => Check the hard-coded slope criteria 
     elif [ ${detMethod}  ==  "STC" ]; then
-        nSgms=4 #6
+        nSgms=4.5 #6
         samplesUp=2 #2 
         samplesDown=3 #3
     fi
+    
 elif [ "$smpStr"  ==  "_samprate4" ];  then
     separation=10000
     smpParam="--samprate samprate4"
@@ -68,6 +77,7 @@ elif [ "$smpStr"  ==  "_samprate4" ];  then
         samplesUp=2 #2 
         samplesDown=3 #3
     fi
+    
 elif [ -z "$smpStr" ]; then  # samprate 156250Hz
     separation=40000
     smpParam=""
@@ -77,19 +87,19 @@ elif [ -z "$smpStr" ]; then  # samprate 156250Hz
     if [ ${detMethod}  ==  "AD" ];  then
         nSgms=4.4 # BE CAREFUL!!! => Check the hard-coded slope criteria 
     elif [ ${detMethod}  ==  "STC" ];  then
-        nSgms=3 #5
+        nSgms=3.5 #5
         samplesUp=3 #3
         samplesDown=4 #3
     fi
 fi
 flengths=($pulseLength)
 echo "Using det=$detMethod nSgms=$nSgms smplsUp=$samplesUp smplsDown=$samplesDown "
-echo "(smpParam: $smpParam) (jitterParam=$jitterParam) (noiseParam=$noiseParam) (bbfb=$bbfbParam) "
+echo "(smpParam: $smpParam) (jitterParam=$jitterParam) (noiseParam=$noiseParam) (bbfb=$bbfbParam) (Lc=$LcParam) "
 
 # USE one BY ONE
-fixedlib6OF_OPTFILT=0
+fixedlib6OF_OPTFILT=1
 fixedlib6OF_OPTFILTNM=0
-fixedlib6OF_I2RNM=1
+fixedlib6OF_I2RNM=0
 fixedlib6OF_I2R=0
 fixedlib6OF_I2RNOL=0
 fixedlib6OF_I2RFITTED=0
@@ -103,8 +113,7 @@ if  [ $fixedlib6OF_OPTFILT -eq 1 ]; then
     lib="fixedlib6OF"
     meth="OPTFILT"
     nSimPulsesLib=20000 
-    flengths=(8192 4096 1024 512 256 128)
-    #flengths=(8192)
+    #flengths=(8192 4096 1024 512 256 128)
     
 elif [ $fixedlib6OF_OPTFILTNM -eq 1 ]; then
     
@@ -113,7 +122,7 @@ elif [ $fixedlib6OF_OPTFILTNM -eq 1 ]; then
     lib="fixedlib6OF"
     meth="OPTFILTNM50000"
     nSimPulsesLib=20000
-    flengths=(4096)
+    #flengths=(4096)
     
 elif [ $fixedlib6OF_I2RNM -eq 1 ]; then
     
@@ -175,7 +184,7 @@ fi
 
 lags=(1 1 1 1 1 1 1 1 1 1) 
 nSimPulses=20000
-energies=(0.2 0.5 1 2 3 4 5 6 7 8)
+energies=(1 2 3 4 5 6 7 8)
 #energies=(3 4)
 nenergies=${#energies[@]}
 nfls=${#flengths[@]}
@@ -203,7 +212,7 @@ if  [ $option -eq 1 ]; then
                     filterLength=${flengths[$ifl]}
                     echo "Launching $meth $lib for $mono1EkeV "
                     logf="${instrument}_${detMethod}_${meth}_${filterLength}_${mono1EkeV}${smpStr}${jitterStr}${noiseStr}${bbfbStr}.log"
-                    command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod --nSgms $nSgms --samplesUp ${samplesUp} --samplesDown ${samplesDown} --filterLength $filterLength $smpParam --resultsDir gainScale ${jitterParam} ${noiseParam} ${bbfbParam} "
+                    command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod --nSgms $nSgms --samplesUp ${samplesUp} --samplesDown ${samplesDown} --filterLength $filterLength $smpParam --resultsDir gainScale ${jitterParam} ${noiseParam} ${bbfbParam} ${LcParam}"
                     echo "Command=python $command >& $logf" 
                     nohup python $command >& $logf &
                     #sleep 240
@@ -229,7 +238,7 @@ if [ $option -eq 2 ]; then
                     filterLength=${flengths[$ifl]}
                     echo "Launching $meth $lib for $mono1EkeV  for flength= ${filterLength}"
                     logf="${instrument}_$meth${lib}_${detMethod}${filterLength}_${mono1EkeV}${smpStr}${jitterStr}${noiseStr}${bbfbStr}.log"
-                    command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod --nSgms $nSgms --samplesUp ${samplesUp} --samplesDown ${samplesDown} --filterLength $filterLength ${smpParam} ${jitterParam} ${noiseParam}  ${bbfbParam} --coeffsFile coeffs_polyfit.dat"
+                    command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain F --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod --nSgms $nSgms --samplesUp ${samplesUp} --samplesDown ${samplesDown} --filterLength $filterLength ${smpParam} ${jitterParam} ${noiseParam}  ${bbfbParam} ${LcParam} --coeffsFile coeffs_polyfit.dat"
                     echo "Command=python $command >& $logf" 
                     nohup python $command >& $logf &
                 done    

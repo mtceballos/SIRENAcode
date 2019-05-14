@@ -645,7 +645,7 @@ def simulPairs(pixName, monoEkeV1, monoEkeV2, acbias, samprate, jitter,
 def simulLibsGlobal(pixName, space, samprate, jitter, noise, bbfb,
                     pulseLength, libEnergies, largeFilter, nsamples,
                     nSimPulses, acbias, tstartPulse1All,
-                    createLib, noiseMat, weightMat, dcmt):
+                    createLib, noiseMat, nintervals, weightMat, dcmt):
     """
     :type pixName: str
     :param pixName: Extension name in FITS file pixel definition
@@ -684,6 +684,8 @@ def simulLibsGlobal(pixName, space, samprate, jitter, noise, bbfb,
                       just create simulated files (0)
     :type noiseMat: str
     :param noiseMat: should the Noise matrices HDU be created? (yes/no)
+    :type nintervals: int
+    :param nintervals: number of intervals if WEIGHTM noise used (inst.of NSD)
     :type weigthMat: str
     :param weightMat: should the Weight matrices HDU be created? (yes/no)
     :param dcmt: decimation factor for jitter in xifusim
@@ -733,6 +735,9 @@ def simulLibsGlobal(pixName, space, samprate, jitter, noise, bbfb,
         noiseStr = "_nonoise"
         simnoise = " simnoise=n"
 
+    # noiseMat
+    if noiseMat == "yes" and nintervals > 0:
+        noiseMatStr = "_" + str(nintervals) + "int"
     # bbfb
     bbfbStr = ""
     assert not(jitter == "" and bbfb == "bbfb"),\
@@ -751,11 +756,11 @@ def simulLibsGlobal(pixName, space, samprate, jitter, noise, bbfb,
     libDir = SIMFILESdir + "/GLOBAL/" + space
 
     noiseFile = (NOISEdir + "/noise" + str(nsamples) + "samples_" + xifusim +
-                 "_B0_" + space + smprtStr + jitterStr + bbfbStr +
-                 ".fits")
+                 "_B0_" + space + smprtStr + jitterStr +
+                 bbfbStr + noiseMatStr + ".fits")
     libFile = (libDir + "/libraryMultiE_GLOBAL_PL" + str(pulseLength) +
                "_" + str(nSimPulses) + "p" + smprtStr + jitterStr +
-               noiseStr + bbfbStr + ".fits")
+               noiseStr + bbfbStr + noiseMatStr + ".fits")
     evttmpFile = tempfile.NamedTemporaryFile()
 
     # added to solve floating point inaccuracies due to sampling rate
@@ -921,11 +926,11 @@ def simulLibsGlobal(pixName, space, samprate, jitter, noise, bbfb,
     os.chdir(cwd)
 
 
-def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb,
+def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
                 mono1EkeV, mono2EkeV, reconMethod, filterMeth, filterLength,
                 nsamples, pulseLength, nSimPulses, fdomain, detMethod,
                 tstartPulse1, tstartPulse2, nSimPulsesLib, coeffsFile,
-                libTmpl, resultsDir, sepsStr):
+                libTmpl, resultsDir, detSP, sepsStr):
     """
     :param pixName: Extension name for FITS pixel definition file
                     (SPA*, LPA1*, LPA2*, LPA3*)
@@ -937,13 +942,14 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb,
     :param jitter: jitter option ("" for no_jitter and "jitter" for jitter)
     :param dcmt: decimation factor for xifusim jitter
     :param bbfb: ("") for dobbfb=n or ("bbfb") for dobbfb=y
+    :param Lc: ("" for L=Lcrit; otherwise, L/Lcrit)
     :param noise: simulations done with ("") or without ("nonoise") noise
     :param mono1EkeV: Monochromatic energy (keV)
                         of input primary simulated pulse
     :param mono2EkeV: Monochromatic energy (keV)
                         of input secondary simulated pulse
     :param reconMethod: Energy reconstruction Method
-                        (OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL)
+                        (OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL,...)
     :param filterMeth: Optimal Filtering Method (F0 or B0)
     :param filterLength: if set to 0 (default) filters are taken
                         from library in BASE2, otherwise filterStartegy=FIXED
@@ -965,6 +971,7 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb,
     :param resultsDir: directory for resulting evt and json files
                     (from .../PAIRS/eresol+pixName ), tipically
                     'nodetSP', 'detSP' or 'gainScale' or ''
+    :param detSP: 1 secondary pulses will be detected (default), 0 otherwise
     :param sepsStr: blank spaces separated list of pulses separations
     :return: file with energy resolutions for the input pairs of pulses
     """
@@ -972,6 +979,7 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb,
     # --- Define some initial values and conversions ----
     EURECAdir = "/dataj6/ceballos/INSTRUMEN/EURECA/"
     ERESOLdir = EURECAdir + "/ERESOL/"
+    simSIXTEdir = EURECAdir + "testHarness/simulations/SIXTE"
 
     # samprate
     smprtStr = ""
@@ -1004,6 +1012,11 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb,
         bbfbStr = "_bbfb"
         jitterStr = "_jitter"
 
+    # Lcrit
+    LcStr = ""
+    if not Lc == "":
+        LcStr = "_" + str(Lc) + "Lc"
+
     # pulses start
     TRIGG = ""
     if tstartPulse1 > 0:
@@ -1016,15 +1029,29 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb,
 
     # data space and reconstruction method
     space = "ADC"
-    if reconMethod in ("I2R", "I2RALL", "I2RNOL", "I2RFITTED"):
+    if "I2R" in reconMethod:
         space = reconMethod.lstrip('I2')
+        space = space.split('NM')[0]
+
+    ofnoise = "NSD"
+    reconMethod2 = ""
+    if "NM" in reconMethod:
+        ofnoise = "WEIGHTM"
+        reconMethod2 = "NM" + reconMethod.split('NM')[1]
+        reconMethod = reconMethod.split('NM')[0]
 
     # libraries
     OFLib = "no"
     OFstrategy = ""
+    noiseDir = simSIXTEdir + "/NOISE/" + xifusim
+    noiseFile = (noiseDir + "/noise" + str(nsamples) + "samples_" +
+                 xifusim + "_B0_" + space + smprtStr +
+                 jitterStr + bbfbStr + LcStr + ".fits")
+    noiseParam = " NoiseFile=" + noiseFile
     if "OF" in labelLib:
         OFLib = "yes"
         OFstrategy = " OFStrategy=FIXED OFLength=" + str(filterLength)
+        noiseParam = ""
 
     # -- LIB & NOISE & SIMS & RESULTS dirs and files ----------
     simDir = ERESOLdir + "PAIRS/" + xifusim
@@ -1032,11 +1059,6 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb,
         simDir += "/gainScale/"
 
     outDir = ERESOLdir + "PAIRS/eresol" + pixName + "/" + resultsDir
-    simSIXTEdir = EURECAdir + "testHarness/simulations/SIXTE"
-    noiseDir = simSIXTEdir + "/NOISE/" + xifusim
-    noiseFile = (noiseDir + "/noise" + str(nsamples) + "samples_" +
-                 xifusim + "_B0_" + space + smprtStr +
-                 jitterStr + bbfbStr + ".fits")
     libDirRoot = simSIXTEdir + "/LIBRARIES/" + xifusim
     libDir = libDirRoot + "/GLOBAL/" + space + "/"
     if libTmpl == "SHORT":
@@ -1047,7 +1069,7 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb,
     if 'multilib' in labelLib:
         libFile = (libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) +
                    "_" + str(nSimPulsesLib) + "p" + smprtStr +
-                   jitterStr + noiseStr + bbfbStr + ".fits")
+                   jitterStr + noiseStr + bbfbStr + LcStr + ".fits")
         filtEeV = 6000.  # eV
     elif 'fixedlib' in labelLib:  # fixedlib1,...
         fixedEkeV = labelLib.replace("OF", "")[8:]
@@ -1056,11 +1078,11 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb,
         if tstartPulse1 == 0 and detMethod == "AD":
             libFile = (libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) +
                        "_" + str(nSimPulsesLib) + "p" + smprtStr +
-                       jitterStr + noiseStr + bbfbStr + ".fits")
+                       jitterStr + noiseStr + bbfbStr + LcStr + ".fits")
         else:
             libFile = (libDir + "/library" + fixedEkeV + "keV_PL" +
                        str(nsamples) + "_" + str(nSimPulsesLib) + "p" +
-                       smprtStr + jitterStr + noiseStr + bbfbStr +
+                       smprtStr + jitterStr + noiseStr + bbfbStr + LcStr +
                        ".fits")
     libFile = libFile.replace(".fits", libTmpl+".fits")
 
@@ -1068,21 +1090,16 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb,
                     str(pulseLength), '_', mono1EkeV, 'keV_', mono2EkeV,
                     'keV_', TRIGG, "_", str(filterMeth), str(fdomain), '_',
                     str(labelLib), '_', str(reconMethod), str(filterLength),
-                    smprtStr, jitterStr, noiseStr, bbfbStr])
+                    reconMethod2, smprtStr, jitterStr, noiseStr, bbfbStr, LcStr])
     if mono2EkeV == "0":
         root = ''.join([str(nSimPulses), 'p_SIRENA', str(nsamples), '_pL',
                         str(pulseLength), '_', mono1EkeV, 'keV_', TRIGG, "_",
                         str(filterMeth), str(fdomain), '_', str(labelLib),
-                        '_', str(reconMethod), str(filterLength), smprtStr,
-                        jitterStr, noiseStr, bbfbStr])
+                        '_', str(reconMethod), str(filterLength),
+                        reconMethod2, smprtStr, jitterStr, noiseStr, bbfbStr, LcStr])
 
     eresolFile = "eresol_" + root + ".json"
     eresolFile = eresolFile.replace(".json", libTmpl+".json")
-
-    ofnoise = "NSD"
-    if 'OPTFILTNM' in reconMethod:
-        ofnoise = "WEIGHTM"
-        reconMethod = "OPTFILT"
 
     os.chdir(outDir)
 
@@ -1098,24 +1115,24 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb,
 
         inFile = (simDir + "/sep" + sep12 + "sam_" + str(nSimPulses) +
                   "p_" + str(mono1EkeV) + "keV_" + str(mono2EkeV) + "keV" +
-                  smprtStr + jitterStr + noiseStr + bbfbStr +
+                  smprtStr + jitterStr + noiseStr + bbfbStr + LcStr +
                   ".fits")
         if mono2EkeV == "0":  # for single Pulses
             inFile = (simDir + "/sep" + sep12 + "sam_" + str(nSimPulses) +
                       "p_" + str(mono1EkeV) + "keV" +
-                      smprtStr + jitterStr + noiseStr + bbfbStr +
+                      smprtStr + jitterStr + noiseStr + bbfbStr + LcStr +
                       ".fits")
 
         evtFile = "events_sep" + sep12 + "sam_" + root + ".fits"
         evtFile = evtFile.replace(
                 jitterStr + noiseStr + bbfbStr + ".fits",
-                libTmpl + jitterStr + noiseStr + bbfbStr + ".fits")
+                libTmpl + jitterStr + noiseStr + bbfbStr + LcStr + ".fits")
         print("=============================================")
         print("RECONSTRUCTING ENERGIES.....................")
         print("Working in:", outDir)
         print("Using file: ", inFile)
         print("Using library: ", libFile)
-        print("Using noisefile: ", noiseFile)
+        #print("Using noisefile: ", noiseFile)
         print("Setting evtFile: ", evtFile)
         print("=============================================")
 
@@ -1143,9 +1160,9 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb,
                     " scaleFactor=" + str(scaleFactor) +
                     " samplesUp=" + str(samplesUp) + " nSgms=" + str(nSgms) +
                     " samplesDown=" + str(samplesDown) +
-                    " opmode=1 NoiseFile=" + noiseFile +
+                    " opmode=1 " + noiseParam +
                     " OFLib=" + OFLib + " FilterDomain=" + fdomain +
-                    " detectionMode=" + detMethod +
+                    " detectionMode=" + detMethod + " detectSP=" + str(detSP) +
                     " FilterMethod=" + filterMeth + " clobber=yes" +
                     " EventListSize=1000" + " EnergyMethod=" + reconMethod +
                     " LagsOrNot=1" + " tstartPulse1=" + str(tstartPulse1) +
@@ -1172,7 +1189,7 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb,
                   nTrigPulses, "/", ndetpulses)
             evtf.close()
 
-    return smprtStr, jitterStr, noiseStr, bbfbStr, evtFile, eresolFile
+    return smprtStr, jitterStr, noiseStr, bbfbStr, LcStr, evtFile, eresolFile
 
 
 def convertEnergies(inFile, outFile, coeffsFile, alias):
@@ -1567,7 +1584,7 @@ def enerToCalEner(inEner, coeffsFile, alias):
     return calEner
 
 
-def VLtoFL(inputFile, outputFile):
+def VLtoFL(inputFile, extnum, outputFile):
     """
     Transform variable length column to fixed length using stilts
     Astropy & ftools & stilts does not work with variable-length arrays,
@@ -1575,6 +1592,7 @@ def VLtoFL(inputFile, outputFile):
     """
 
     print("\n Converting variable length column to fixed length column")
+    print("Using:", inputFile, extnum, outputFile)
     try:
         # save inputFile into outFile
         copy(inputFile, outputFile)
@@ -1583,12 +1601,13 @@ def VLtoFL(inputFile, outputFile):
         #        " out=" + outputFile)
         comm = ("stilts tpipe cmd='addcol " +
                 "TIME2 \"(TIME*2)\"' cmd='delcols TIME2' ofmt=fits in=" +
-                outputFile + " out=" + outputFile)
+                outputFile + "#" + str(extnum) + " out=" + outputFile)
         args = shlex.split(comm)
         check_call(args, stderr=STDOUT)
         # copy header (modified by stilts) from one FITS header to another
         # existing FITS file header
-        comm = "cphead " + inputFile + "+1 " + outputFile + "+1"
+        comm = ("cphead " + inputFile + "+" + str(extnum) + " " + outputFile +
+                "+" + str(extnum))
         args = shlex.split(comm)
         check_call(args, stderr=STDOUT)
     except RuntimeError:

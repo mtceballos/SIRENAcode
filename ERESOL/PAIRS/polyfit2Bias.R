@@ -67,6 +67,25 @@ fixed6OF8192smprtSTCBbfb <-
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
          color=adccols[1], point=1, ltype=1,
          lab="OF_ADC (8192,6keV, STC, s1, bbfb)")
+fixed6OF8192smprtSTCBbfb0.7Lc <-
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT8192_jitter_bbfb_0.7Lc",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="", LcStr="_0.7Lc",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
+         color=adccols[1], point=1, ltype=1,
+         lab="OF_ADC (8192,6keV, STC, s1, bbfb, 0.7Lc)")
+fixed6OF8192smprtSTCBbfb0.5Lc <-
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT8192_jitter_bbfb_0.5Lc",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="", LcStr="_0.5Lc",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
+         color=adccols[1], point=1, ltype=1,
+         lab="OF_ADC (8192,6keV, STC, s1, bbfb, 0.5Lc)")
+fixed6OF8192smprtSTCBbfb0.35Lc <-
+    list(name=paste("STC_F0F_fixedlib6OF_OPTFILT8192_jitter_bbfb_0.35Lc",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="", LcStr="_0.35Lc",
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
+         color=adccols[1], point=1, ltype=1,
+         lab="OF_ADC (8192,6keV, STC, s1, bbfb, 0.35Lc)")
+
 fixed6OF4096smprtSTCBbfb <-
     list(name=paste("STC_F0F_fixedlib6OF_OPTFILT4096_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",
@@ -222,6 +241,8 @@ save(fixed6OFsmprtSTCnn,
      fixed6OFsmprt2STCnn,fixed6OFsmprt2STC,
      fixed6OF4096smprt2STCBbfb,fixed6OF4096smprt2STCnnBbfb,
      fixed6OFsmprt4STCBbfb,fixed6OFsmprt4STCnnBbfb,
+     fixed6OF8192smprtSTCBbfb0.7Lc, fixed6OF8192smprtSTCBbfb0.5Lc,
+     fixed6OF8192smprtSTCBbfb0.35Lc,
      file="/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat")
 #===========================================================================================
 
@@ -238,7 +259,9 @@ methods <- list(fixed6OF8192smprtSTCBbfb, fixed6OF4096smprtSTCBbfb,
                 fixed6OF4096NM50000smprtSTCBbfb,fixed6I2R4096NM150000smprtSTCBbfb,
                 fixed6I2R2048NM150000smprtSTCBbfb,
                 fixed6OF8192smprtSTCnnBbfb,
-                fixed6OF4096smprt2STCnnBbfb,fixed6OF4096smprt2STCBbfb
+                fixed6OF4096smprt2STCnnBbfb,fixed6OF4096smprt2STCBbfb,
+                fixed6OF8192smprtSTCBbfb0.7Lc,fixed6OF8192smprtSTCBbfb0.5Lc,
+                fixed6OF8192smprtSTCBbfb0.35Lc
 )
 #methods <- list(fixed6OF8192smprtSTCBbfb,
 #                fixed6I2R8192smprtSTCBbfb,

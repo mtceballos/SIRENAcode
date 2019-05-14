@@ -65,6 +65,8 @@ if __name__ == "__main__":
                         [default %(default)s]')
     parser.add_argument('--decimation', type=int, default=1,
                         help='xifusim decimation factor')
+    parser.add_argument('--nintervals', type=int, default=0,
+                        help='n. of intervals for WEIGHTM noise')
 
     inargs = parser.parse_args()
     len1 = 0
@@ -89,5 +91,6 @@ if __name__ == "__main__":
                           acbias=inargs.acbias,
                           createLib=inargs.createLib,
                           noiseMat=inargs.noiseMat,
+                          nintervals=inargs.nintervals,
                           weightMat=inargs.weightMat,
                           dcmt=inargs.decimation)

@@ -37,6 +37,8 @@ import xml.etree.ElementTree as ET
 # ----GLOBAL VARIABLES -------------
 cwd = os.getcwd()
 tmpDir = tempfile.mkdtemp()
+print(tmpDir)
+#input("stop here")
 os.environ["PFILES"] = tmpDir + ":" + os.environ["PFILES"]
 os.environ["HEADASNOQUERY"] = ""
 os.environ["HEADASPROMPT"] = "/dev/null/"
@@ -135,6 +137,8 @@ if __name__ == "__main__":
     parser.add_argument('--bbfb', default="",
                         choices=['', 'bbfb'],
                         help="dobbfb=n, dobbfb=y")
+    parser.add_argument('--Lc', default="",
+                        help="Inductance over critical value")
     parser.add_argument('--detSP', type=int, default=1,
                         help='Detect secondary pulses? (1=Y, 0=N)\
                         [default %(default)s]')
@@ -155,6 +159,7 @@ if __name__ == "__main__":
     jitter = inargs.jitter
     noise = inargs.noise
     bbfb = inargs.bbfb
+    Lc = inargs.Lc
     dcmt = inargs.decimation
     mono1EkeV = inargs.monoEnergy1
     mono2EkeV = inargs.monoEnergy2
@@ -207,9 +212,9 @@ if __name__ == "__main__":
 
     # 1) Reconstruct energies
     # ------------------------
-    smprtStr, jitterStr, noiseStr, bbfbStr, evtFile, eresolFile = \
+    smprtStr, jitterStr, noiseStr, bbfbStr, LcStr, evtFile, eresolFile = \
         auxpy.reconstruct(pixName, labelLib, samprate, jitter, dcmt,
-                          noise, bbfb, mono1EkeV, mono2EkeV, reconMethod,
+                          noise, bbfb, Lc, mono1EkeV, mono2EkeV, reconMethod,
                           filterMeth, filterLength, nsamples, pulseLength,
                           nSimPulses, fdomain, detMethod, tstartPulse1,
                           tstartPulse2, nSimPulsesLib, coeffsFile,
@@ -296,11 +301,11 @@ if __name__ == "__main__":
             fwhmEreal = 0
             fwhmEreal_err = 0
             biasEreal = 0
-            
-            print("evt, SIGNALsigma=", evt,SIGNALsigma)
+
+            print("evt, SIGNALsigma=", evt, SIGNALsigma)
 
             fwhm = SIGNALsigma * 2.35 * 1000.
-            print("evt, fwhm=", evt,fwhm)
+            print("evt, fwhm=", evt, fwhm)
 
             # FWHM for reconstructed events in eV:
             fwhmErecons = '{0:0.5f}'.format(fwhm)
@@ -325,13 +330,13 @@ if __name__ == "__main__":
                 # ------------------------------------
                 alias = (detMethod + "_" + filterMeth + fdomain + "_" +
                          labelLib + "_" + reconMethod + str(filterLength) +
-                         smprtStr + jitterStr + noiseStr + bbfbStr)
+                         smprtStr + jitterStr + noiseStr + bbfbStr + LcStr)
                 if "NM" in reconMethod:
                     alias = (detMethod + "_" + filterMeth + fdomain + "_" +
                              labelLib + "_" + reconMethod.split("NM")[0] +
                              str(filterLength) + "NM" +
                              reconMethod.split("NM")[1] + smprtStr +
-                             jitterStr + noiseStr + bbfbStr)
+                             jitterStr + noiseStr + bbfbStr + LcStr)
                 # unchecked option...
                 # if 'fixedlib' in labelLib and 'OF' not in labelLib:
                 #    alias = (detMethod + "_" + labelLib + "OF_" + "_" +
