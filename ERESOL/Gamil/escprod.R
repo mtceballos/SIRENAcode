@@ -45,8 +45,8 @@ data <- c(pulse, rep(prebuffer, len=postbuffer))
 dirfilter <- "/dataj6/ceballos/INSTRUMEN/EURECA/testHarness/simulations/SIXTE/LIBRARIES/xifusimLPA75um/GLOBAL/ADC/"
 filtername <- paste(dirfilter,"library6keV_PL8192_20000p_jitter_bbfb.fits+2",sep="") #FIXFILTT
 #filtername <- paste(dirfilter,"library6keV_PL8192_20000p_jitter_dcmt100.fits+2",sep="") #FIXFILTT
-dirfilter <- "/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/simsDBbbfb/"
-filtername <- paste(dirfilter,"library6keV_PL8192_20000p_bbfb.fits+2",sep="") #FIXFILTT
+#dirfilter <- "/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/simsDBbbfb/"
+#filtername <- paste(dirfilter,"library6keV_PL8192_20000p_bbfb.fits+2",sep="") #FIXFILTT
 colname <- "T8192" # filter to be used from the lib
 command <- paste("export HEADAS=",HEADAS,";. $HEADAS/headas-init.sh;",
                  "fdump wrap=yes infile=",filtername," columns=",colname, " rows=-",
@@ -63,7 +63,8 @@ reconE <- numeric(noffs)
 for (i in 1:noffs){
     ifin <- flen + (i-1)
     scprod[i] <- sum(data[i:ifin] * filter[1:flen])
-    reconE[i] <- scprod[i]*sqrt(2*flensecs)
+    reconE[i] <- scprod[i]/flen
+    
 }
 # apply normalising factor since filter in Time Domain comes from Frequency Domain
 # check that reconstructed energy is ok (off by a factor due to the energy scale corr)
