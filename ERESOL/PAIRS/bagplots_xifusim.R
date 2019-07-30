@@ -36,24 +36,27 @@ npulses <- nPairs*2
 samprate <- 156250
 samprateStr="" # to name files with full samprate
 #samprateStr="_samprate2" # to name files with 1/2 samprate
+
+filterLengths <- c(8192,512,256)
+pulseLength<- 8192   # pulse length
+xmax <- c(8200, 550, 260 )
+separationsBGplots <- sprintf("%05d", sort(c(seq(30,250,40),235,seq(345,470,10),
+                                             seq(245,255,5),seq(260,510,40),
+                                             seq(510,515,5),seq(520,8130,100), 
+                                             seq(7900,8151,50),seq(8190,8200,5))))
+
 if (samprateStr == "_samprate2"){
     samprate <- samprate/2.    
-    filterLengths <- c(4096,256,128)
-    pulseLength<- 4096   # pulse length
+    filterLengths <- filterLengths/2
+    pulseLength<- pulseLength/2   # pulse length
     xmax <- c(4200, 260, 150 )
-    separationsBGplots <- sprintf("%05d",
-                           sort(c(15,seq(19,25,2),seq(16,34,2),35,seq(40,256,2),300,
-                            seq(320,340,10),seq(360,400,20),450,500,750,800,seq(1000,4000,250),
-                            seq(4010,4196,10),4200)))
-
-}else{
-    filterLengths <- c(8192,512,256)
-    pulseLength<- 8192   # pulse length
-    xmax <- c(8200, 550, 260 )
-    separationsBGplots <- sprintf("%05d",
-        sort(c(seq(30,250,40),235,seq(345,470,10),seq(245,255,5),seq(260,510,40),seq(510,515,5),
-               seq(520,8130,100), seq(7900,8151,50),seq(8190,8200,5))))
+    #separationsBGplots <- sprintf("%05d",
+    #                       sort(c(15,seq(19,25,2),seq(16,34,2),35,seq(40,256,2),300,
+    #                        seq(320,340,10),seq(360,400,20),450,500,750,800,seq(1000,4000,250),
+    #                        seq(4010,4196,10),4200)))
+    separationsBGplots <- sprintf("%05d", round(as.numeric(separationsBGplots)/2))
 }
+
 fEnergy="6" # filter energy in keV
 #energies <- c("0.2", "0.5", "1", "2", "3", "4", "5", "6", "7", "8") # primary pulses energies
 Eprims <- c("0.2", "0.5", "1", "4", "6", "8") # primary pulses energies
@@ -160,6 +163,7 @@ cat("PAIR pulses (bluish bagplots) finished\n")
 #pdf(paste("baselineLPA75um/bagplotsStudy",samprateStr,".pdf",sep=""),width=10, height=7,version="1.4")
 pdf(paste("baselineLPA75um/bagplotsStudy",samprateStr,".pdf",sep=""),width=7, height=10,version="1.4")
 
+separationsInSingles <- array(NA, dim=c(nseps, nprims, nsecs, nfilters))
 for (ip in 1:nprims){
     Eprim <- Eprims[ip]
     cat("plotting for Eprim=", Eprim,"\n")
@@ -219,15 +223,13 @@ for (ip in 1:nprims){
             abline(v=fLength, col="black",lty=2)
             abline(h=thresholdProb, col="orange",lty=1)
             
-            # save interesting quantities for detectionMaps y frequencyPairs:
             # separations where the probability of having double pulses inside singles zone
             # is larger than thresholdProb
-            separationsInSingles=numeric()
-            separationsInSingles=separationsBGplots[which(inprob>thresholdProb&
+            badseps <-separationsBGplots[which(inprob>thresholdProb&
                                                         as.numeric(separationsBGplots)<=fLength)]
-            fileBPfail <- paste("baselineLPA75um/BPfail_Ep",Eprim,"keV_Es",Esec,"keV_fL",fLength,
-                                samprateStr,".dat",sep="")
-            save(separationsInSingles,file=fileBPfail)
+            if(length(badseps)>0){
+                separationsInSingles[1:length(badseps),ip,is,ifl]<-badseps
+            }
             points(separationsInSingles, rep(0.1,length(separationsInSingles)),
                    pch=4,cex=0.5,col="orange")
             #
@@ -289,5 +291,9 @@ for (ip in 1:nprims){
         
     } # foreach secondary energy
 } # foreach primary energy
+
+# save interesting quantities for detectionMaps y frequencyPairs:
+fileBPfail <- paste("baselineLPA75um/BPfail", samprateStr,".dat",sep="")
+save(separationsInSingles,file=fileBPfail)
 dev.off()
 
