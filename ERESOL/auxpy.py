@@ -8,6 +8,10 @@ import numpy as np
 import math
 from subprocess import check_call, STDOUT
 from astropy.io import fits, ascii
+import json
+from scipy.interpolate import interp1d
+
+
 # import xml.etree.ElementTree as ET
 
 tmpDir = tempfile.mkdtemp()
@@ -25,7 +29,7 @@ sampStrs = ("", "_samprate2", "_samprate4")
 separations = ('40000', '20000', '10000')
 samplesUps = (3, 2, 2)
 samplesDowns = (4, 3, 3)
-nSigmss = (3, 4, 4)
+nSigmss = (3.5, 4.5, 4)
 preBufferPulses = 1000
 scaleFactor = 0
 
@@ -927,10 +931,10 @@ def simulLibsGlobal(pixName, space, samprate, jitter, noise, bbfb,
 
 
 def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
-                mono1EkeV, mono2EkeV, reconMethod, filterMeth, filterLength,
+                mono1EkeV, mono2EkeV, reconMethod, filterLength,
                 nsamples, pulseLength, nSimPulses, fdomain, detMethod,
                 tstartPulse1, tstartPulse2, nSimPulsesLib, coeffsFile,
-                libTmpl, resultsDir, detSP, sepsStr):
+                libTmpl, resultsDir, detSP, pB, s0, sepsStr):
     """
     :param pixName: Extension name for FITS pixel definition file
                     (SPA*, LPA1*, LPA2*, LPA3*)
@@ -950,7 +954,6 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
                         of input secondary simulated pulse
     :param reconMethod: Energy reconstruction Method
                         (OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL,...)
-    :param filterMeth: Optimal Filtering Method (F0 or B0)
     :param filterLength: if set to 0 (default) filters are taken
                         from library in BASE2, otherwise filterStartegy=FIXED
     :param nsamples: noise length samples
@@ -972,6 +975,8 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
                     (from .../PAIRS/eresol+pixName ), tipically
                     'nodetSP', 'detSP' or 'gainScale' or ''
     :param detSP: 1 secondary pulses will be detected (default), 0 otherwise
+    :param pB: preBuffer value for optimal filters
+    :param s0: Optimal Filters' SUM should be '0'?: s0=0 (NO); s0=1 (YES)
     :param sepsStr: blank spaces separated list of pulses separations
     :return: file with energy resolutions for the input pairs of pulses
     """
@@ -1012,6 +1017,16 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
         bbfbStr = "_bbfb"
         jitterStr = "_jitter"
 
+    # optimal filters' preBuffer
+    pBStr = ""
+    if pB > 0:
+        pBStr = "_pB" + str(pB)
+    # optimal filter's SUM
+    s0Str = ""
+    s0Param = ""
+    if s0 == 1:
+        s0Str = "_Sum0Filt"
+        s0Param = " Sum0Filt=1"
     # Lcrit
     LcStr = ""
     if not Lc == "":
@@ -1040,6 +1055,10 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
         reconMethod2 = "NM" + reconMethod.split('NM')[1]
         reconMethod = reconMethod.split('NM')[0]
 
+    # LAGS (temporarily unavailable)
+    lags = 1
+    if "WEIGHT" in reconMethod:
+        lags = 0
     # libraries
     OFLib = "no"
     OFstrategy = ""
@@ -1052,6 +1071,8 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
         OFLib = "yes"
         OFstrategy = " OFStrategy=FIXED OFLength=" + str(filterLength)
         noiseParam = ""
+        if "WEIGHT" in reconMethod:
+            noiseParam = " NoiseFile=" + noiseFile
 
     # -- LIB & NOISE & SIMS & RESULTS dirs and files ----------
     simDir = ERESOLdir + "PAIRS/" + xifusim
@@ -1077,26 +1098,28 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
         # detection to be performed -> require different models:
         if tstartPulse1 == 0 and detMethod == "AD":
             libFile = (libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) +
-                       "_" + str(nSimPulsesLib) + "p" + smprtStr +
-                       jitterStr + noiseStr + bbfbStr + LcStr + ".fits")
+                       "_" + str(nSimPulsesLib) + "p" + smprtStr + jitterStr +
+                       noiseStr + bbfbStr + LcStr + pBStr + ".fits")
         else:
             libFile = (libDir + "/library" + fixedEkeV + "keV_PL" +
                        str(nsamples) + "_" + str(nSimPulsesLib) + "p" +
                        smprtStr + jitterStr + noiseStr + bbfbStr + LcStr +
-                       ".fits")
+                       pBStr + ".fits")
     libFile = libFile.replace(".fits", libTmpl+".fits")
 
     root = ''.join([str(nSimPulses), 'p_SIRENA', str(nsamples), '_pL',
                     str(pulseLength), '_', mono1EkeV, 'keV_', mono2EkeV,
-                    'keV_', TRIGG, "_", str(filterMeth), str(fdomain), '_',
+                    'keV_', TRIGG, "_", str(fdomain), '_',
                     str(labelLib), '_', str(reconMethod), str(filterLength),
-                    reconMethod2, smprtStr, jitterStr, noiseStr, bbfbStr, LcStr])
+                    reconMethod2, pBStr + smprtStr, jitterStr, noiseStr,
+                    bbfbStr, LcStr, s0Str])
     if mono2EkeV == "0":
         root = ''.join([str(nSimPulses), 'p_SIRENA', str(nsamples), '_pL',
                         str(pulseLength), '_', mono1EkeV, 'keV_', TRIGG, "_",
-                        str(filterMeth), str(fdomain), '_', str(labelLib),
+                        str(fdomain), '_', str(labelLib),
                         '_', str(reconMethod), str(filterLength),
-                        reconMethod2, smprtStr, jitterStr, noiseStr, bbfbStr, LcStr])
+                        reconMethod2, pBStr, smprtStr, jitterStr, noiseStr,
+                        bbfbStr, LcStr, s0Str])
 
     eresolFile = "eresol_" + root + ".json"
     eresolFile = eresolFile.replace(".json", libTmpl+".json")
@@ -1132,7 +1155,7 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
         print("Working in:", outDir)
         print("Using file: ", inFile)
         print("Using library: ", libFile)
-        #print("Using noisefile: ", noiseFile)
+        # print("Using noisefile: ", noiseFile)
         print("Setting evtFile: ", evtFile)
         print("=============================================")
 
@@ -1163,12 +1186,14 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
                     " opmode=1 " + noiseParam +
                     " OFLib=" + OFLib + " FilterDomain=" + fdomain +
                     " detectionMode=" + detMethod + " detectSP=" + str(detSP) +
-                    " FilterMethod=" + filterMeth + " clobber=yes" +
+                    " clobber=yes" +
                     " EventListSize=1000" + " EnergyMethod=" + reconMethod +
-                    " LagsOrNot=1" + " tstartPulse1=" + str(tstartPulse1) +
+                    " LagsOrNot=" + str(lags) +
+                    " tstartPulse1=" + str(tstartPulse1) +
                     " tstartPulse2=" + str(tstartPulse2) +
                     " OFNoise=" + ofnoise + " XMLFile=" + XMLsixte +
-                    " filtEeV=" + str(filtEeV) + OFstrategy)
+                    " filtEeV=" + str(filtEeV) + OFstrategy +
+                    " preBuffer=" + str(pB) + s0Param)
             try:
                 print(comm)
                 args = shlex.split(comm)
@@ -1198,6 +1223,7 @@ def convertEnergies(inFile, outFile, coeffsFile, alias):
                     (non-calibrated) energies
     :param coeffsFile: file with coefficients of polynomial
                     fit to gain curves from polyfit2bias.R
+                    or JSON file with data points for spline fitting
     :param alias: string to select reconstruction type in
                     the coefficients table
     :param outFile: file with reconstructed/calibrated energies
@@ -1215,10 +1241,11 @@ def convertEnergies(inFile, outFile, coeffsFile, alias):
     # read Erecons (SIGNAL) column in numpy array (in keV)
     ftab = f[1].data
     EreconKeV = np.array(ftab['SIGNAL'])
+    reconPhase = np.array(ftab['PHI'])
 
     # calculate corrected energies with polyfit coeffs
     print("...Calculating corrected energies for pulses in ", inFile)
-    EcorrKeV = enerToCalEner(EreconKeV, coeffsFile, alias)
+    EcorrKeV = enerToCalEner(EreconKeV, reconPhase, coeffsFile, alias)
 
     # close input file
     f.close()
@@ -1231,7 +1258,7 @@ def convertEnergies(inFile, outFile, coeffsFile, alias):
     f = fits.open(outFile, memmap=True, mode='update')
     hdr = f[0].header
     hdr['HISTORY'] = ("Updated by convertEnergies.py to correct "
-                      "energies by gainscale")
+                      "energies by gainscale using", coeffsFile)
     ftab = f[1].data
     ftab['SIGNAL'] = EcorrKeV
     f.close()
@@ -1519,65 +1546,105 @@ def updateHISTORY(file, history):
     print(histSplit)
 
 
-def enerToCalEner(inEner, coeffsFile, alias):
+def enerToCalEner(inEner, inPhase, coeffsFile, alias):
     """
     :param inEner: numpy array with input uncorrected energies
+    :param inPhase: numpy array with input phases (jitter)
     :param coeffsFile: file with coefficients of polynomial fit to gain curves
-                        from polyfit2bias.R
+                        from polyfit2bias.R or surface 2D polynomial or
+                        JSON file with data points for spline fit
     :param alias: string to select reconstruction type in the
-                        coefficients table
+                        coefficients table (if gainScale curve)
     :return calEner: numpy vector with calibrated energies
     """
 
     # locate coefficients in calibration table
     # ----------------------------------------
     coeffsDict = dict()
-    if coeffsFile:
+    with open(coeffsFile, "rt") as f:
+        fileCont = f.read()   # JSON file
+        if 'surface' in fileCont:
+            ftype = "surface"
+        elif fileCont[0] == '{':
+            ftype = 'json'
+        else:
+            ftype = 'poly'
+
+    if ftype == 'poly':
         codata = ascii.read(coeffsFile, guess=False, format='basic')
         # codata[1] : row 2
         # codata[1][1]: row 2, col 2
+        print("Reading curve coefficients from", coeffsFile, "\n")
         for i in range(0, len(codata)):
             #  METHOD   ALIAS  a0  a1  a2  a3  a4
             coeffsDict[codata[i][1]] = (codata[i][2], codata[i][3],
                                         codata[i][4], codata[i][5],
                                         codata[i][6])
+        npCoeffs = np.array(coeffsDict[alias])
+    elif ftype == 'surface':
+        print("Reading surface coefficients from", coeffsFile, "\n")
+        npCoeffs = np.loadtxt(coeffsFile, comments="#")
+    elif ftype == 'json':
+        with open(coeffsFile, 'r') as f:
+            jsonDict = json.load(f)
+        nalias = len(jsonDict["ALIAS"])
+        aliasidx = jsonDict["ALIAS"].index(alias)
+        if len(jsonDict["xdata"]) % nalias == 0:
+            nEnerCal = len(jsonDict["xdata"])//nalias
+        else:
+            raise ValueError("Length of xdata is not a multiple of number"
+                             " of calibration energies")
+        stridx = nEnerCal*aliasidx
+        endidx = stridx + nEnerCal
+        xdata = jsonDict["xdata"][stridx:endidx]
+        ydata = jsonDict["ydata"][stridx:endidx]
+        funinterp = interp1d(xdata, ydata, kind="linear",
+                             fill_value="extrapolate")
+    else:
+        raise ValueError("Incorrect Coeffs file type")
 
     calEner = np.zeros(inEner.size, dtype=float)
     ie = 0
 
+    # print("npCoeffs=",npCoeffs)
     #
     # convert energies
     #
-    for ie in range(0, inEner.size):
-        # read fitting coeffs taken from polyfit2Bias.R (a0, a1, a2, a3)
-        #  as in y = a0 + a1*x + a2*x^2 + a3*x^3
-        # where y=E_reconstructed and x=Ecalibration (keV)
+    if ftype == 'surface':
+        # print("Using surface to calibrate reconstructed energies\n")
+        calEner[ie] = np.polynomial.polynomial.polyval2d(
+                inEner, inPhase, npCoeffs)
+    elif ftype == 'poly':
+        for ie in range(0, inEner.size):
+            # read fitting coeffs taken from polyfit2Bias.R (a0, a1, a2, a3)
+            #  as in y = a0 + a1*x + a2*x^2 + a3*x^3
+            # where y=E_reconstructed and x=Ecalibration (keV)
 
-        coeffs = coeffsDict[alias]
-        # print("SIGNAL=", inEner[ie], "coeffs=", coeffs)
-        npCoeffs = np.array(coeffs)
-        # print("npCoeffs=",npCoeffs)
+            # print("Using curve to calibrate reconstructed energies\n")
+            # subtract "y" (0 = a0 + a1*x + a2*x^2 + ... - y) :
+            npCoeffs = np.array(coeffsDict[alias])
+            npCoeffs[0] -= inEner[ie]
+            # reversed to say fit with poly1d definition:
+            npCoeffsRev = npCoeffs[::-1]
+            polyfit = np.poly1d(npCoeffsRev)
+            # get real root (value of Ereal for a given Erecons )
+            r = np.roots(polyfit)
+            # real && >0 roots
+            # print("r=", r)
+            rreal = r.real[abs(r.imag) < 1e-5]
+            # print("rreal=", rreal)
+            rrealpos = rreal[rreal > 0]
+            # print("rrealpos=", rrealpos)
+            # closest root
+            # print(inEner[ie])
+            rclosest = min(enumerate(rrealpos),
+                           key=lambda x: abs(x[1]-inEner[ie]))[1]  # (idx,value)
+            # print("For:", alias, " Recon energy=",rclosest)
 
-        # subtract "y" (0 = a0 + a1*x + a2*x^2 + ... - y) :
-        npCoeffs[0] -= inEner[ie]
-        # reversed to say fit with poly1d definition:
-        npCoeffsRev = npCoeffs[::-1]
-        polyfit = np.poly1d(npCoeffsRev)
-        # get real root (value of Ereal for a given Erecons )
-        r = np.roots(polyfit)
-        # real && >0 roots
-        # print("r=", r)
-        rreal = r.real[abs(r.imag) < 1e-5]
-        # print("rreal=", rreal)
-        rrealpos = rreal[rreal > 0]
-        # print("rrealpos=", rrealpos)
-        # closest root
-        # print(inEner[ie])
-        rclosest = min(enumerate(rrealpos),
-                       key=lambda x: abs(x[1]-inEner[ie]))[1]  # (idx,value)
-        # print("For:", alias, " Recon energy=",rclosest)
+            calEner[ie] = rclosest
 
-        calEner[ie] = rclosest
+    elif ftype == 'json':
+        calEner = inEner/funinterp(inEner)
 
     # return calibrated energies
     # ------------------------------------
