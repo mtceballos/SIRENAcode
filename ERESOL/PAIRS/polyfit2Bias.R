@@ -10,6 +10,7 @@ library(Hmisc)
 library(rjson)
 library(FITSio)
 library("RColorBrewer")
+source("~/R/Rfunctions/drawLogPlotBox.r")
 
 #
 # Initialize variables
@@ -20,9 +21,10 @@ nSimPulses <- "5000" # "20000"
 separation <- 40000 #for samprate (corrected below for samprate2)
 gainScaleID <-"methods_shortFilters"   # !!!! CHECK METHODS BELOW !!!!!
 gainScaleID <-"methods_longFilter_zeroPadding"   # !!!! CHECK METHODS BELOW !!!!!
-#gainScaleID <-"methods_longFilter_zeroPadding_OPTFILT"   # !!!! CHECK METHODS BELOW !!!!!
+gainScaleID <-"methods_longFilter_zeroPadding_ADC_I2R"   # !!!! CHECK METHODS BELOW !!!!!
+gainScaleID <-"methods_allFilter_ADC_I2R"   # !!!! CHECK METHODS BELOW !!!!!
 EkeV <- c(0.2,0.5,1,2,3,4,5,6,7,8)
-#EkeV <- c(1,2,3,4,5,6,7,8)
+EkeV <- c(0.2,0.5,1,2,3,4,5,6,7)
 #nIntervals <- 50000
 nIntervals <- 0
 noiseMat<-""
@@ -32,7 +34,7 @@ setwd(paste("/home/ceballos/INSTRUMEN/EURECA/ERESOL/PAIRS/eresol",array,sep=""))
 #coeffsFile <- paste("coeffs_polyfit",noiseMat,".dat",sep="")
 pdf(paste("./PDFs/polyfit2Bias_",gainScaleID,".pdf",sep=""),width=10, height=7)
 coeffsFile <- paste("coeffs_polyfit_",gainScaleID,".dat",sep="")
-
+splineFile <- paste("spline_forfit_",gainScaleID,".json",sep="")
 dcmt<- 100
 dcmt<- 1
 
@@ -87,13 +89,20 @@ adc3cols = rep("green",9)
 i2rcols = rev(brewer.pal(n = 9, name = "Oranges"))
 #adccols = rainbow(6)
 #adccols=c("blue4", "blue", "cornflowerblue","cadetblue","blueviolet","darkmagenta")
-pL8192fixed6OF8192smprtSTCBbfb <-
-    list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_jitter_bbfb",sep=""),
-         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
-         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
-         color=adccols[1], point=1, ltype=1,
-         lab="OF_ADC (pL8192,ofL8192,6keV, STC, s1, bbfb)")
-#--
+
+adc0cols = rep("blue4",9)
+adcSHcols = rep("cornflowerblue",9)
+adcPBcols = rep("blueviolet",9)
+adcNMcols = rep("turquoise",9)
+
+i2r0cols = rep("darkorange4",9)
+i2rSHcols = rep("darkorange",9)
+i2rPB50cols = rep("brown3",9)
+i2rPB100cols = rep("gold4",9)
+
+###### OPTFILT  ############
+
+#--Lc
 pL8192fixed6OF8192smprtSTCBbfb0.7Lc <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_jitter_bbfb_0.7Lc",sep=""),pLength=8192,
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="", LcStr="_0.7Lc",
@@ -125,168 +134,311 @@ pL8192fixed6OF8192smprtSTCBbfb0.35Lc <-
          color=adccols[1], point=1, ltype=1,
          lab="OF_ADC (pL8192,ofL8192,6keV, STC, s1, bbfb, 0.35Lc)")
 #--
+pL8192fixed6OF8192smprtSTCBbfb <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
+         color=adc0cols[1], point=1, ltype=1,
+         lab="OF_ADC (pL8192,ofL8192,6keV, STC, s1, bbfb)")
+
 pL4096fixed6OF8192smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=4096,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
-         color=adccols[2], point=2, ltype=1,
+         color=adc0cols[2], point=2, ltype=1,
          lab="OF_ADC (pL4096,ofL8192,6keV, STC, s1, bbfb)")
 pL8192fixed6OF4096smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT4096_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=4096,
-         color=adccols[2], point=2, ltype=1,
+         color=adcSHcols[2], point=2, ltype=1,
          lab="OF_ADC (pL8192,ofL4096,6keV, STC, s1, bbfb)")
-pL8192fixed6OF4096smprtSTCBbfb_pB500 <-
-    list(name=paste("STC_T_fixedlib6OF_OPTFILT4096_pB500_jitter_bbfb",sep=""),
+pL8192fixed6OF4096smprtSTCBbfb_pB50 <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT4096_pB50_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=4096,
-         color=adc2cols[1], point=2, ltype=1, 
-         lab="OF_ADC (pL8192,ofL4096,6keV, STC, s1, bbfb, pB500)")
-pL8192fixed6OF4096smprtSTCBbfb_pB990 <-
-    list(name=paste("STC_T_fixedlib6OF_OPTFILT4096_pB990_jitter_bbfb",sep=""),
-         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
-         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=4096,
-         color=adc3cols[1], point=2, ltype=1, 
-         lab="OF_ADC (pL8192,ofL4096,6keV, STC, s1, bbfb, pB990)")
+         color=adcPBcols[2], point=2, ltype=1, 
+         lab="OF_ADC (pL8192,ofL4096,6keV, STC, s1, bbfb, pB50)")
 
 pL2048fixed6OF8192smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=2048,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
-         color=adccols[3], point=3, ltype=1,
+         color=adc0cols[3], point=3, ltype=1,
          lab="OF_ADC (pL2048,ofL8192,6keV, STC, s1, bbfb)")
 pL8192fixed6OF2048smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT2048_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=2048,
-         color=adccols[3], point=3, ltype=1,
+         color=adcSHcols[3], point=3, ltype=1,
          lab="OF_ADC (pL8192,ofL2048,6keV, STC, s1, bbfb)")
-pL8192fixed6OF2048smprtSTCBbfb_pB500 <-
-    list(name=paste("STC_T_fixedlib6OF_OPTFILT2048_pB500_jitter_bbfb",sep=""),
+pL8192fixed6OF2048smprtSTCBbfb_pB50 <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT2048_pB50_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=2048,
-         color=adc2cols[2], point=3, ltype=1,
-         lab="OF_ADC (pL8192,ofL2048,6keV, STC, s1, bbfb, pB500)")
-pL8192fixed6OF2048smprtSTCBbfb_pB990 <-
-    list(name=paste("STC_T_fixedlib6OF_OPTFILT2048_pB990_jitter_bbfb",sep=""),
-         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
-         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=2048,
-         color=adc3cols[2], point=3, ltype=1,
-         lab="OF_ADC (pL8192,ofL2048,6keV, STC, s1, bbfb, pB990)")
+         color=adcPBcols[3], point=3, ltype=1,
+         lab="OF_ADC (pL8192,ofL2048,6keV, STC, s1, bbfb, pB50)")
+
 pL1024fixed6OF8192smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=1024,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
-         color=adccols[4], point=4, ltype=1,
+         color=adc0cols[4], point=4, ltype=1,
          lab="OF_ADC (pL1024,ofL8192,6keV, STC, s1, bbfb)")
 pL8192fixed6OF1024smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT1024_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=1024,
-         color=adccols[4], point=4, ltype=1,
+         color=adcSHcols[4], point=4, ltype=1,
          lab="OF_ADC (pL8192,ofL1024,6keV, STC, s1, bbfb)")
-pL8192fixed6OF1024smprtSTCBbfb_pB500 <-
-    list(name=paste("STC_T_fixedlib6OF_OPTFILT1024_pB500_jitter_bbfb",sep=""),
+pL8192fixed6OF1024smprtSTCBbfb_pB50 <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT1024_pB50_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=1024,
-         color=adc2cols[3], point=4, ltype=1, 
-         lab="OF_ADC (pL8192,ofL1024,6keV, STC, s1, bbfb, pB500)")
-pL8192fixed6OF1024smprtSTCBbfb_pB990 <-
-    list(name=paste("STC_T_fixedlib6OF_OPTFILT1024_pB990_jitter_bbfb",sep=""),
-         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
-         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=1024,
-         color=adc3cols[3], point=4, ltype=1, 
-         lab="OF_ADC (pL8192,ofL1024,6keV, STC, s1, bbfb, pB990)")
+         color=adcPBcols[4], point=4, ltype=1, 
+         lab="OF_ADC (pL8192,ofL1024,6keV, STC, s1, bbfb, pB50)")
 
 pL512fixed6OF8192smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=512,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
-         color=adccols[5], point=5, ltype=1,
+         color=adc0cols[5], point=5, ltype=1,
          lab="OF_ADC (pL512,ofL8192,6keV, STC, s1, bbfb)")
+pL512fixed6OF8192smprtSTCBbfbSUM0 <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_jitter_bbfb_Sum0Filt",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=512,
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
+         color="black", point=5, ltype=1, Sum0Filt=1,
+         lab="OF_ADC (pL512,ofL8192,6keV, STC, s1, bbfb, SUM0)")
 pL8192fixed6OF512smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT512_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=512,
-         color=adccols[5], point=5, ltype=1,
+         color=adcSHcols[5], point=5, ltype=1,
          lab="OF_ADC (pL8192,ofL512,6keV, STC, s1, bbfb)")
-pL8192fixed6OF512smprtSTCBbfb_pB500 <-
-    list(name=paste("STC_T_fixedlib6OF_OPTFILT512_pB500_jitter_bbfb",sep=""),
+pL8192fixed6OF512smprtSTCBbfb_pB50 <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT512_pB50_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=512,
-         color=adc2cols[4], point=5, ltype=1, 
-         lab="OF_ADC (pL8192,ofL512,6keV, STC, s1, bbfb, pB500)")
-pL8192fixed6OF512smprtSTCBbfb_pB990 <-
-    list(name=paste("STC_T_fixedlib6OF_OPTFILT512_pB990_jitter_bbfb",sep=""),
-         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
-         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=512,
-         color=adc3cols[4], point=5, ltype=1, 
-         lab="OF_ADC (pL8192,ofL512,6keV, STC, s1, bbfb, pB990)")
+         color=adcPBcols[5], point=5, ltype=1, 
+         lab="OF_ADC (pL8192,ofL512,6keV, STC, s1, bbfb, pB50)")
 
 pL256fixed6OF8192smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=256,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
-         color=adccols[6], point=6, ltype=1,
+         color=adc0cols[6], point=6, ltype=1,
          lab="OF_ADC (pL256,ofL8192,6keV, STC, s1, bbfb)")
 pL8192fixed6OF256smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT256_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=256,
-         color=adccols[6], point=6, ltype=1,
+         color=adcSHcols[6], point=6, ltype=1,
          lab="OF_ADC (pL8192,ofL256,6keV, STC, s1, bbfb)")
-pL8192fixed6OF256smprtSTCBbfb_pB500 <-
-    list(name=paste("STC_T_fixedlib6OF_OPTFILT256_pB500_jitter_bbfb",sep=""),
+pL8192fixed6OF256smprtSTCBbfb_pB50 <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT256_pB50_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=256,
-         color=adc2cols[5], point=6, ltype=1, 
-         lab="OF_ADC (pL8192,ofL256,6keV, STC, s1, bbfb, pB500)")
-pL8192fixed6OF256smprtSTCBbfb_pB990 <-
-    list(name=paste("STC_T_fixedlib6OF_OPTFILT256_pB990_jitter_bbfb",sep=""),
-         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
-         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=256,
-         color=adc3cols[5], point=6, ltype=1, 
-         lab="OF_ADC (pL8192,ofL256,6keV, STC, s1, bbfb, pB990)")
+         color=adcPBcols[6], point=6, ltype=1, 
+         lab="OF_ADC (pL8192,ofL256,6keV, STC, s1, bbfb, pB50)")
 
 pL128fixed6OF8192smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=128,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
-         color=adccols[7], point=7, ltype=1,
+         color=adc0cols[7], point=7, ltype=1,
          lab="OF_ADC (pL128,ofL8192,6keV, STC, s1, bbfb)")
 pL8192fixed6OF128smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT128_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=128,
-         color=adccols[7], point=7, ltype=1,
+         color=adcSHcols[7], point=7, ltype=1,
          lab="OF_ADC (pL8192,ofL128,6keV, STC, s1, bbfb)")
-pL8192fixed6OF128smprtSTCBbfb_pB500 <-
-    list(name=paste("STC_T_fixedlib6OF_OPTFILT128_pB500_jitter_bbfb",sep=""),
+pL8192fixed6OF128smprtSTCBbfb_pB50 <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT128_pB50_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=128,
-         color=adc2cols[6], point=7, ltype=1, 
-         lab="OF_ADC (pL8192,ofL128,6keV, STC, s1, bbfb, pB500)")
-pL8192fixed6OF128smprtSTCBbfb_pB990 <-
-    list(name=paste("STC_T_fixedlib6OF_OPTFILT128_pB990_jitter_bbfb",sep=""),
+         color=adcPBcols[7], point=7, ltype=1, 
+         lab="OF_ADC (pL8192,ofL128,6keV, STC, s1, bbfb, pB50)")
+
+##### I2R BBFB ########
+pL8192fixed6I2R8192smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
+         color=i2r0cols[1], point=1, ltype=1,
+         lab="OF_R (pL8192,ofL8192,6keV, STC, s1, bbfb)")
+
+pL4096fixed6I2R8192smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=4096,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
+         color=i2r0cols[2], point=2, ltype=1,
+         lab="OF_R (pL4096,ofL8192,6keV, STC, s1, bbfb)")
+pL8192fixed6I2R4096smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R4096_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=4096,
+         color=i2rSHcols[2], point=2, ltype=1,
+         lab="OF_R (pL8192,ofL4096,6keV, STC, s1, bbfb)")
+pL8192fixed6I2R4096smprtSTCBbfb_pB50 <-
+    list(name="STC_T_fixedlib6OF_I2R4096_pB50_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=4096,
+         color=i2rPB50cols[2], point=2, ltype=1,
+         lab="OF_R (pL8192,ofL4096,6keV, STC, s1, bbfb, pB50)")
+pL8192fixed6I2R4096smprtSTCBbfb_pB100 <-
+    list(name="STC_T_fixedlib6OF_I2R4096_pB100_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=4096,
+         color=i2rPB100cols[2], point=2, ltype=2,
+         lab="OF_R (pL8192,ofL4096,6keV, STC, s1, bbfb, pB100)")
+
+pL2048fixed6I2R8192smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=2048,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
+         color=i2r0cols[3], point=3, ltype=1,
+         lab="OF_R (pL2048,ofL8192,6keV, STC, s1, bbfb)")
+pL8192fixed6I2R2048smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R2048_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=2048,
+         color=i2rSHcols[3], point=3, ltype=1,
+         lab="OF_R (pL8192,ofL2048,6keV, STC, s1, bbfb)")
+pL8192fixed6I2R2048smprtSTCBbfb_pB50 <-
+    list(name="STC_T_fixedlib6OF_I2R2048_pB50_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=2048,
+         color=i2rPB50cols[3], point=3, ltype=1,
+         lab="OF_R (pL8192,ofL2048,6keV, STC, s1, bbfb, pB50)")
+pL8192fixed6I2R2048smprtSTCBbfb_pB100 <-
+    list(name="STC_T_fixedlib6OF_I2R2048_pB100_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=2048,
+         color=i2rPB100cols[3], point=3, ltype=2,
+         lab="OF_R (pL8192,ofL2048,6keV, STC, s1, bbfb, pB100)")
+
+pL1024fixed6I2R8192smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=1024,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
+         color=i2r0cols[4], point=4, ltype=1,
+         lab="OF_R (pL1024,ofL8192,6keV, STC, s1, bbfb)")
+pL8192fixed6I2R1024smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R1024_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=1024,
+         color=i2rSHcols[4], point=4, ltype=1,
+         lab="OF_R (pL8192,ofL1024,6keV, STC, s1, bbfb)")
+pL8192fixed6I2R1024smprtSTCBbfb_pB50 <-
+    list(name="STC_T_fixedlib6OF_I2R1024_pB50_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=1024,
+         color=i2rPB50cols[4], point=4, ltype=1,
+         lab="OF_R (pL8192,ofL1024,6keV, STC, s1, bbfb, pB50)")
+pL8192fixed6I2R1024smprtSTCBbfb_pB100 <-
+    list(name="STC_T_fixedlib6OF_I2R1024_pB100_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=1024,
+         color=i2rPB100cols[4], point=4, ltype=2,
+         lab="OF_R (pL8192,ofL1024,6keV, STC, s1, bbfb, pB100)")
+
+pL512fixed6I2R8192smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=512,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
+         color=i2r0cols[5], point=5, ltype=1,
+         lab="OF_R (pL512,ofL8192,6keV, STC, s1, bbfb)")
+pL8192fixed6I2R512smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R512_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=512,
+         color=i2rSHcols[5], point=5, ltype=1,
+         lab="OF_R (pL8192,ofL512,6keV, STC, s1, bbfb)")
+pL8192fixed6I2R512smprtSTCBbfb_pB50 <-
+    list(name="STC_T_fixedlib6OF_I2R512_pB50_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=512,
+         color=i2rPB50cols[5], point=5, ltype=1,
+         lab="OF_R (pL8192,ofL512,6keV, STC, s1, bbfb, pB50)")
+pL8192fixed6I2R512smprtSTCBbfb_pB100 <-
+    list(name="STC_T_fixedlib6OF_I2R512_pB100_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=512,
+         color=i2rPB100cols[5], point=5, ltype=2,
+         lab="OF_R (pL8192,ofL512,6keV, STC, s1, bbfb, pB100)")
+
+pL256fixed6I2R8192smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=256,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
+         color=i2r0cols[6], point=6, ltype=1,
+         lab="OF_R (pL256,ofL8192,6keV, STC, s1, bbfb)")
+pL8192fixed6I2R256smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R256_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=256,
+         color=i2rSHcols[6], point=6, ltype=1,
+         lab="OF_R (pL8192,ofL256,6keV, STC, s1, bbfb)")
+pL8192fixed6I2R256smprtSTCBbfb_pB50 <-
+    list(name=paste("STC_T_fixedlib6OF_I2R256_pB50_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
-         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=128,
-         color=adc3cols[6], point=7, ltype=1, 
-         lab="OF_ADC (pL8192,ofL128,6keV, STC, s1, bbfb, pB990)")
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_I2R", ofLength=256,
+         color=i2rPB50cols[6], point=6, ltype=1, 
+         lab="OF_R (pL8192,ofL256,6keV, STC, s1, bbfb, pB50)")
+pL8192fixed6I2R256smprtSTCBbfb_pB100 <-
+    list(name=paste("STC_T_fixedlib6OF_I2R256_pB100_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_I2R", ofLength=256,
+         color=i2rPB100cols[6], point=6, ltype=2, 
+         lab="OF_R (pL8192,ofL256,6keV, STC, s1, bbfb, pB100)")
+
+pL128fixed6I2R8192smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=128,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
+         color=i2r0cols[7], point=7, ltype=1,
+         lab="OF_R (pL128,ofL8192,6keV, STC, s1, bbfb)")
+pL8192fixed6I2R128smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R128_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=128,
+         color=i2rSHcols[7], point=7, ltype=1,
+         lab="OF_R (pL8192,ofL128,6keV, STC, s1, bbfb)")
+pL8192fixed6I2R128smprtSTCBbfb_pB50 <-
+    list(name=paste("STC_T_fixedlib6OF_I2R128_pB50_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_I2R", ofLength=128,
+         color=i2rPB50cols[7], point=7, ltype=1, 
+         lab="OF_R (pL8192,ofL128,6keV, STC, s1, bbfb, pB50)")
+pL8192fixed6I2R128smprtSTCBbfb_pB100 <-
+    list(name=paste("STC_T_fixedlib6OF_I2R128_pB100_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_I2R", ofLength=128,
+         color=i2rPB100cols[7], point=7, ltype=1, 
+         lab="OF_R (pL8192,ofL128,6keV, STC, s1, bbfb, pB100)")
+
 
 # OFNM BBFB
 pL8192fixed6OF8192NM50000smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT8192NM50000_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
-         color=adccols[1], point=2, ltype=0,
+         color=adcNMcols[1], point=2, ltype=0,
          lab="OF_ADC_NM(pL8192,ofL8192,50000int,6keV,STC,s1,bbfb)")
 pL4096fixed6OF8192NM50000smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT8192NM50000_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=4096,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
-         color=adccols[2], point=17, ltype=0,
+         color=adcNMcols[2], point=17, ltype=0,
          lab="OF_ADC_NM(pL4096,ofL8192,50000int,6keV,STC,s1,bbfb)")
+pL1024fixed6OF1024NM50000smprtSTCBbfb <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT1024NM50000_jitter_bbfb",sep=""),
+         nSamples=1024, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=1024,
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=1024,
+         color=adcNMcols[3], point=4, ltype=0,
+         lab="OF_ADC_NM(pL1024,ofL1024,50000int,6keV,STC,s1,bbfb)")
 
 pL8192fixed6I2R8192NM150000smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_I2R8192NM150000_jitter_bbfb",sep=""),
@@ -314,50 +466,6 @@ fixed6OF8192smprtSTCnnBbfb <-
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
          color="blue", point=19, ltype=1,
          lab="OF_ADC (8192,6keV, STC, s1, nonoise, bbfb)")
-# I2R BBFB
-pL8192fixed6I2R8192smprtSTCBbfb <-
-    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
-         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
-         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
-         color=i2rcols[1], point=1, ltype=1,
-         lab="OF_R (pL8192,ofL8192,6keV, STC, s1, bbfb)")
-pL4096fixed6I2R8192smprtSTCBbfb <-
-    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
-         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=4096,
-         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
-         color=i2rcols[2], point=2, ltype=1,
-         lab="OF_R (pL4096,ofL8192,6keV, STC, s1, bbfb)")
-pL2048fixed6I2R8192smprtSTCBbfb <-
-    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
-         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=2048,
-         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
-         color=i2rcols[3], point=3, ltype=1,
-         lab="OF_R (pL2048,ofL8192,6keV, STC, s1, bbfb)")
-pL1024fixed6I2R8192smprtSTCBbfb <-
-    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
-         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=1024,
-         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
-         color=i2rcols[4], point=4, ltype=1,
-         lab="OF_R (pL1024,ofL8192,6keV, STC, s1, bbfb)")
-pL512fixed6I2R8192smprtSTCBbfb <-
-    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
-         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=512,
-         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
-         color=i2rcols[5], point=5, ltype=1,
-         lab="OF_R (pL512,ofL8192,6keV, STC, s1, bbfb)")
-pL256fixed6I2R8192smprtSTCBbfb <-
-    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
-         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=256,
-         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
-         color=i2rcols[6], point=6, ltype=1,
-         lab="OF_R (pL256,ofL8192,6keV, STC, s1, bbfb)")
-pL128fixed6I2R8192smprtSTCBbfb <-
-    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
-         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=128,
-         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
-         color=i2rcols[7], point=7, ltype=1,
-         lab="OF_R (pL128,ofL8192,6keV, STC, s1, bbfb)")
-
 # I2RNOL BBFB
 pL8192fixed6I2RNOL8192smprtSTCBbfb <-
     list(name="STC_T_fixedlib6OF_I2RNOL8192_jitter_bbfb", 
@@ -372,6 +480,14 @@ pL8192fixed6I2RFITTED8192smprtSTCBbfb <-
          noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2RFITTED", ofLength=8192,
          color="green", point=0, ltype=1,
          lab="OF_RFITTED (pL8192,ofL8192,6keV, STC, s1, bbfb)")
+
+# WEIGHTNOF   
+pL1024multilibWEIGHTN1024NM50000smprtSTCBbfb <-
+    list(name=paste("STC_T_multilibOF_WEIGHTN1024_jitter_bbfb",sep=""),
+         nSamples=1024, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=1024,
+         bbfbStr="_bbfb", detMethod="STC", lib="multilibOF_WEIGHTN", ofLength=1024,
+         color="darkgreen", point=4, ltype=0,
+         lab="OF_ADC_WEIGHTN(pL1024,ofL1024,50000int,STC,s1,bbfb)")
 
 # samprate2 = 78125 Hz
 pL4096fixed6OF4096smprt2STCnnBbfb <-
@@ -421,8 +537,7 @@ pL2048fixed6OF2048smprt4STCBbfb <-
 #                            lab="COVARIANCE MATRICES (Fixen)")
 # weightn         <- list(name="multilib_WEIGHTN", color="darkgreen", point=0, ltype=3,
 #                            lab="COVARIANCE MATRICES (0(n))")
-# weightnOF       <- list(name="multilibOF_WEIGHTN", color="darkgreen", point=1, ltype=2,
-#                         lab="COVARIANCE MATRICES OF (0(n))")
+
 # 
 #save(fixed6OFsmprtSTCnn,
 #     fixed6OF8192smprtSTCBbfb,fixed6OF8192smprtSTCnnBbfb,
@@ -444,12 +559,9 @@ save(
      pL8192fixed6OF2048smprtSTCBbfb, pL8192fixed6OF1024smprtSTCBbfb, 
      pL8192fixed6OF512smprtSTCBbfb,  pL8192fixed6OF256smprtSTCBbfb,  
      pL8192fixed6OF128smprtSTCBbfb,
-     pL8192fixed6OF4096smprtSTCBbfb_pB500, pL8192fixed6OF2048smprtSTCBbfb_pB500,
-     pL8192fixed6OF1024smprtSTCBbfb_pB500, pL8192fixed6OF512smprtSTCBbfb_pB500,
-     pL8192fixed6OF256smprtSTCBbfb_pB500,  pL8192fixed6OF128smprtSTCBbfb_pB500,
-     pL8192fixed6OF4096smprtSTCBbfb_pB990, pL8192fixed6OF2048smprtSTCBbfb_pB990,
-     pL8192fixed6OF1024smprtSTCBbfb_pB990, pL8192fixed6OF512smprtSTCBbfb_pB990,
-     pL8192fixed6OF256smprtSTCBbfb_pB990,  pL8192fixed6OF128smprtSTCBbfb_pB990,
+     pL8192fixed6OF4096smprtSTCBbfb_pB50, pL8192fixed6OF2048smprtSTCBbfb_pB50,
+     pL8192fixed6OF1024smprtSTCBbfb_pB50, pL8192fixed6OF512smprtSTCBbfb_pB50,
+     pL8192fixed6OF256smprtSTCBbfb_pB50,  pL8192fixed6OF128smprtSTCBbfb_pB50,
                                      pL4096fixed6OF8192smprtSTCBbfb, 
      pL2048fixed6OF8192smprtSTCBbfb, pL1024fixed6OF8192smprtSTCBbfb, 
      pL512fixed6OF8192smprtSTCBbfb,  pL256fixed6OF8192smprtSTCBbfb,  
@@ -458,8 +570,20 @@ save(
      pL2048fixed6I2R8192smprtSTCBbfb, pL1024fixed6I2R8192smprtSTCBbfb,
      pL512fixed6I2R8192smprtSTCBbfb,  pL256fixed6I2R8192smprtSTCBbfb,
      pL128fixed6I2R8192smprtSTCBbfb,
+     pL8192fixed6I2R4096smprtSTCBbfb_pB50, pL8192fixed6I2R2048smprtSTCBbfb_pB50,
+     pL8192fixed6I2R1024smprtSTCBbfb_pB50, pL8192fixed6I2R512smprtSTCBbfb_pB50,
+     pL8192fixed6I2R256smprtSTCBbfb_pB50,  pL8192fixed6I2R128smprtSTCBbfb_pB50,
+     pL8192fixed6I2R4096smprtSTCBbfb_pB100, pL8192fixed6I2R2048smprtSTCBbfb_pB100,
+     pL8192fixed6I2R1024smprtSTCBbfb_pB100, pL8192fixed6I2R512smprtSTCBbfb_pB100,
+     pL8192fixed6I2R256smprtSTCBbfb_pB100,  pL8192fixed6I2R128smprtSTCBbfb_pB100,
+     pL8192fixed6I2R4096smprtSTCBbfb, pL8192fixed6I2R2048smprtSTCBbfb,
+     pL8192fixed6I2R1024smprtSTCBbfb, pL8192fixed6I2R512smprtSTCBbfb,
+     pL8192fixed6I2R256smprtSTCBbfb,  pL8192fixed6I2R128smprtSTCBbfb,
      pL8192fixed6I2RNOL8192smprtSTCBbfb,
      pL8192fixed6I2RFITTED8192smprtSTCBbfb,
+     pL1024fixed6OF1024NM50000smprtSTCBbfb,
+     pL1024multilibWEIGHTN1024NM50000smprtSTCBbfb,
+     pL512fixed6OF8192smprtSTCBbfbSUM0,
      file="/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat")
 
 #===========================================================================================
@@ -495,27 +619,46 @@ if (length(grep("shortFilters",gainScaleID)) > 0){
     #                pL8192fixed6I2R8192smprtSTCBbfb,
     #                pL8192fixed6I2RNOL8192smprtSTCBbfb,
     #                pL8192fixed6I2RFITTED8192smprtSTCBbfb
-    )
+    #)
     #methods <- list(pL8192fixed6OF8192smprtSTCBbfb, 
     #                pL8192fixed6I2R8192smprtSTCBbfb,
     #                pL8192fixed6I2RNOL8192smprtSTCBbfb,
     #                pL8192fixed6I2RFITTED8192smprtSTCBbfb
     #)
-    #methods <- list(pL8192fixed6OF8192smprtSTCBbfb, pL4096fixed6OF8192smprtSTCBbfb,
-    #                pL2048fixed6OF8192smprtSTCBbfb, pL1024fixed6OF8192smprtSTCBbfb, 
-    #                pL512fixed6OF8192smprtSTCBbfb,  pL256fixed6OF8192smprtSTCBbfb, 
-    #                pL128fixed6OF8192smprtSTCBbfb,  
-    #                pL8192fixed6OF4096smprtSTCBbfb_pB500,
-    #                pL8192fixed6OF2048smprtSTCBbfb_pB500, pL8192fixed6OF1024smprtSTCBbfb_pB500, 
-    #                pL8192fixed6OF512smprtSTCBbfb_pB500,  pL8192fixed6OF256smprtSTCBbfb_pB500,  
-    #                pL8192fixed6OF128smprtSTCBbfb_pB500,
-    #                pL8192fixed6OF4096smprtSTCBbfb_pB990,
-    #                pL8192fixed6OF2048smprtSTCBbfb_pB990, pL8192fixed6OF1024smprtSTCBbfb_pB990, 
-    #                pL8192fixed6OF512smprtSTCBbfb_pB990,  pL8192fixed6OF256smprtSTCBbfb_pB990,  
-    #                pL8192fixed6OF128smprtSTCBbfb_pB990
-    #)
     
     cat("Using method for LongFilter\n")
+}else if(length(grep("allFilter",gainScaleID)) > 0){
+    methods <- list(pL8192fixed6OF8192smprtSTCBbfb, pL4096fixed6OF8192smprtSTCBbfb,
+                    pL2048fixed6OF8192smprtSTCBbfb, pL1024fixed6OF8192smprtSTCBbfb, 
+                    pL512fixed6OF8192smprtSTCBbfb,  pL256fixed6OF8192smprtSTCBbfb, 
+                    pL128fixed6OF8192smprtSTCBbfb, 
+                    pL8192fixed6OF4096smprtSTCBbfb, pL8192fixed6OF2048smprtSTCBbfb,
+                    pL8192fixed6OF1024smprtSTCBbfb, pL8192fixed6OF512smprtSTCBbfb,
+                    pL8192fixed6OF256smprtSTCBbfb, pL8192fixed6OF128smprtSTCBbfb,
+                    pL8192fixed6OF4096smprtSTCBbfb_pB50,
+                    pL8192fixed6OF2048smprtSTCBbfb_pB50, pL8192fixed6OF1024smprtSTCBbfb_pB50, 
+                    pL8192fixed6OF512smprtSTCBbfb_pB50,  pL8192fixed6OF256smprtSTCBbfb_pB50,  
+                    pL8192fixed6OF128smprtSTCBbfb_pB50,
+                    pL8192fixed6I2R8192smprtSTCBbfb, pL4096fixed6I2R8192smprtSTCBbfb,
+                    pL2048fixed6I2R8192smprtSTCBbfb, pL1024fixed6I2R8192smprtSTCBbfb,
+                    pL512fixed6I2R8192smprtSTCBbfb,  pL256fixed6I2R8192smprtSTCBbfb,
+                    pL128fixed6I2R8192smprtSTCBbfb,
+                    pL8192fixed6I2R4096smprtSTCBbfb, pL8192fixed6I2R2048smprtSTCBbfb,
+                    pL8192fixed6I2R1024smprtSTCBbfb, pL8192fixed6I2R512smprtSTCBbfb,
+                    pL8192fixed6I2R256smprtSTCBbfb, pL8192fixed6I2R128smprtSTCBbfb,
+                    pL8192fixed6I2R4096smprtSTCBbfb_pB50, pL8192fixed6I2R2048smprtSTCBbfb_pB50,
+                    pL8192fixed6I2R1024smprtSTCBbfb_pB50, pL8192fixed6I2R512smprtSTCBbfb_pB50,
+                    pL8192fixed6I2R256smprtSTCBbfb_pB50,  pL8192fixed6I2R128smprtSTCBbfb_pB50,
+                    pL8192fixed6I2R4096smprtSTCBbfb_pB100, pL8192fixed6I2R2048smprtSTCBbfb_pB100,
+                    pL8192fixed6I2R1024smprtSTCBbfb_pB100, pL8192fixed6I2R512smprtSTCBbfb_pB100,
+                    pL8192fixed6I2R256smprtSTCBbfb_pB100,  pL8192fixed6I2R128smprtSTCBbfb_pB100,
+                    pL1024fixed6OF1024NM50000smprtSTCBbfb,
+                    pL1024multilibWEIGHTN1024NM50000smprtSTCBbfb,
+                    pL512fixed6OF8192smprtSTCBbfbSUM0
+    )
+    #methods <- list(pL1024multilibWEIGHTN1024NM50000smprtSTCBbfb)
+    cat("Using method for allFilter\n")
+    
 }
 nmethods <- length(methods)
 
@@ -529,6 +672,7 @@ fwhmUNCORR  <- array(data=NA,dim=c(length(EkeV),nmethods)) # FWHM of Erecons
 # ======================
 meanEkeVfilt <- array(data=NA,dim=c(length(EkeV),nmethods))
 errmean      <- array(data=NA,dim=c(length(EkeV),nmethods))
+sigrobust    <- array(data=NA,dim=c(length(EkeV),nmethods))
 for (ie in 1:length(EkeV)){
     for (im in 1:nmethods){
         nSamples <- methods[[im]]$nSamples
@@ -584,6 +728,7 @@ for (ie in 1:length(EkeV)){
         EkeVrecons <- evtTable$col[[idcol]]
         meanEkeVfilt[ie,im] <- mean(EkeVrecons)
         errmean[ie,im] <- sd(EkeVrecons)/sqrt(nreconPulses)
+        sigrobust[ie,im] <- 0.7413*(quantile(EkeVrecons,0.75)-quantile(EkeVrecons,0.25))
 
         if(all(is.nan(fwhmUNCORR[ie,im]))){
             warning("Error in ",eresolFile,"\n","  Non numerical values in eresol files: check event files")
@@ -668,7 +813,7 @@ for (im in 1:nmethods){
 
 # PLOT polynomial fits over gain scale curve(s)
 legend("topleft",legend=MethodsLab, col=colors, pch=points, lty=ltypes,
-       cex=0.8,text.col=colors, bty="n")
+       cex=0.5,text.col=colors, bty="n")
 text(7,1,paste("Lines= poly fits to calib energies",sep=""), cex=0.8)
 
 # SAVE coefficients to coeffs table
@@ -689,10 +834,59 @@ mtext(bquote(paste(E[filt], " (keV)= a0 + a1 * ",E[cal]," + a2 * ",
 grid.table(coeffsTab, rows=NULL, theme=tt3)
 #legend("topleft", legend=fitLabel, title="Polynomial fit to Erecons vs Einput relation")
 
+#
+# Plot <Erecons>/Ereal vs <Erecons>
+# ===================================
+#plot(EkeV,EkeV,type="n",mgp=c(2,1,0),xlim=c(0,30),ylim=c(-2,3),
+#     ylab="Input Energy/Recons Energy", xlab="Reconstructed energy (keV)",
+#     main="GAIN SCALE (II)",log="y")
+library("splines")
+drawLogPlotBox(xlimits=c(0.1,28),ylimits=c(0.3,150),
+               logxy="y", xlabel="Reconstructed energy (keV)", 
+               ylabel="Input Energy/Recons Energy",
+               naxes=c(T,T,F,F))
+minor.tick(nx=5,ny=5,tick.ratio=0.5)
+title(main="GAIN SCALE(II) - linear spline")
+grid(nx=NA,ny=NULL)
+abline(h=1,lty=2,col="gray")
+splineList <- list(METHODS=MethodsLab, ALIAS=alias, 
+                  xdata=array(data=NA,dim=c(length(EkeV),nmethods)),
+                  ydata=array(data=NA,dim=c(length(EkeV),nmethods)))
+
+for (im in 1:nmethods){
+    # plot points and fit
+    xmeth <- meanEkeVfilt[,im]
+    ymeth <- meanEkeVfilt[,im]/EkeV
+    linfun <- approxfun(x=xmeth, y=log10(ymeth), method="linear")
+    pow10linfun <- function(x){
+        10**linfun(x)
+    }
+    
+    #splfun <- splinefun(x=xmeth, y=ymeth, method="monoH.FC")
+    #x.knots <- quantile(xmeth,probs=seq(0.2,0.8,0.2))
+    #splcub <- lm(ymeth~bs(xmeth,knots=x.knots))
+    points(xmeth,ymeth,pch=methods[[im]]$point,col=methods[[im]]$color, 
+               type="p",lty=1)
+    arrows(x0=xmeth-sigrobust[,im],x1=xmeth+sigrobust[,im],
+           y0=ymeth,y1=ymeth,length=0)
+    curve(pow10linfun,from=min(xmeth),to=max(xmeth),add=TRUE)
+    #curve(splfun,from=min(xmeth),to=max(xmeth),add=TRUE)
+    #xfit <- seq(min(xmeth),max(xmeth),length.out=101)
+    #yfit <- predict(splcub,newdata=data.frame(xmeth=xfit))
+    #lines(xfit,yfit)
+    splineList$xdata[,im] <- xmeth
+    splineList$ydata[,im] <- ymeth
+}
+#legend("topright",legend=MethodsLab, col=colors, pch=points, lty=ltypes,
+#       cex=0.8,text.col=colors, bty="n")
+spline.json <- toJSON(splineList,indent=1)
+write(spline.json, splineFile)
+
+#
+# Save fitting points (in JSON) for fitting/correction in convertEnergies.py
+# 
+
+
 setwd("/home/ceballos/INSTRUMEN/EURECA/ERESOL/PAIRS/")
 dev.off()
-
-
-
-
 
