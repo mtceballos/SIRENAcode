@@ -6,8 +6,8 @@
 #      - pairs as if secondary pulse has been missed (in noDetSP folder)
 #
 #
-#rm(list=ls())
-read=0
+rm(list=ls())
+read=1
 source("~/R/Rfunctions/drawLogPlotBox.r")
 library(scales)
 dcmt <- 100
@@ -35,7 +35,8 @@ nPairs <- 200
 npulses <- nPairs*2
 samprate <- 156250
 samprateStr="" # to name files with full samprate
-#samprateStr="_samprate2" # to name files with 1/2 samprate
+samprateStr="_samprate2" # to name files with 1/2 samprate
+sepSingles <- 40000
 
 filterLengths <- c(8192,512,256)
 pulseLength<- 8192   # pulse length
@@ -47,8 +48,10 @@ separationsBGplots <- sprintf("%05d", sort(c(seq(30,250,40),235,seq(345,470,10),
 
 if (samprateStr == "_samprate2"){
     samprate <- samprate/2.    
+    dcmt <- dcmt*2
     filterLengths <- filterLengths/2
     pulseLength<- pulseLength/2   # pulse length
+    sepSingles <- sepSingles/2
     xmax <- c(4200, 260, 150 )
     #separationsBGplots <- sprintf("%05d",
     #                       sort(c(15,seq(19,25,2),seq(16,34,2),35,seq(40,256,2),300,
@@ -69,7 +72,9 @@ nfilters <- length(filterLengths)
 seps.ms <- as.numeric(separationsBGplots)/samprate*1E3 #separations in ms
 minsep <- min(as.numeric(separationsBGplots))
 maxsep <- max(as.numeric(separationsBGplots))
-# --------------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------------
+
 
 if(read){
     arrayLowResEstimE <- array(data=NA,dim=c(nSinglePulses,nprims,nfilters))
@@ -92,7 +97,7 @@ for (ip in 1:nprims){
     for (ifl in 1:nfilters){
         fl <- filterLengths[ifl]
         # get reconstructed energies
-        eventsFile <- paste("eresolLPA75um/nodetSP/events_sep40000sam_5000p_SIRENA",
+        eventsFile <- paste("eresolLPA75um/nodetSP/events_sep",sepSingles,"sam_5000p_SIRENA",
                             pulseLength,"_pL",fl,"_",Eprims[ip],
                             "keV_STC_",domain,"_fixedlib",fEnergy,"OF_OPTFILT",pulseLength,
                             samprateStr,"_jitter_dcmt",dcmt,"_HR.fits",sep="")
@@ -138,6 +143,10 @@ for (ip in 1:nprims){
                                 "OF_OPTFILT",pulseLength,samprateStr,"_jitter_dcmt",
                                 dcmt,".fits",sep="")
                 #cat("  Reading file:", eventsFile,"\n")
+                try(if(! file.exists(eventsFile)) 
+                    stop(paste("Events file does not exist: Eprim=",
+                              Eprim, " Esec=", Esec, " sep=", separationsBGplots[iss],
+                              " fl=",fl,sep="")))
                 zz <- file(description = eventsFile, open = "rb")
                 header0 <- readFITSheader(zz, fixHdr = 'none') # read primary header
                 header <- readFITSheader(zz, fixHdr = 'none') # read extension header
@@ -178,8 +187,8 @@ for (ip in 1:nprims){
         for (ifl in 1:length(filterLengths)){
             fLength=filterLengths[ifl]
             # define orange band
-            bandMin <- min(EkeVrecons[,ip,ifl])
-            bandMax <- max(EkeVrecons[,ip,ifl])
+            bandMin <- min(EkeVrecons[,ip,ifl],na.rm = TRUE)
+            bandMax <- max(EkeVrecons[,ip,ifl],na.rm = TRUE)
         
             #
             # Draw reconstruction curves
