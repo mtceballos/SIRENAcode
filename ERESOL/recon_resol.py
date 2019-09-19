@@ -38,7 +38,7 @@ import xml.etree.ElementTree as ET
 cwd = os.getcwd()
 tmpDir = tempfile.mkdtemp()
 print(tmpDir)
-#input("stop here")
+# input("stop here")
 os.environ["PFILES"] = tmpDir + ":" + os.environ["PFILES"]
 os.environ["HEADASNOQUERY"] = ""
 os.environ["HEADASPROMPT"] = "/dev/null/"
@@ -84,10 +84,6 @@ if __name__ == "__main__":
                         help='Energy reconstruction Method (OPTFILT,\
                         OPTFILTNMnnnn, WEIGHT, WEIGHTN, I2R, I2RNMnnnn,\
                         I2RALL, I2RNOL, I2RFITTED)')
-    parser.add_argument('--filter', default='F0',
-                        choices=['F0', 'B0'],
-                        help='Optimal Filtering Method (F0, B0)\
-                        [default %(default)s]')
     parser.add_argument('--filterLength', type=int, default=0,
                         help='filter length for reconstruction')
     parser.add_argument('--nsamples', type=int,
@@ -102,18 +98,6 @@ if __name__ == "__main__":
                         choices=['F', 'T'],
                         help='Optimal Filtering domain (F(req) or T(ime))\
                         [default %(default)s]')
-    parser.add_argument('--scaleFactor', type=float, default=0.0,
-                        help='Param scaleFactor for detection\
-                        [default %(default)s]')
-    parser.add_argument('--samplesUp', type=int, default=0,
-                        help='Param samplesUp for detection\
-                        [default %(default)s]')
-    parser.add_argument('--samplesDown', type=int, default=0,
-                        help='Param samplesUp for detection\
-                        [default %(default)s]')
-    parser.add_argument('--nSgms', type=float, default=0,
-                        help='Param nSgms\
-                        for detection [default %(default)s]')
     parser.add_argument('--tstartPulse1', type=int, default=0,
                         help='Start sample for first pulse\
                         [default %(default)s]')
@@ -142,16 +126,15 @@ if __name__ == "__main__":
     parser.add_argument('--detSP', type=int, default=1,
                         help='Detect secondary pulses? (1=Y, 0=N)\
                         [default %(default)s]')
+    parser.add_argument('--preBuffer', default=0, type=int,
+                        help="preBuffer value for optimal filters")
+    parser.add_argument('--Sum0Filt', default=0, type=int,
+                        help="Optimal Filter SUM shoud be 0? (0=NO; 1=YES)")
 
     inargs = parser.parse_args()
 
     # print("array=",inargs.array)
-    if (inargs.nSgms == 0) and (inargs.tstartPulse1 == 0
-       and inargs.tstartPulse2 == 0):
-        print("Start sample of pulses or detection parameters \
-              must be provided")
-        sys.exit()
-
+    
     # rename input parameters
     pixName = inargs.pixName
     labelLib = inargs.labelLib
@@ -164,7 +147,6 @@ if __name__ == "__main__":
     mono1EkeV = inargs.monoEnergy1
     mono2EkeV = inargs.monoEnergy2
     reconMethod = inargs.reconMethod
-    filterMeth = inargs.filter
     filterLength = inargs.filterLength
     nsamples = inargs.nsamples
     pulseLength = inargs.pulseLength
@@ -179,6 +161,8 @@ if __name__ == "__main__":
     resultsDir = inargs.resultsDir
     sepsStr = inargs.separations
     detSP = inargs.detSP
+    pB = inargs.preBuffer
+    s0 = inargs.Sum0Filt
 
     # general definitions
     EURECAdir = "/dataj6/ceballos/INSTRUMEN/EURECA/"
@@ -208,17 +192,30 @@ if __name__ == "__main__":
             factor = auxpy.sampfreqs[idxsmp]/auxpy.sampfreqs[0]
             Hres = int(int(Hres) * factor)
             invalid = int(int(invalid) * factor)
-    Hres = filterLength  # to be able to use shorter filters in the FWHM curve
+
+    # to be able to use shorter filters or long filter shortened in FWHM curve
+    Hres = min(filterLength, pulseLength)
+    pBStr = ""
+    if pB > 0:
+        Hres = filterLength - pB
+        pBStr = "_pB" + str(pB)
+
+    s0Str = ""
+    if s0 == 1:
+        s0Str = "_Sum0Filt"
+    print("Hres=", Hres)
+    print("filterLength=", filterLength)
+    print("pulseLength=", pulseLength)
 
     # 1) Reconstruct energies
     # ------------------------
     smprtStr, jitterStr, noiseStr, bbfbStr, LcStr, evtFile, eresolFile = \
         auxpy.reconstruct(pixName, labelLib, samprate, jitter, dcmt,
                           noise, bbfb, Lc, mono1EkeV, mono2EkeV, reconMethod,
-                          filterMeth, filterLength, nsamples, pulseLength,
+                          filterLength, nsamples, pulseLength,
                           nSimPulses, fdomain, detMethod, tstartPulse1,
                           tstartPulse2, nSimPulsesLib, coeffsFile,
-                          libTmpl, resultsDir, detSP, sepsStr)
+                          libTmpl, resultsDir, detSP, pB, s0, sepsStr)
 
     # 2) Calibrate (AND/OR) extract Energy resolution info to .json files
     # --------------------------------------------------------------------
@@ -273,9 +270,12 @@ if __name__ == "__main__":
                            " && GRADE2>" + str(invalid) + "' clobber=yes"
                     monoEeV = float(mono2EkeV) * 1000.
                 else:
+                    #comm = "fselect infile=" + evtFile + " outfile=" + evt +\
+                    #       " expr='GRADE1==" + str(Hres) + \
+                    #       " && GRADE2>" + str(invalid) + "' clobber=yes"
                     comm = "fselect infile=" + evtFile + " outfile=" + evt +\
-                           " expr='GRADE1==" + str(Hres) + \
-                           " && GRADE2>" + str(invalid) + "' clobber=yes"
+                           " expr='GRADE1>=" + str(Hres) + \
+                           " && GRADE2>=" + str(Hres) + "' clobber=yes"
                 print("Running:", comm)
                 args = shlex.split(comm)
                 check_call(args, stdout=open(os.devnull, 'wb'))
@@ -328,14 +328,16 @@ if __name__ == "__main__":
                 evtcalib = evt.replace(".fits", ".calib")
                 # locate coefficients in coeffs table
                 # ------------------------------------
-                alias = (detMethod + "_" + filterMeth + fdomain + "_" +
-                         labelLib + "_" + reconMethod + str(filterLength) +
-                         smprtStr + jitterStr + noiseStr + bbfbStr + LcStr)
+                alias = ("pL" + str(pulseLength) + "_" + detMethod + "_" +
+                         fdomain + "_" + labelLib + "_" +
+                         reconMethod + str(filterLength) + pBStr +
+                         smprtStr + jitterStr + noiseStr + bbfbStr +
+                         LcStr + s0Str)
                 if "NM" in reconMethod:
-                    alias = (detMethod + "_" + filterMeth + fdomain + "_" +
-                             labelLib + "_" + reconMethod.split("NM")[0] +
-                             str(filterLength) + "NM" +
-                             reconMethod.split("NM")[1] + smprtStr +
+                    alias = ("pL" + str(pulseLength) + "_" + detMethod + "_" +
+                             fdomain + "_" + labelLib + "_" +
+                             reconMethod.split("NM")[0] + str(filterLength) +
+                             "NM" + reconMethod.split("NM")[1] + smprtStr +
                              jitterStr + noiseStr + bbfbStr + LcStr)
                 # unchecked option...
                 # if 'fixedlib' in labelLib and 'OF' not in labelLib:
@@ -396,28 +398,3 @@ if __name__ == "__main__":
     feresol.close()
     os.chdir(cwd)
     shutil.rmtree(tmpDir)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
