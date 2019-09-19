@@ -6,8 +6,9 @@
 #  Option 2: with the Erec vs. Ecal coeffs, calculate FWHM corrected curves (filter always 8192 + zero padding)
 #                      - correction performed with Gain Scale curves
 #                      - correction performed with Gain Scale 2D surface
-# Option 3: calculate reconstructed energies and set coefficients table for gain scale curves (reduced filter)
-#  Option 4: with the Erec vs. Ecal coeffs, calculate FWHM corrected curves (reduced filter)
+#
+# Option 3: calculate reconstructed energies and set coefficients table for gain scale curves (reduced filter + optionally preBuffer)
+# Option 4: with the Erec vs. Ecal coeffs, calculate FWHM corrected curves (reduced filter + optionally preBuffer)
 #                      - correction performed with Gain Scale curves
 #                      - correction performed with Gain Scale 2D surface
 #
@@ -23,13 +24,21 @@ jitterStr="_jitter"
 noiseStr="" # "" or"_nonoise"
 smpStr="_samprate2" # "" for samprate (156.25kHz)  or "_samprate2" for 78125Hz or "_samprate4" for 39062.5Hz
 smpStr=""
-coeffsFile="coeffs_polyfit.dat"  # or coeffs_poly2Dfit_pL8192 _OPTFILT8192.dat, coeffs_poly2Dfit_pL512 _OPTFILT8192.dat, coeffs_poly2Dfit_pL8192 _I2R8192.dat
+preBuffer=100
+#preBuffer=0
+pBstr=""
 # ----------------------------------------------------------------------------------------------------------------------
 
 jitterParam=""
 bbfbParam=""
 dcmt=100
 LcParam=""
+pBparam=""
+sum0Param="--Sum0Filt 0"  # No need to 0-sum filter
+
+if [ ${preBuffer} -gt 0 ]; then
+    pBparam="--preBuffer=${preBuffer}"
+fi
 if [ "$bbfbStr"  ==  "_bbfb" ];  then
     bbfbParam="--bbfb bbfb"
     jitterParam="--jitter jitter"
@@ -67,9 +76,9 @@ if [ "$smpStr"  ==  "_samprate2" ];  then
     if [ ${detMethod}  ==  "AD" ];  then
         nSgms=12 # BE CAREFUL!!! => Check the hard-coded slope criteria 
     elif [ ${detMethod}  ==  "STC" ]; then
-        nSgms=4.5 #6
-        samplesUp=2 #2 
-        samplesDown=3 #3
+        nSgms=4.5 #6    #HARDCODED in auxpy.py
+        samplesUp=2 #2   #HARDCODED in auxpy.py 
+        samplesDown=3 #3  #HARDCODED in auxpy.py
     fi
     
 elif [ "$smpStr"  ==  "_samprate4" ];  then
@@ -81,9 +90,9 @@ elif [ "$smpStr"  ==  "_samprate4" ];  then
     if [ ${detMethod}  == "AD" ];  then
         nSgms=23.5 # BE CAREFUL!!! => Check the hard-coded slope criteria 
     elif [ ${detMethod} == "STC" ]; then
-        nSgms=4 #6
-        samplesUp=2 #2 
-        samplesDown=3 #3
+        nSgms=4 #6  #HARDCODED in auxpy.py
+        samplesUp=2 #2   #HARDCODED in auxpy.py
+        samplesDown=3 #3  #HARDCODED in auxpy.py
     fi
     
 elif [ -z "$smpStr" ]; then  # samprate 156250Hz
@@ -95,23 +104,26 @@ elif [ -z "$smpStr" ]; then  # samprate 156250Hz
     if [ ${detMethod}  ==  "AD" ];  then
         nSgms=4.4 # BE CAREFUL!!! => Check the hard-coded slope criteria 
     elif [ ${detMethod}  ==  "STC" ];  then
-        nSgms=3.5 #5
-        samplesUp=3 #3
-        samplesDown=4 #3
+        nSgms=3.5 #5  #HARDCODED in auxpy.py
+        samplesUp=3 #3  #HARDCODED in auxpy.py
+        samplesDown=4 #3  #HARDCODED in auxpy.py
     fi
 fi
 flengths=($pulseLength)
 echo "Using det=$detMethod nSgms=$nSgms smplsUp=$samplesUp smplsDown=$samplesDown "
-echo "(smpParam: $smpParam) (jitterParam=$jitterParam) (noiseParam=$noiseParam) (bbfb=$bbfbParam) (Lc=$LcParam) "
+echo "(smpParam: $smpParam) (jitterParam=$jitterParam) (noiseParam=$noiseParam) (bbfb=$bbfbParam) (Lc=$LcParam) (pBparam=$pBparam)"
 
 # USE one BY ONE
-fixedlib6OF_OPTFILT=1
+fixedlib6OF_OPTFILT=0          # includes 0-padding with SUM/=0 (no action over SUM(filter))
+fixedlib6OF_OPTFILT_0SUM=0     # includes 0-padding with SUM(filter)=0 
+fixedlib6OF_OPTFILT_pB=0  # filters done with preBuffer 
 fixedlib6OF_OPTFILTNM=0
 fixedlib6OF_I2RNM=0
 fixedlib6OF_I2R=0
+fixedlib6OF_I2R_pB=1
 fixedlib6OF_I2RNOL=0
 fixedlib6OF_I2RFITTED=0
-multilibOF_WEIGHTN=0
+multilibOF_WEIGHTN=
 multilib_WEIGHTN=0
 multilib_WEIGHT=0
 
@@ -121,9 +133,31 @@ if  [ $fixedlib6OF_OPTFILT -eq 1 ]; then
     lib="fixedlib6OF"
     meth="OPTFILT"
     nSimPulsesLib=20000 
-    flengths=(8192 2048 4096 1024 512 256 128)
-    flengths=(8192)
-    
+    flengths=(8192 4096 2048 1024 512 256 128)
+    preBuffer=0
+    pBparam=""
+
+elif  [ $fixedlib6OF_OPTFILT_0SUM -eq 1 ]; then
+    # Global OPTFILT AC fixedlib6 OFLib=yes
+    # -------------------------------------------
+    lib="fixedlib6OF"
+    meth="OPTFILT"
+    nSimPulsesLib=20000 
+    flengths=(512)
+    preBuffer=0
+    pBparam=""
+    sum0Param="--Sum0Filt 1"
+
+elif  [ $fixedlib6OF_OPTFILT_pB -eq 1 ]; then
+    # Global OPTFILT AC fixedlib6 OFLib=yes preBuffer
+    # --------------------------------------------------
+    lib="fixedlib6OF"
+    meth="OPTFILT"
+    nSimPulsesLib=20000 
+    flengths=(4096 2048 1024 512 256 128)
+    #flengths=(4096)
+    pBparam="--preBuffer ${preBuffer}"
+
 elif [ $fixedlib6OF_OPTFILTNM -eq 1 ]; then
     
     # Global OPTFILT AC fixedlib6 OFLib=yes NoiseMAT
@@ -131,7 +165,10 @@ elif [ $fixedlib6OF_OPTFILTNM -eq 1 ]; then
     lib="fixedlib6OF"
     meth="OPTFILTNM50000"   
     nSimPulsesLib=20000
-    flengths=(8192 4096)     # 8192 gives bad results in reconstruction
+    pulseLength=1024
+    nSamples=1024
+    flengths=(1024)     # 8192 gives bad results in reconstruction
+    
     
 elif [ $fixedlib6OF_I2RNM -eq 1 ]; then
     
@@ -149,8 +186,21 @@ elif [ $fixedlib6OF_I2R -eq 1 ]; then
     lib="fixedlib6OF"
     meth="I2R"
     nSimPulsesLib=20000
-    flengths=(8192 2048 4096 1024 512 256 128)
+    flengths=(8192 4096 2048 1024 512 256 128)
+   flengths=(4096 2048 1024 512 256 128)
+    preBuffer=0
+    pBparam=""
 
+elif  [ $fixedlib6OF_I2R_pB -eq 1 ]; then
+    # Global I2R AC fixedlib6 OFLib=yes preBuffer
+    # --------------------------------------------------
+    lib="fixedlib6OF"
+    meth="I2R"
+    nSimPulsesLib=20000 
+    flengths=(4096 2048 1024 512 256 128)
+    #flengths=(4096)
+    pBparam="--preBuffer ${preBuffer}"
+   
 elif [ $fixedlib6OF_I2RNOL -eq 1 ]; then
 
 # Global OPTFILT I2RNOL fixedlib6  --OFLib yes 
@@ -173,8 +223,12 @@ elif [ $multilib_WEIGHT -eq 1 ]; then
     #---------------------
     lib="multilib"
     meth="WEIGHT"
-    nSimPulsesLib=200000
-
+    #nSimPulsesLib=200000
+    nSimPulsesLib=20000
+    pulseLength=1024
+    nSamples=1024
+    flengths=(1024) 
+    
 elif [ $multilib_WEIGHTN -eq 1 ]; then
     
     # WEIGHTN AC multilib
@@ -182,7 +236,11 @@ elif [ $multilib_WEIGHTN -eq 1 ]; then
     lib="multilib"
     meth="WEIGHTN"
     nSimPulsesLib=200000
-
+    nSimPulsesLib=20000
+    pulseLength=1024
+    nSamples=1024
+    flengths=(1024) 
+    
 elif [ $multilibOF_WEIGHTN -eq 1 ]; then
     
     # WEIGHTN AC OF
@@ -190,25 +248,29 @@ elif [ $multilibOF_WEIGHTN -eq 1 ]; then
     lib="multilibOF"
     meth="WEIGHTN"
     nSimPulsesLib=200000
+    nSimPulsesLib=20000
+    pulseLength=1024
+    nSamples=1024
+    flengths=(1024)
 fi
 
 lags=(1 1 1 1 1 1 1 1 1 1) 
 nSimPulses=20000
 energies=(0.2 0.5 1 2 3 4 5 6 7 8)
+energies=(0.2 0.5 1 2 3 4 5 6 7)
 #energies=( 1 2 3 4 5 6 7 8)
 nenergies=${#energies[@]}
 nfls=${#flengths[@]}
 
+###########    LONG FILTER #####################################################
 if  [ $option -eq 1 ]; then
 	# =================================================
 	# To create gain scale curves & coefficients table
 	# =================================================
 	# All methods can be run OFLib=yes because length to be used is maximum (pulseLength=largeFilter)
-	#set tstartPulse1All=(999 999 1000 1000 1000 1000 1000 1000 1000 1000) # default 0 in getEresolCurves
-        #set tstartPulse1All=(0 0 0 0 0 0 0 0 0 0) # default 0 in getEresolCurves
 	nSimPulses=5000
 	#energies=(0.2 0.5)
-        
+        (( ${preBuffer} > 0 )) && { echo "Options '1' and '2' cannot be run under preBuffer > 0 -> (preBuffer=${preBuffer}). Check options"; exit 1; }
 	for (( ie=0; ie<$nenergies; ie++ )); do
 		mono1EkeV=${energies[$ie]}
 		mono2EkeV=0
@@ -222,17 +284,19 @@ if  [ $option -eq 1 ]; then
                     filterLength=${flengths[$ifl]}
                     echo "Launching $meth $lib for $mono1EkeV "
                     logf="${instrument}_${detMethod}_${meth}_${filterLength}_${mono1EkeV}${smpStr}${jitterStr}${noiseStr}${bbfbStr}.log"
-                    command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $filterLength --fdomain $domain --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod --nSgms $nSgms --samplesUp ${samplesUp} --samplesDown ${samplesDown} --filterLength $pulseLength $smpParam --resultsDir gainScale ${jitterParam} ${noiseParam} ${bbfbParam} ${LcParam}"
+                    command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth  --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $filterLength --fdomain $domain --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod  --filterLength $pulseLength $smpParam --resultsDir gainScale ${jitterParam} ${noiseParam} ${bbfbParam} ${LcParam} ${pBparam} ${sum0Param}"
                     nohup python $command >& $logf &
                     echo "Command=python $command >> $logf" 
                 done
-               # sleep 80
+                #sleep 80
 	done
 fi
 
 if [ $option -eq 2 ]; then
 	# To create resolution curves with the coefficients from gain scale curves or surfaces
 	# ====================================================
+	 (( ${preBuffer} > 0 )) && { echo "Options '1' and '2' cannot be run under preBuffer > 0 -> (preBuffer=${preBuffer}). Check options"; exit 1; }
+	 
 	nSimPulses=2000
         for (( ie=0; ie<$nenergies; ie++ )); do
 		mono1EkeV=${energies[$ie]}
@@ -245,9 +309,15 @@ if [ $option -eq 2 ]; then
                 
 		for (( ifl=0; ifl<$nfls; ifl++ )); do
                     filterLength=${flengths[$ifl]}
+                    # !!!!!!!!!!!!!!!!!! Check file
+                    coeffsFile="coeffs_polyfit.dat"  
+                    #coeffsFile="coeffs_poly2Dfit_pL${filterLength}_${meth}${pulseLength}.dat"
+                    #coeffsFile="spline_forfit_methods_longFilter_zeroPadding_ADC_I2R.json"
+                    echo "Using calibration file ${coeffsFile}"
+
                     echo "Launching $meth $lib for $mono1EkeV  for flength= ${filterLength}"
                     logf="${instrument}_$meth${lib}_${detMethod}${filterLength}_${mono1EkeV}${smpStr}${jitterStr}${noiseStr}${bbfbStr}.log"
-                    command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $filterLength --fdomain $domain --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod --nSgms $nSgms --samplesUp ${samplesUp} --samplesDown ${samplesDown} --filterLength $pulseLength ${smpParam} ${jitterParam} ${noiseParam}  ${bbfbParam} ${LcParam} --coeffsFile coeffs_polyfit.dat"
+                    command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $filterLength --fdomain $domain --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod --filterLength $pulseLength ${smpParam} ${jitterParam} ${noiseParam}  ${bbfbParam} ${LcParam} ${pBparam}${sum0Param} --coeffsFile ${coeffsFile}"
                     nohup python $command >&  $logf &
                     echo "Command=python $command >> $logf" 
                 done    
@@ -255,13 +325,13 @@ if [ $option -eq 2 ]; then
 	done
 fi
 
+###########   SHORT  FILTER  (AND optionally preBuffer)  ##################################
 if  [ $option -eq 3 ]; then
 	# =================================================
 	# To create gain scale curves & coefficients table
 	# =================================================
 	# All methods can be run OFLib=yes because length to be used is maximum (pulseLength=largeFilter)
-	#set tstartPulse1All=(999 999 1000 1000 1000 1000 1000 1000 1000 1000) # default 0 in getEresolCurves
-        #set tstartPulse1All=(0 0 0 0 0 0 0 0 0 0) # default 0 in getEresolCurves
+    
 	nSimPulses=5000
 	#energies=(0.2 0.5)
         
@@ -276,13 +346,13 @@ if  [ $option -eq 3 ]; then
                 
 		for (( ifl=0; ifl<$nfls; ifl++ )); do
                     filterLength=${flengths[$ifl]}
-                    echo "Launching $meth $lib for $mono1EkeV "
-                    logf="${instrument}_${detMethod}_${meth}_${filterLength}_${mono1EkeV}${smpStr}${jitterStr}${noiseStr}${bbfbStr}.log"
-                    command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain $domain --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod --nSgms $nSgms --samplesUp ${samplesUp} --samplesDown ${samplesDown} --filterLength $filterLength $smpParam --resultsDir gainScale ${jitterParam} ${noiseParam} ${bbfbParam} ${LcParam}"
+                    echo "Launching $meth $lib for $mono1EkeV  and $pBparam"
+                    logf="${instrument}_${detMethod}_${meth}_${filterLength}_${mono1EkeV}${smpStr}${jitterStr}${noiseStr}${bbfbStr}${pBstr}.log"
+                    command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth  --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain $domain --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod --filterLength $filterLength $smpParam --resultsDir gainScale ${jitterParam} ${noiseParam} ${bbfbParam} ${LcParam} ${pBparam}"
                     nohup python $command >& $logf &
                     echo "Command=python $command >> $logf" 
                 done
-                #sleep 80
+                sleep 80
 	done
 fi
 
@@ -301,13 +371,17 @@ if [ $option -eq 4 ]; then
                 
 		for (( ifl=0; ifl<$nfls; ifl++ )); do
                     filterLength=${flengths[$ifl]}
+                    # !!!!!!!!!!!!!!!!!! Check file
+                    coeffsFile="coeffs_polyfit.dat"  
+                    #coeffsFile="coeffs_poly2Dfit_pL${filterLength}_${meth}${pulseLength}.dat"    
+                
                     echo "Launching $meth $lib for $mono1EkeV  for flength= ${filterLength}"
-                    logf="${instrument}_$meth${lib}_${detMethod}${filterLength}_${mono1EkeV}${smpStr}${jitterStr}${noiseStr}${bbfbStr}.log"
-                    command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth --filter F0 --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain $domain --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod --nSgms $nSgms --samplesUp ${samplesUp} --samplesDown ${samplesDown} --filterLength $filterLength ${smpParam} ${jitterParam} ${noiseParam}  ${bbfbParam} ${LcParam} --coeffsFile coeffs_polyfit.dat"
+                    logf="${instrument}_$meth${lib}_${detMethod}${filterLength}_${mono1EkeV}${smpStr}${jitterStr}${noiseStr}${bbfbStr}${pBstr}.log"
+                    command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $pulseLength --fdomain $domain --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod  --filterLength $filterLength ${smpParam} ${jitterParam} ${noiseParam}  ${bbfbParam} ${LcParam} ${pBparam} --coeffsFile ${coeffsFile}"
                     nohup python $command >&  $logf &
                     echo "Command=python $command >> $logf" 
                 done    
-                sleep 80
+                sleep 40
 	done
 fi
 
