@@ -67,8 +67,8 @@ if __name__ == "__main__":
                         choices=['', 'samprate2', 'samprate4'],
                         help="baseline, half_baseline, quarter baseline")
     parser.add_argument('--jitter', default="",
-                        choices=['', 'jitter'],
-                        help="no jitter, jitter")
+                        choices=['', 'jitter', 'jitter_M82'],
+                        help="no jitter, jitter, M82")
     parser.add_argument('--noise', default="",
                         choices=['', 'nonoise'],
                         help="noisy, nonoise")
@@ -130,11 +130,13 @@ if __name__ == "__main__":
                         help="preBuffer value for optimal filters")
     parser.add_argument('--Sum0Filt', default=0, type=int,
                         help="Optimal Filter SUM shoud be 0? (0=NO; 1=YES)")
+    parser.add_argument('--lags', default=1, type=int,
+                        help="Do parabola fit if lags=1")
 
     inargs = parser.parse_args()
 
     # print("array=",inargs.array)
-    
+
     # rename input parameters
     pixName = inargs.pixName
     labelLib = inargs.labelLib
@@ -163,6 +165,7 @@ if __name__ == "__main__":
     detSP = inargs.detSP
     pB = inargs.preBuffer
     s0 = inargs.Sum0Filt
+    lags=inargs.lags
 
     # general definitions
     EURECAdir = "/dataj6/ceballos/INSTRUMEN/EURECA/"
@@ -197,7 +200,7 @@ if __name__ == "__main__":
     Hres = min(filterLength, pulseLength)
     pBStr = ""
     if pB > 0:
-        Hres = filterLength - pB
+        #Hres = filterLength - pB
         pBStr = "_pB" + str(pB)
 
     s0Str = ""
@@ -215,7 +218,7 @@ if __name__ == "__main__":
                           filterLength, nsamples, pulseLength,
                           nSimPulses, fdomain, detMethod, tstartPulse1,
                           tstartPulse2, nSimPulsesLib, coeffsFile,
-                          libTmpl, resultsDir, detSP, pB, s0, sepsStr)
+                          libTmpl, resultsDir, detSP, pB, s0, lags, sepsStr)
 
     # 2) Calibrate (AND/OR) extract Energy resolution info to .json files
     # --------------------------------------------------------------------
@@ -325,7 +328,28 @@ if __name__ == "__main__":
                 print("=============================================")
                 print("CALIBRATING ENERGIES.........................")
                 print("=============================================")
-                evtcalib = evt.replace(".fits", ".calib")
+
+                with open(coeffsFile, "rt") as f:
+                    fileCont = f.read()   # JSON file
+                    if 'surface' in fileCont:
+                        ftype = "surface"
+                    elif fileCont[0] == '{':
+                        ftype = 'json'
+                    else:
+                        ftype = 'poly'
+
+                if ftype == 'poly':
+                    evtcalib = evt.replace(".fits", ".calib1D")
+                    eresolFile = eresolFile.replace(".json", ".json1D")
+                elif ftype == 'surface':
+                    evtcalib = evt.replace(".fits", ".calib2D")
+                    eresolFile = eresolFile.replace(".json", ".json2D")
+                elif ftype == 'json':
+                    evtcalib = evt.replace(".fits", ".calibItr")
+                    eresolFile = eresolFile.replace(".json", ".jsonItr")
+                else:
+                    raise ValueError("Incorrect Coeffs file type")
+
                 # locate coefficients in coeffs table
                 # ------------------------------------
                 alias = ("pL" + str(pulseLength) + "_" + detMethod + "_" +
