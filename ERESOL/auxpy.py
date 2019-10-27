@@ -934,7 +934,7 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
                 mono1EkeV, mono2EkeV, reconMethod, filterLength,
                 nsamples, pulseLength, nSimPulses, fdomain, detMethod,
                 tstartPulse1, tstartPulse2, nSimPulsesLib, coeffsFile,
-                libTmpl, resultsDir, detSP, pB, s0, sepsStr):
+                libTmpl, resultsDir, detSP, pB, s0, lags, sepsStr):
     """
     :param pixName: Extension name for FITS pixel definition file
                     (SPA*, LPA1*, LPA2*, LPA3*)
@@ -943,7 +943,8 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
     :param samprate: Samprate value with respect to baseline of 156250 Hz:
                     "" (baseline), "samprate2" (half_baseline),
                     samprate4 (quarter baseline)
-    :param jitter: jitter option ("" for no_jitter and "jitter" for jitter)
+    :param jitter: jitter option ("" for no_jitter and "jitter" for jitter or
+                                  "jitter_M82" for M82 special case)
     :param dcmt: decimation factor for xifusim jitter
     :param bbfb: ("") for dobbfb=n or ("bbfb") for dobbfb=y
     :param Lc: ("" for L=Lcrit; otherwise, L/Lcrit)
@@ -977,6 +978,7 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
     :param detSP: 1 secondary pulses will be detected (default), 0 otherwise
     :param pB: preBuffer value for optimal filters
     :param s0: Optimal Filters' SUM should be '0'?: s0=0 (NO); s0=1 (YES)
+    :param lags: Do parabola fit? lags=1 (YES), lags=0 (NO)
     :param sepsStr: blank spaces separated list of pulses separations
     :return: file with energy resolutions for the input pairs of pulses
     """
@@ -1005,6 +1007,8 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
     jitterStr = ""
     if jitter == "jitter" and dcmt > 1:
         jitterStr = "_jitter_dcmt" + str(dcmt)
+    if jitter == "jitter_M82":
+        jitterStr = "_jitter_M82"
 
     # noise
     noiseStr = ""
@@ -1027,6 +1031,11 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
     if s0 == 1:
         s0Str = "_Sum0Filt"
         s0Param = " Sum0Filt=1"
+    # lags
+    lagsStr = ""
+    if lags == 0:
+        lagsStr = "_nolags"
+
     # Lcrit
     LcStr = ""
     if not Lc == "":
@@ -1055,10 +1064,8 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
         reconMethod2 = "NM" + reconMethod.split('NM')[1]
         reconMethod = reconMethod.split('NM')[0]
 
-    # LAGS (temporarily unavailable)
-    lags = 1
-    if "WEIGHT" in reconMethod:
-        lags = 0
+    # if "WEIGHT" in reconMethod:
+    #    lags = 0
     # libraries
     OFLib = "no"
     OFstrategy = ""
@@ -1112,14 +1119,14 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
                     'keV_', TRIGG, "_", str(fdomain), '_',
                     str(labelLib), '_', str(reconMethod), str(filterLength),
                     reconMethod2, pBStr + smprtStr, jitterStr, noiseStr,
-                    bbfbStr, LcStr, s0Str])
+                    bbfbStr, LcStr, s0Str, lagsStr])
     if mono2EkeV == "0":
         root = ''.join([str(nSimPulses), 'p_SIRENA', str(nsamples), '_pL',
                         str(pulseLength), '_', mono1EkeV, 'keV_', TRIGG, "_",
                         str(fdomain), '_', str(labelLib),
                         '_', str(reconMethod), str(filterLength),
                         reconMethod2, pBStr, smprtStr, jitterStr, noiseStr,
-                        bbfbStr, LcStr, s0Str])
+                        bbfbStr, LcStr, s0Str, lagsStr])
 
     eresolFile = "eresol_" + root + ".json"
     eresolFile = eresolFile.replace(".json", libTmpl+".json")
@@ -1148,8 +1155,9 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
 
         evtFile = "events_sep" + sep12 + "sam_" + root + ".fits"
         evtFile = evtFile.replace(
-                jitterStr + noiseStr + bbfbStr + ".fits",
-                libTmpl + jitterStr + noiseStr + bbfbStr + LcStr + ".fits")
+                jitterStr + noiseStr + bbfbStr + LcStr + lagsStr + ".fits",
+                libTmpl + jitterStr + noiseStr + bbfbStr + LcStr + lagsStr +
+                ".fits")
         print("=============================================")
         print("RECONSTRUCTING ENERGIES.....................")
         print("Working in:", outDir)
@@ -1241,9 +1249,11 @@ def convertEnergies(inFile, outFile, coeffsFile, alias):
     # read Erecons (SIGNAL) column in numpy array (in keV)
     ftab = f[1].data
     EreconKeV = np.array(ftab['SIGNAL'])
-    reconPhase = np.array(ftab['PHI'])
+    # reconPhase = np.array(ftab['PHI']) 
+    reconPhase = np.array(ftab['PHI']) + np.array(ftab['LAGS'])
 
     # calculate corrected energies with polyfit coeffs
+    # 1) check if pulses are of different length (different gain scale)
     print("...Calculating corrected energies for pulses in ", inFile)
     EcorrKeV = enerToCalEner(EreconKeV, reconPhase, coeffsFile, alias)
 
@@ -1612,8 +1622,7 @@ def enerToCalEner(inEner, inPhase, coeffsFile, alias):
     #
     if ftype == 'surface':
         # print("Using surface to calibrate reconstructed energies\n")
-        calEner[ie] = np.polynomial.polynomial.polyval2d(
-                inEner, inPhase, npCoeffs)
+        calEner = np.polynomial.polynomial.polyval2d(inEner, inPhase, npCoeffs)
     elif ftype == 'poly':
         for ie in range(0, inEner.size):
             # read fitting coeffs taken from polyfit2Bias.R (a0, a1, a2, a3)
@@ -1638,8 +1647,8 @@ def enerToCalEner(inEner, inPhase, coeffsFile, alias):
             # closest root
             # print(inEner[ie])
             rclosest = min(enumerate(rrealpos),
-                           key=lambda x: abs(x[1]-inEner[ie]))[1]  # (idx,value)
-            # print("For:", alias, " Recon energy=",rclosest)
+                           key=lambda x: abs(x[1]-inEner[ie]))[1]  #(idx,value)
+            # print("For:", alias, " Recon energy=", rclosest)
 
             calEner[ie] = rclosest
 
@@ -1681,3 +1690,4 @@ def VLtoFL(inputFile, extnum, outputFile):
         print("Error Coverting columns: ")
         print(comm)
         raise
+
