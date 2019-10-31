@@ -18,14 +18,16 @@ source("~/R/Rfunctions/drawLogPlotBox.r")
 #array <- "LPA2shunt"
 array <- "LPA75um" #"LPA2shunt"
 nSimPulses <- "5000" # "20000"
+nSimPulses <- "1"
 separation <- 40000 #for samprate (corrected below for samprate2)
 gainScaleID <-"methods_shortFilters"   # !!!! CHECK METHODS BELOW !!!!!
 gainScaleID <-"methods_longFilter_zeroPadding"   # !!!! CHECK METHODS BELOW !!!!!
 gainScaleID <-"methods_longFilter_zeroPadding_ADC_I2R"   # !!!! CHECK METHODS BELOW !!!!!
-gainScaleID <-"methods_allFilter_ADC_I2R"   # !!!! CHECK METHODS BELOW !!!!!
+#gainScaleID <-"methods_allFilter_ADC_I2R"   # !!!! CHECK METHODS BELOW !!!!!
 #gainScaleID <-"methods_M82"   # !!!! CHECK METHODS BELOW !!!!!
 #gainScaleID <-"methods_LOWRES"   # !!!! CHECK METHODS BELOW !!!!!
 #gainScaleID <-"methods_4samNolags"   # !!!! CHECK METHODS BELOW !!!!!
+gainScaleID <-"methods_NewPar"   # !!!! CHECK METHODS BELOW !!!!!
 EkeV <- c(0.2,0.5,1,2,3,4,5,6,7,8)
 #EkeV <- c(0.2,0.5,1,2,3,4,5,6,7)
 #nIntervals <- 50000
@@ -46,7 +48,9 @@ if (dcmt > 1){
 } else {
     jitterStr="_jitter"
 }
-#TRIGG = "STC"
+if (length(grep("NewPar",gainScaleID)) > 0){
+    jitterStr=""
+}
 
 # FUNCTIONS
 #============
@@ -139,6 +143,86 @@ pL8192fixed6OF8192smprtSTCBbfb0.35Lc <-
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
          color=adccols[1], point=1, ltype=1,
          lab="OF_ADC (pL8192,ofL8192,6keV, STC, s1, bbfb, 0.35Lc)")
+#-- NewPar
+pL8192fixed6OF8192smprtSTCBbfbNewPar <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_nonoise_bbfb_NewPar",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="", noiseStr="_nonoise",pLength=8192,
+         bbfbStr="_bbfb_NewPar", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
+         color=adc0cols[1], point=1, ltype=1,
+         lab="OF_ADC (pL8192,ofL8192,6keV, STC, s1, bbfb_NewPar)")
+pL4096fixed6OF8192smprtSTCBbfbNewPar <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_nonoise_bbfb_NewPar",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="", noiseStr="_nonoise",pLength=4096,
+         bbfbStr="_bbfb_NewPar", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
+         color=adc0cols[2], point=2, ltype=1,
+         lab="OF_ADC (pL4096,ofL8192,6keV, STC, s1, bbfb_NewPar)")
+pL2048fixed6OF8192smprtSTCBbfbNewPar <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_nonoise_bbfb_NewPar",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="", noiseStr="_nonoise",pLength=2048,
+         bbfbStr="_bbfb_NewPar", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
+         color=adc0cols[3], point=3, ltype=1,
+         lab="OF_ADC (pL2048,ofL8192,6keV, STC, s1, bbfb_NewPar)")
+pL1024fixed6OF8192smprtSTCBbfbNewPar <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_nonoise_bbfb_NewPar",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="", noiseStr="_nonoise",pLength=1024,
+         bbfbStr="_bbfb_NewPar", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
+         color=adc0cols[4], point=4, ltype=1,
+         lab="OF_ADC (pL1024,ofL8192,6keV, STC, s1, bbfb_NewPar)")
+pL512fixed6OF8192smprtSTCBbfbNewPar <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_nonoise_bbfb_NewPar",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="", noiseStr="_nonoise",pLength=512,
+         bbfbStr="_bbfb_NewPar", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
+         color=adc0cols[5], point=5, ltype=1,
+         lab="OF_ADC (pL512,ofL8192,6keV, STC, s1, bbfb_NewPar)")
+pL256fixed6OF8192smprtSTCBbfbNewPar <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_nonoise_bbfb_NewPar",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="", noiseStr="_nonoise",pLength=256,
+         bbfbStr="_bbfb_NewPar", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
+         color=adc0cols[6], point=6, ltype=1,
+         lab="OF_ADC (pL256,ofL8192,6keV, STC, s1, bbfb_NewPar)")
+pL128fixed6OF8192smprtSTCBbfbNewPar <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_nonoise_bbfb_NewPar",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="", noiseStr="_nonoise",pLength=128,
+         bbfbStr="_bbfb_NewPar", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
+         color=adc0cols[7], point=7, ltype=1,
+         lab="OF_ADC (pL128,ofL8192,6keV, STC, s1, bbfb_NewPar)")
+pL8192fixed6OF4096smprtSTCBbfbNewPar <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT4096_nonoise_bbfb_NewPar",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="", noiseStr="_nonoise",pLength=8192,
+         bbfbStr="_bbfb_NewPar", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=4096,
+         color=adc0cols[2], point=2, ltype=1,
+         lab="OF_ADC (pL8192,ofL4096,6keV, STC, s1, bbfb_NewPar)")
+pL8192fixed6OF2048smprtSTCBbfbNewPar <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT2048_nonoise_bbfb_NewPar",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="", noiseStr="_nonoise",pLength=8192,
+         bbfbStr="_bbfb_NewPar", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=2048,
+         color=adc0cols[3], point=3, ltype=1,
+         lab="OF_ADC (pL8192,ofL2048,6keV, STC, s1, bbfb_NewPar)")
+pL8192fixed6OF1024smprtSTCBbfbNewPar <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT1024_nonoise_bbfb_NewPar",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="", noiseStr="_nonoise",pLength=8192,
+         bbfbStr="_bbfb_NewPar", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=1024,
+         color=adc0cols[4], point=4, ltype=1,
+         lab="OF_ADC (pL8192,ofL1024,6keV, STC, s1, bbfb_NewPar)")
+pL8192fixed6OF512smprtSTCBbfbNewPar <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT512_nonoise_bbfb_NewPar",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="", noiseStr="_nonoise",pLength=8192,
+         bbfbStr="_bbfb_NewPar", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=512,
+         color=adc0cols[5], point=5, ltype=1,
+         lab="OF_ADC (pL8192,ofL512,6keV, STC, s1, bbfb_NewPar)")
+pL8192fixed6OF256smprtSTCBbfbNewPar <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT256_nonoise_bbfb_NewPar",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="", noiseStr="_nonoise",pLength=8192,
+         bbfbStr="_bbfb_NewPar", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=256,
+         color=adc0cols[6], point=6, ltype=1,
+         lab="OF_ADC (pL8192,ofL256,6keV, STC, s1, bbfb_NewPar)")
+pL8192fixed6OF128smprtSTCBbfbNewPar <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT128_nonoise_bbfb_NewPar",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="", noiseStr="_nonoise",pLength=8192,
+         bbfbStr="_bbfb_NewPar", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=128,
+         color=adc0cols[7], point=7, ltype=1,
+         lab="OF_ADC (pL8192,ofL128,6keV, STC, s1, bbfb_NewPar)")
+
 #--
 pL8192fixed6OF8192smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_jitter_bbfb",sep=""),
@@ -564,19 +648,46 @@ pL8192fixed6I2R128smprtSTCBbfb_pB85 <-
 
 
 # OFNM BBFB
+pL1024fixed6OF1024NM200000smprtSTCBbfb <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT1024NM200000_jitter_bbfb",sep=""),
+         nSamples=1024, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=1024,
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=1024,
+         color=adcNMcols[4], point=8, ltype=0,
+         lab="OF_ADC_NM(pL1024,ofL1024,200000int,6keV,STC,s1,bbfb)")
+
+pL1024fixed6I2R1024NM200000smprtSTCBbfb <-
+    list(name=paste("STC_T_fixedlib6OF_I2R1024NM200000_jitter_bbfb",sep=""),
+         nSamples=1024, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=1024,
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=1024,
+         color=i2rNMcols[4], point=8, ltype=0,
+         lab="OF_R_NM(pL1024,ofL1024,200000int,6keV,STC,s1,bbfb)")
+
 pL1024fixed6OF1024NM150000smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT1024NM150000_jitter_bbfb",sep=""),
          nSamples=1024, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=1024,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=1024,
-         color=adcNMcols[4], point=4, ltype=0,
+         color=adcNMcols[4], point=13, ltype=0,
          lab="OF_ADC_NM(pL1024,ofL1024,150000int,6keV,STC,s1,bbfb)")
 
 pL1024fixed6I2R1024NM150000smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_I2R1024NM150000_jitter_bbfb",sep=""),
          nSamples=1024, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=1024,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=1024,
-         color=i2rNMcols[4], point=4, ltype=0,
+         color=i2rNMcols[4], point=13, ltype=0,
          lab="OF_R_NM(pL1024,ofL1024,150000int,6keV,STC,s1,bbfb)")
+pL1024fixed6OF1024NM50000smprtSTCBbfb <-
+    list(name=paste("STC_T_fixedlib6OF_OPTFILT1024NM50000_jitter_bbfb",sep=""),
+         nSamples=1024, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=1024,
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=1024,
+         color=adcNMcols[4], point=4, ltype=0,
+         lab="OF_ADC_NM(pL1024,ofL1024,50000int,6keV,STC,s1,bbfb)")
+
+pL1024fixed6I2R1024NM50000smprtSTCBbfb <-
+    list(name=paste("STC_T_fixedlib6OF_I2R1024NM50000_jitter_bbfb",sep=""),
+         nSamples=1024, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=1024,
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=1024,
+         color=i2rNMcols[4], point=4, ltype=0,
+         lab="OF_R_NM(pL1024,ofL1024,50000int,6keV,STC,s1,bbfb)")
 
 # OF BBFB NN
 fixed6OF8192smprtSTCnnBbfb <-
@@ -727,6 +838,13 @@ pL4fixed6OF8192smprtSTCM82 <-
 #     fixed6OF8192smprtSTCBbfb0.35Lc,
 #     file="/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat")
 save(
+    pL8192fixed6OF8192smprtSTCBbfbNewPar, pL4096fixed6OF8192smprtSTCBbfbNewPar,
+    pL2048fixed6OF8192smprtSTCBbfbNewPar, pL1024fixed6OF8192smprtSTCBbfbNewPar, 
+    pL512fixed6OF8192smprtSTCBbfbNewPar,  pL256fixed6OF8192smprtSTCBbfbNewPar, 
+    pL128fixed6OF8192smprtSTCBbfbNewPar, 
+    pL8192fixed6OF4096smprtSTCBbfbNewPar, pL8192fixed6OF2048smprtSTCBbfbNewPar, 
+    pL8192fixed6OF1024smprtSTCBbfbNewPar, pL8192fixed6OF512smprtSTCBbfbNewPar,  
+    pL8192fixed6OF256smprtSTCBbfbNewPar,  pL8192fixed6OF128smprtSTCBbfbNewPar, 
     pL8192fixed6OF8192smprtSTCM82, pL4096fixed6OF8192smprtSTCM82, 
     pL2048fixed6OF8192smprtSTCM82, pL1024fixed6OF8192smprtSTCM82, 
     pL512fixed6OF8192smprtSTCM82,  pL256fixed6OF8192smprtSTCM82,  
@@ -767,8 +885,12 @@ save(
      pL8192fixed6I2R4smprtSTCBbfb,
      pL8192fixed6I2RNOL8192smprtSTCBbfb,
      pL8192fixed6I2RFITTED8192smprtSTCBbfb,
-     pL1024fixed6OF1024NM150000smprtSTCBbfb,
-     pL1024fixed6I2R1024NM150000smprtSTCBbfb,
+     pL1024fixed6OF1024NM200000smprtSTCBbfb,
+     pL1024fixed6I2R1024NM200000smprtSTCBbfb,
+    pL1024fixed6OF1024NM150000smprtSTCBbfb,
+    pL1024fixed6I2R1024NM150000smprtSTCBbfb,
+    pL1024fixed6OF1024NM50000smprtSTCBbfb,
+    pL1024fixed6I2R1024NM50000smprtSTCBbfb,
      pL1024multilibWEIGHTN1024NM150000smprtSTCBbfb,
      pL512fixed6OF8192smprtSTCBbfbSUM0,
      file="/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat")
@@ -838,22 +960,24 @@ if (length(grep("shortFilters",gainScaleID)) > 0){
                     pL8192fixed6I2R1024smprtSTCBbfb, pL8192fixed6I2R512smprtSTCBbfb,
                     pL8192fixed6I2R256smprtSTCBbfb, pL8192fixed6I2R128smprtSTCBbfb,
                     pL8192fixed6I2R4smprtSTCBbfb,
-                    pL8192fixed6I2R4096smprtSTCBbfb_pB50, pL8192fixed6I2R2048smprtSTCBbfb_pB50,
-                    pL8192fixed6I2R1024smprtSTCBbfb_pB50, pL8192fixed6I2R512smprtSTCBbfb_pB50,
-                    pL8192fixed6I2R256smprtSTCBbfb_pB50,  pL8192fixed6I2R128smprtSTCBbfb_pB50,
-                    pL8192fixed6I2R4096smprtSTCBbfb_pB25, pL8192fixed6I2R2048smprtSTCBbfb_pB25,
-                    pL8192fixed6I2R1024smprtSTCBbfb_pB25, pL8192fixed6I2R512smprtSTCBbfb_pB25,
-                    pL8192fixed6I2R256smprtSTCBbfb_pB25,  pL8192fixed6I2R128smprtSTCBbfb_pB25,
+                    #pL8192fixed6I2R4096smprtSTCBbfb_pB50, pL8192fixed6I2R2048smprtSTCBbfb_pB50,
+                    #pL8192fixed6I2R1024smprtSTCBbfb_pB50, pL8192fixed6I2R512smprtSTCBbfb_pB50,
+                    #pL8192fixed6I2R256smprtSTCBbfb_pB50,  pL8192fixed6I2R128smprtSTCBbfb_pB50,
+                    #pL8192fixed6I2R4096smprtSTCBbfb_pB25, pL8192fixed6I2R2048smprtSTCBbfb_pB25,
+                    #pL8192fixed6I2R1024smprtSTCBbfb_pB25, pL8192fixed6I2R512smprtSTCBbfb_pB25,
+                    #pL8192fixed6I2R256smprtSTCBbfb_pB25,  pL8192fixed6I2R128smprtSTCBbfb_pB25,
                     pL8192fixed6I2R4096smprtSTCBbfb_pB75, pL8192fixed6I2R2048smprtSTCBbfb_pB75,
                     pL8192fixed6I2R1024smprtSTCBbfb_pB75, pL8192fixed6I2R512smprtSTCBbfb_pB75,
                     pL8192fixed6I2R256smprtSTCBbfb_pB75,  pL8192fixed6I2R128smprtSTCBbfb_pB75,
-                    pL8192fixed6I2R4096smprtSTCBbfb_pB85, pL8192fixed6I2R2048smprtSTCBbfb_pB85,
-                    pL8192fixed6I2R1024smprtSTCBbfb_pB85, pL8192fixed6I2R512smprtSTCBbfb_pB85,
-                    pL8192fixed6I2R256smprtSTCBbfb_pB85,  pL8192fixed6I2R128smprtSTCBbfb_pB85,
+                    #pL8192fixed6I2R4096smprtSTCBbfb_pB85, pL8192fixed6I2R2048smprtSTCBbfb_pB85,
+                    #pL8192fixed6I2R1024smprtSTCBbfb_pB85, pL8192fixed6I2R512smprtSTCBbfb_pB85,
+                    #pL8192fixed6I2R256smprtSTCBbfb_pB85,  pL8192fixed6I2R128smprtSTCBbfb_pB85,
+                    pL1024fixed6OF1024NM200000smprtSTCBbfb,
                     pL1024fixed6OF1024NM150000smprtSTCBbfb,
+                    pL1024fixed6OF1024NM50000smprtSTCBbfb,
                     #pL1024fixed6I2R1024NM150000smprtSTCBbfb,
-                    pL1024multilibWEIGHTN1024NM150000smprtSTCBbfb,
-                    pL512fixed6OF8192smprtSTCBbfbSUM0
+                    pL1024multilibWEIGHTN1024NM150000smprtSTCBbfb
+                    #pL512fixed6OF8192smprtSTCBbfbSUM0
     )
     #methods <- list(pL1024multilibWEIGHTN1024NM50000smprtSTCBbfb)
     cat("Using method for allFilter\n")
@@ -862,6 +986,14 @@ if (length(grep("shortFilters",gainScaleID)) > 0){
                     pL2048fixed6OF8192smprtSTCM82, pL1024fixed6OF8192smprtSTCM82, 
                     pL512fixed6OF8192smprtSTCM82,  pL256fixed6OF8192smprtSTCM82, 
                     pL128fixed6OF8192smprtSTCM82,  pL4fixed6OF8192smprtSTCM82)
+}else if(length(grep("NewPar",gainScaleID)) > 0){
+    methods <- list(pL8192fixed6OF8192smprtSTCBbfbNewPar, pL4096fixed6OF8192smprtSTCBbfbNewPar,
+                    pL2048fixed6OF8192smprtSTCBbfbNewPar, pL1024fixed6OF8192smprtSTCBbfbNewPar, 
+                    pL512fixed6OF8192smprtSTCBbfbNewPar,  pL256fixed6OF8192smprtSTCBbfbNewPar, 
+                    pL128fixed6OF8192smprtSTCBbfbNewPar, 
+                    pL8192fixed6OF4096smprtSTCBbfbNewPar, pL8192fixed6OF2048smprtSTCBbfbNewPar, 
+                    pL8192fixed6OF1024smprtSTCBbfbNewPar, pL8192fixed6OF512smprtSTCBbfbNewPar,  
+                    pL8192fixed6OF256smprtSTCBbfbNewPar,  pL8192fixed6OF128smprtSTCBbfbNewPar)
 }else if(length(grep("LOWRES",gainScaleID)) > 0){
     methods <- list(pL4fixed6OF8192smprtSTCBbfb, pL8192fixed6OF4smprtSTCBbfb,
                     pL4fixed6I2R8192smprtSTCBbfb, pL8192fixed6I2R4smprtSTCBbfb,
@@ -877,11 +1009,12 @@ if (length(grep("shortFilters",gainScaleID)) > 0){
 
 nmethods <- length(methods)
 
-# FWHM vs Energy Gain scale plot
-#--------------------------------
+########## # FWHM vs Energy Gain scale plot
+########## #--------------------------------
 npolyInit <- 4 # degree of polynomial to be fitted
 pulsesCateg <- c("all")
-fwhmUNCORR  <- array(data=NA,dim=c(length(EkeV),nmethods)) # FWHM of Erecons
+
+##########fwhmUNCORR  <- array(data=NA,dim=c(length(EkeV),nmethods)) # FWHM of Erecons
 
 # READ CALIBRATION DATA
 # ======================
@@ -906,29 +1039,29 @@ for (ie in 1:length(EkeV)){
         #eresolFile <- paste("gainScale/eresol_",nSimPulses,"p_SIRENA",nSamples,
         #                    "_pL",pulseLength,"_", EkeV[ie],"keV_",TRIGG,"_T_", 
         #                    lib,ofLength,samprateStr,jitterStr,noiseStr,bbfbStr,".json",sep="")
-        eresolFile <- paste("gainScale/eresol_",nSimPulses,"p_SIRENA",nSamples,
-                    "_pL",pulseLength,"_", EkeV[ie],"keV_",methods[[im]]$name,".json",sep="")
+        ##########eresolFile <- paste("gainScale/eresol_",nSimPulses,"p_SIRENA",nSamples,
+        ##########            "_pL",pulseLength,"_", EkeV[ie],"keV_",methods[[im]]$name,".json",sep="")
         #eventsFile <- paste("gainScale/events_sep",separation,"sam_",nSimPulses,"p_SIRENA",nSamples,
         #                    "_pL",pulseLength,"_", EkeV[ie],"keV_",TRIGG,"_T_", 
         #                    lib,ofLength,samprateStr,jitterStr,noiseStr,bbfbStr,"_HR.fits",sep="")
         eventsFile <- paste("gainScale/events_sep",separation,"sam_",nSimPulses,"p_SIRENA",
                             nSamples,"_pL",pulseLength,"_", EkeV[ie],"keV_",
                             methods[[im]]$name,"_HR.fits",sep="")
-        if(file.exists(eresolFile)){
-            #data <- read.table(eresolFile,header=TRUE)
-            # use data for selected separation (see initial definitions)
-            cat("Reading file ",eresolFile,"\n")
-            #cat("Separation= ",separation,"\n")
-            #cat("   ie,im=",ie,im,"\n")
-            jsondata <- fromJSON(file=eresolFile)
-            idxSep <- which(sapply(jsondata,function(x) x$separation)==separation)
-            #cat("   idxSep=",idxSep,"\n")
-            fwhmUNCORR[ie,im]  <- as.numeric(jsondata[[idxSep]]$fwhmErecons[[pulsesCateg]])
-            
-        }else{
-            warning("Not-existing file:", eresolFile)
-            fwhmUNCORR[ie,im]  <- NaN
-        }
+        ##########if(file.exists(eresolFile)){
+        ##########    #data <- read.table(eresolFile,header=TRUE)
+        ##########    # use data for selected separation (see initial definitions)
+        ##########    cat("Reading file ",eresolFile,"\n")
+        ##########    #cat("Separation= ",separation,"\n")
+        ##########    #cat("   ie,im=",ie,im,"\n")
+        ##########    jsondata <- fromJSON(file=eresolFile)
+        ##########    idxSep <- which(sapply(jsondata,function(x) x$separation)==separation)
+        ##########    #cat("   idxSep=",idxSep,"\n")
+        ##########    fwhmUNCORR[ie,im]  <- as.numeric(jsondata[[idxSep]]$fwhmErecons[[pulsesCateg]])
+        ##########            
+        ##########}else{
+        ##########    warning("Not-existing file:", eresolFile)
+        ##########    fwhmUNCORR[ie,im]  <- NaN
+        ##########}
         cat("Reading file ",eventsFile,"\n")
         stopifnot(file.exists(eventsFile))
         zz <- file(description = eventsFile, open = "rb")
@@ -945,13 +1078,13 @@ for (ie in 1:length(EkeV)){
         errmean[ie,im] <- sd(EkeVrecons)/sqrt(nreconPulses)
         sigrobust[ie,im] <- 0.7413*(quantile(EkeVrecons,0.75)-quantile(EkeVrecons,0.25))
 
-        if(all(is.nan(fwhmUNCORR[ie,im]))){
-            warning("Error in ",eresolFile,"\n","  Non numerical values in eresol files: check event files")
-        }
+        ##########if(all(is.nan(fwhmUNCORR[ie,im]))){
+        ##########    warning("Error in ",eresolFile,"\n","  Non numerical values in eresol files: check event files")
+        ##########}
     } # for each method
 } # foreach energy
 cat("Writing coeffs:",coeffsFile,"\n")
-fwhm  <- fwhmUNCORR
+##########fwhm  <- fwhmUNCORR
 
 # Define plot layout (colors, tables)
 # ====================================
