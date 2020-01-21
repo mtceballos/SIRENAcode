@@ -53,6 +53,7 @@ command <- paste("export HEADAS=",HEADAS,";. $HEADAS/headas-init.sh;",
                  " prhead=no showcol=yes showunit=no showrow=no outfile=filter.txt clobber=yes", sep="")
 system(command)
 filter <- read.table(file='filter.txt', header=TRUE )[,1]
+totalsum <- sum(filter)
 
 # calculate scalar product in 'noff' offsets
 #-------------------------------------------
@@ -64,6 +65,7 @@ for (i in 1:noffs){
     ifin <- flen + (i-1)
     scprod[i] <- sum(data[i:ifin] * filter[1:flen])
     reconE[i] <- scprod[i]/flen
+    #reconE[i] <- scprod[i]*2*flensecs
     
 }
 # apply normalising factor since filter in Time Domain comes from Frequency Domain
@@ -78,6 +80,23 @@ maxdata<-which.max(data)
 cat("Max Pulse data=",maxdata,"\n")
 start<-min(which(data>1.1*data[1]))-1
 cat("Start Pulse data=",start,"\n")
+#plot scalar product
+ifin <- flen+ (maxoff-1)
+
+par(mfrow=c(2,1))
+plot(seq(1,flen),cumsum(data[maxoff:ifin]*filter[1:flen]), pch=1,cex=0.2, 
+     xlim=c(100,9000), ylim=c(5e7,6e7),log="x")
+plot(seq(1,flen),data[maxoff:ifin]*filter[1:flen], ylim=c(-2000,1000),pch=1,cex=0.2)
+lines(seq(1,flen),data[maxoff:ifin]-1800,col="blue")
+lines(seq(1,flen),filter[1:flen]*1000, col="green")
+fitFilter <-lm(filter[1000:7000]~seq(1000,7000))
+summary(fitFilter)
+abline(h=fitFilter$coefficients[1]*1000, col="red")
+grid(nx=20)
+#plot(seq(1,flen),data[maxoff:ifin]*filter[1:flen], ylim=c(-2000,1000),xlim=c(100,9000), log="x",pch=1,cex=0.2)
+#lines(seq(1,flen),data[maxoff:ifin]-1800,col="blue")
+#lines(seq(1,flen),filter[1:flen]*1000, col="green")
+
 
 # Plot Pulse/data vs samples  && Re-scaled Scalar product vs. data samples
 #--------------------------------------------------------------------------
