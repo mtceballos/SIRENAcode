@@ -14,15 +14,16 @@ source("~/R/Rfunctions/drawLogPlotBox.r")
 load("/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat") #created @ polyfit2Bias.R
 
 plotFWHM_GAINCORRS <- 0   # FWHM vs. Energy
-plotFWHM_GAINCORRE <- 1   # FWHM vs. Energy
+plotFWHM_GAINCORRE <- 0   # FWHM vs. Energy
 plotBiasCorrFit    <- 0   # Bias-gainScaleCorrected vs. separation
-plotFWHM_rlength   <- 0   # FWHM vs. Record Length     
+plotFWHM_rlength   <- 1   # FWHM vs. Record Length     
+plotFWHM_pB        <- 0   # FWHM vs. Record Length     
 # if(plotFWHM_GAINCORRS || plotFWHM_GAINCORRE){
 #     pdfName <- "fwhmVSenergy_methods"
 # }else if (plotBiasCorrFit){
 #     pdfName <- "biasVSsep_methods"
 # }else if (plotFWHM_rlength){    
-#     pdfName <- "fwhmVSrlenght_methods"
+#     pdfName <- "fwhmVSrlength_methods"
 # }
 subtitle <- "ALL"
 #subtitle <- "PERF"
@@ -30,6 +31,9 @@ subtitle <- "OPTFILT_long_basePadding"
 subtitle <- "OPTFILT_long_zeroPadding_ADC_I2R"
 #subtitle <- "OPTFILT_short"
 subtitle <- "allFilter_ADC_I2R"
+#subtitle <- "allFilter_ADC_I2R_nomat"
+#subtitle <- "base0pad"
+#subtitle <- "preBuffer0padding"
 #subtitle <- "OPTFILT"
 #subtitle <- "SPIE2016" # SPIE2016/SPIE2016PP (to plot also PP points)
 plttype="b"
@@ -39,10 +43,7 @@ pulsesCateg <- c("all")
 par(pty="s")
 separation <- "40000"
 calib = "surface" # or "curve"
-calib = "curve"
-if (calib == "surface" && plotFWHM_GAINCORRS){
-    stop("Impossible FWHM correction with surface calibration")
-}
+#calib = "curve"
 array <- "LPA2shunt"
 array <- "LPA75um"
 nSimPulses <- "2000"
@@ -111,9 +112,12 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                         pL8192fixed6OF4096smprtSTCBbfb, pL8192fixed6OF2048smprtSTCBbfb,
                         pL8192fixed6OF1024smprtSTCBbfb, pL8192fixed6OF512smprtSTCBbfb,
                         pL8192fixed6OF256smprtSTCBbfb, pL8192fixed6OF128smprtSTCBbfb,
-                        pL8192fixed6OF4096smprtSTCBbfb_pB50,pL8192fixed6OF2048smprtSTCBbfb_pB50,
-                        pL8192fixed6OF1024smprtSTCBbfb_pB50, pL8192fixed6OF512smprtSTCBbfb_pB50,
-                        pL8192fixed6OF256smprtSTCBbfb_pB50, pL8192fixed6OF128smprtSTCBbfb_pB50,
+                        #pL8192fixed6OF4096smprtSTCBbfb_pB50,pL8192fixed6OF2048smprtSTCBbfb_pB50,
+                        #pL8192fixed6OF1024smprtSTCBbfb_pB50, pL8192fixed6OF512smprtSTCBbfb_pB50,
+                        #pL8192fixed6OF256smprtSTCBbfb_pB50, pL8192fixed6OF128smprtSTCBbfb_pB50,
+                        pL8192fixed6OF4096smprtSTCBbfb_pB75, pL8192fixed6OF2048smprtSTCBbfb_pB75,
+                        pL8192fixed6OF1024smprtSTCBbfb_pB75, pL8192fixed6OF512smprtSTCBbfb_pB75,
+                        pL8192fixed6OF256smprtSTCBbfb_pB75,  pL8192fixed6OF128smprtSTCBbfb_pB75,
                         pL8192fixed6I2R8192smprtSTCBbfb, pL4096fixed6I2R8192smprtSTCBbfb,
                         pL2048fixed6I2R8192smprtSTCBbfb, pL1024fixed6I2R8192smprtSTCBbfb, 
                         pL512fixed6I2R8192smprtSTCBbfb,  pL256fixed6I2R8192smprtSTCBbfb, 
@@ -121,17 +125,67 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                         pL8192fixed6I2R4096smprtSTCBbfb, pL8192fixed6I2R2048smprtSTCBbfb,
                         pL8192fixed6I2R1024smprtSTCBbfb, pL8192fixed6I2R512smprtSTCBbfb,
                         pL8192fixed6I2R256smprtSTCBbfb, pL8192fixed6I2R128smprtSTCBbfb,
-                        pL8192fixed6I2R4096smprtSTCBbfb_pB50,pL8192fixed6I2R2048smprtSTCBbfb_pB50,
-                        pL8192fixed6I2R1024smprtSTCBbfb_pB50, pL8192fixed6I2R512smprtSTCBbfb_pB50,
-                        pL8192fixed6I2R256smprtSTCBbfb_pB50, pL8192fixed6I2R128smprtSTCBbfb_pB50,
-                        #pL8192fixed6I2R4096smprtSTCBbfb_pB100, pL8192fixed6I2R2048smprtSTCBbfb_pB100,
-                        #pL8192fixed6I2R1024smprtSTCBbfb_pB100, pL8192fixed6I2R512smprtSTCBbfb_pB100,
-                        #pL8192fixed6I2R256smprtSTCBbfb_pB100,  pL8192fixed6I2R128smprtSTCBbfb_pB100,
-                        pL1024fixed6OF1024NM50000smprtSTCBbfb,
-                        pL1024multilibWEIGHTN1024NM50000smprtSTCBbfb
+                        #pL8192fixed6I2R4096smprtSTCBbfb_pB25,pL8192fixed6I2R2048smprtSTCBbfb_pB25,
+                        #pL8192fixed6I2R1024smprtSTCBbfb_pB25, pL8192fixed6I2R512smprtSTCBbfb_pB25,
+                        #pL8192fixed6I2R256smprtSTCBbfb_pB25, #pL8192fixed6I2R128smprtSTCBbfb_pB25,
+                        #pL8192fixed6I2R4096smprtSTCBbfb_pB50,pL8192fixed6I2R2048smprtSTCBbfb_pB50,
+                        #pL8192fixed6I2R1024smprtSTCBbfb_pB50, pL8192fixed6I2R512smprtSTCBbfb_pB50,
+                        #pL8192fixed6I2R256smprtSTCBbfb_pB50, #pL8192fixed6I2R128smprtSTCBbfb_pB50,
+                        pL8192fixed6I2R4096smprtSTCBbfb_pB75, pL8192fixed6I2R2048smprtSTCBbfb_pB75,
+                        pL8192fixed6I2R1024smprtSTCBbfb_pB75, pL8192fixed6I2R512smprtSTCBbfb_pB75,
+                        pL8192fixed6I2R256smprtSTCBbfb_pB75,  pL8192fixed6I2R128smprtSTCBbfb_pB75,
+                        #pL8192fixed6I2R4096smprtSTCBbfb_pB85, pL8192fixed6I2R2048smprtSTCBbfb_pB85,
+                        #pL8192fixed6I2R1024smprtSTCBbfb_pB85, pL8192fixed6I2R512smprtSTCBbfb_pB85,
+                        #pL8192fixed6I2R256smprtSTCBbfb_pB85,  #pL8192fixed6I2R128smprtSTCBbfb_pB85,
+                        
+                        pL4096fixed6I2R8192smprtSTCBbfb_pB75, pL2048fixed6I2R8192smprtSTCBbfb_pB75,
+                        pL1024fixed6I2R8192smprtSTCBbfb_pB75, pL512fixed6I2R8192smprtSTCBbfb_pB75,
+                        pL256fixed6I2R8192smprtSTCBbfb_pB75, pL128fixed6I2R8192smprtSTCBbfb_pB75,
+                        
+                        pL8192fixed6OF8192smprtSTCBbfbCT, pL8192fixed6OF4096smprtSTCBbfbCT,
+                        pL8192fixed6OF2048smprtSTCBbfbCT,
+                        
+                        #pL1024fixed6OF1024NM200000smprtSTCBbfb,
+                        #pL1024fixed6OF1024NM150000smprtSTCBbfb,
+                        pL1024fixed6OF1024NM150000smprtSTCBbfb,
+                        pL1024multilibWEIGHTN1024NM150000smprtSTCBbfb
                         #pL512fixed6OF8192smprtSTCBbfbSUM0
         )
-        preBuffer=50
+        preBuffer=75 # selected prebuffer for fwhmvsrlength plotting
+    }else if(subtitle == "OPTFILT_long_zeroPadding_ADC_I2R"){
+        methods <- list(pL8192fixed6OF8192smprtSTCBbfb, pL4096fixed6OF8192smprtSTCBbfb,
+                        pL2048fixed6OF8192smprtSTCBbfb, pL1024fixed6OF8192smprtSTCBbfb, 
+                        pL512fixed6OF8192smprtSTCBbfb,  pL256fixed6OF8192smprtSTCBbfb, 
+                        pL128fixed6OF8192smprtSTCBbfb,
+                        pL8192fixed6I2R8192smprtSTCBbfb,pL4096fixed6I2R8192smprtSTCBbfb,
+                        pL2048fixed6I2R8192smprtSTCBbfb, pL1024fixed6I2R8192smprtSTCBbfb, 
+                        pL512fixed6I2R8192smprtSTCBbfb,  pL256fixed6I2R8192smprtSTCBbfb, 
+                        pL128fixed6I2R8192smprtSTCBbfb
+        )
+    }else if(subtitle == "allFilter_ADC_I2R_nomat"){
+        methods <- list(pL8192fixed6OF8192smprtSTCBbfb, pL4096fixed6OF8192smprtSTCBbfb,
+                        pL2048fixed6OF8192smprtSTCBbfb, pL1024fixed6OF8192smprtSTCBbfb, 
+                        pL512fixed6OF8192smprtSTCBbfb,  pL256fixed6OF8192smprtSTCBbfb, 
+                        pL128fixed6OF8192smprtSTCBbfb,
+                        pL8192fixed6OF4096smprtSTCBbfb, pL8192fixed6OF2048smprtSTCBbfb,
+                        pL8192fixed6OF1024smprtSTCBbfb, pL8192fixed6OF512smprtSTCBbfb,
+                        pL8192fixed6OF256smprtSTCBbfb, pL8192fixed6OF128smprtSTCBbfb,
+                        pL8192fixed6OF4096smprtSTCBbfb_pB75, pL8192fixed6OF2048smprtSTCBbfb_pB75,
+                        pL8192fixed6OF1024smprtSTCBbfb_pB75, pL8192fixed6OF512smprtSTCBbfb_pB75,
+                        pL8192fixed6OF256smprtSTCBbfb_pB75,  pL8192fixed6OF128smprtSTCBbfb_pB75,
+                        pL8192fixed6I2R8192smprtSTCBbfb, pL4096fixed6I2R8192smprtSTCBbfb,
+                        pL2048fixed6I2R8192smprtSTCBbfb, pL1024fixed6I2R8192smprtSTCBbfb, 
+                        pL512fixed6I2R8192smprtSTCBbfb,  pL256fixed6I2R8192smprtSTCBbfb, 
+                        pL128fixed6I2R8192smprtSTCBbfb,
+                        pL8192fixed6I2R4096smprtSTCBbfb, pL8192fixed6I2R2048smprtSTCBbfb,
+                        pL8192fixed6I2R1024smprtSTCBbfb, pL8192fixed6I2R512smprtSTCBbfb,
+                        pL8192fixed6I2R256smprtSTCBbfb, pL8192fixed6I2R128smprtSTCBbfb,
+                        pL8192fixed6I2R4096smprtSTCBbfb_pB75, pL8192fixed6I2R2048smprtSTCBbfb_pB75,
+                        pL8192fixed6I2R1024smprtSTCBbfb_pB75, pL8192fixed6I2R512smprtSTCBbfb_pB75,
+                        pL8192fixed6I2R256smprtSTCBbfb_pB75,  pL8192fixed6I2R128smprtSTCBbfb_pB75
+        )
+        preBuffer=75 # selected prebuffer for fwhmvsrlength plotting
+        
     }else if(subtitle == "OPTFILT"){
         methods <- list(pL8192fixed6OF8192smprtSTCBbfb,
                         pL8192fixed6I2R8192smprtSTCBbfb,pL8192fixed6I2RFITTED8192smprtSTCBbfb,
@@ -142,6 +196,45 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                         fixed6I2RNOL8192smprtSTCBbfb,fixed6OF8192NM50000smprtSTCBbfb)
     }else if(subtitle == "WEIGHTS"){
         methods <- list(weight,weightn)#,weightnOF)
+    }else if(subtitle == "base0pad"){    
+        methods <- list(pL8192fixed6OF8192smprtSTCBbfb, pL4096fixed6OF8192smprtSTCBbfb,
+                        pL2048fixed6OF8192smprtSTCBbfb, pL1024fixed6OF8192smprtSTCBbfb, 
+                        pL512fixed6OF8192smprtSTCBbfb,  pL256fixed6OF8192smprtSTCBbfb, 
+                        pL128fixed6OF8192smprtSTCBbfb,  
+                        pL8192fixed6OF8192smprtSTCBbfbBase100, 
+                        pL4096fixed6OF8192smprtSTCBbfbBase100,
+                        pL2048fixed6OF8192smprtSTCBbfbBase100, 
+                        pL1024fixed6OF8192smprtSTCBbfbBase100, 
+                        pL512fixed6OF8192smprtSTCBbfbBase100,  
+                        pL256fixed6OF8192smprtSTCBbfbBase100, 
+                        pL128fixed6OF8192smprtSTCBbfbBase100,  
+                        pL8192fixed6OF8192smprtSTCBbfbBase3000, 
+                        pL4096fixed6OF8192smprtSTCBbfbBase3000,
+                        pL2048fixed6OF8192smprtSTCBbfbBase3000, 
+                        pL1024fixed6OF8192smprtSTCBbfbBase3000, 
+                        pL512fixed6OF8192smprtSTCBbfbBase3000,  
+                        pL256fixed6OF8192smprtSTCBbfbBase3000, 
+                        pL128fixed6OF8192smprtSTCBbfbBase3000)
+    }else if(subtitle == "preBuffer"){    
+        methods <- list(pL8192fixed6I2R4096smprtSTCBbfb_pB5, pL8192fixed6I2R2048smprtSTCBbfb_pB5,
+                        pL8192fixed6I2R1024smprtSTCBbfb_pB5, pL8192fixed6I2R512smprtSTCBbfb_pB5,
+                        pL8192fixed6I2R256smprtSTCBbfb_pB5,  pL8192fixed6I2R128smprtSTCBbfb_pB5,
+                        pL8192fixed6I2R4096smprtSTCBbfb_pB25, pL8192fixed6I2R2048smprtSTCBbfb_pB25,
+                        pL8192fixed6I2R1024smprtSTCBbfb_pB25, pL8192fixed6I2R512smprtSTCBbfb_pB25,
+                        pL8192fixed6I2R256smprtSTCBbfb_pB25,  pL8192fixed6I2R128smprtSTCBbfb_pB25,
+                        pL8192fixed6I2R4096smprtSTCBbfb_pB50, pL8192fixed6I2R2048smprtSTCBbfb_pB50,
+                        pL8192fixed6I2R1024smprtSTCBbfb_pB50, pL8192fixed6I2R512smprtSTCBbfb_pB50,
+                        pL8192fixed6I2R256smprtSTCBbfb_pB50,  pL8192fixed6I2R128smprtSTCBbfb_pB50,
+                        pL8192fixed6I2R4096smprtSTCBbfb_pB75, pL8192fixed6I2R2048smprtSTCBbfb_pB75,
+                        pL8192fixed6I2R1024smprtSTCBbfb_pB75, pL8192fixed6I2R512smprtSTCBbfb_pB75,
+                        pL8192fixed6I2R256smprtSTCBbfb_pB75,  pL8192fixed6I2R128smprtSTCBbfb_pB75,
+                        pL8192fixed6I2R4096smprtSTCBbfb_pB85, pL8192fixed6I2R2048smprtSTCBbfb_pB85,
+                        pL8192fixed6I2R1024smprtSTCBbfb_pB85, pL8192fixed6I2R512smprtSTCBbfb_pB85,
+                        pL8192fixed6I2R256smprtSTCBbfb_pB85,  pL8192fixed6I2R128smprtSTCBbfb_pB85,
+                        pL8192fixed6I2R4096smprtSTCBbfb_pB100, pL8192fixed6I2R2048smprtSTCBbfb_pB100,
+                        pL8192fixed6I2R1024smprtSTCBbfb_pB100, pL8192fixed6I2R512smprtSTCBbfb_pB100,
+                        pL8192fixed6I2R256smprtSTCBbfb_pB100,  pL8192fixed6I2R128smprtSTCBbfb_pB100)
+                        
     }else{
         stop("Undefined list of methods\n")
     }
@@ -163,7 +256,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
         Emin <- 0.1
         Emax <- 9.
         FWmin<-1.7
-        FWmax<-40.
+        FWmax<-10.
         coeffsFile <- "coeffs_polyfit.dat"
         EkeV <- c(0.2,0.5,1,2,3,4,5,6,7,8) # CALIBRATION
         #EkeV <- c(0.2,1,2,3,4,5,6,7,8) # CALIBRATION
@@ -191,14 +284,22 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                 samprateStr <-methods[[im]]$samprateStr
                 jitterStr <- methods[[im]]$jitterStr
                 bbfbStr <- methods[[im]]$bbfbStr
+                baseStr <- methods[[im]]$baseStr
                 lib <- methods[[im]]$lib
-                #eresolFile <- paste("eresol_",nSimPulses,"p_SIRENA",nSamples,
-                #                    "_pL",pulseLength,"_", EkeV[ie],"keV_",
-                #                    TRIGG,"_F0F_",lib,samprateStr,
-                #                    jitterStr,bbfbStr,".json",sep="")
-                eresolFile <- paste("eresol_",nSimPulses,"p_SIRENA",nSamples,
-                                    "_pL",pulseLength,"_", EkeV[ie],"keV_",
-                                    methods[[im]]$name,".json",sep="")
+                eresolFile1D <- paste("eresol_",nSimPulses,"p_SIRENA",nSamples,
+                                      "_pL",pulseLength,"_", EkeV[ie],"keV_",
+                                      methods[[im]]$name,".json1D",sep="")
+                if (length(grep("base",baseStr)) > 0){
+                    eresolFile1D <- paste(substring(baseStr,2),"/",eresolFile1D,sep="")
+                }
+                eresolFile2D <- paste("eresol_",nSimPulses,"p_SIRENA",nSamples,
+                                      "_pL",pulseLength,"_", EkeV[ie],"keV_",
+                                      methods[[im]]$name,".json2D",sep="")
+                if (calib == "curve" || !file.exists(eresolFile2D)){
+                    eresolFile <- eresolFile1D
+                }else if (calib == "surface"){
+                    eresolFile <- eresolFile2D
+                }
                 if(file.exists(eresolFile)){
                     # use data for selected separation (see initial definitions)
                     cat("Reading file ",eresolFile,"\n")
@@ -291,10 +392,13 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
             menuMethsIds[[5]] <- grep("I2R[1-7]{1}[0-9]{2,}_[^pB]", aliases, perl=TRUE) #I2R short
             menuMethsIds[[6]] <- grep("I2R.*_pB", aliases, perl=TRUE) #I2R preBuffer
             cat("Color for base plot is:", methods[[menuMethsIds[[imeth]][[1]]]]$color)
-            colAlt <- readline("What color for altenative models?: ")
+            alt <- readline("Alternative plots (y/n):")
+            if (alt == "y" || alt == "Y"){
+                colAlt <- readline("What color for altenative models?: ")
+            }
             
+            # Plot secondary plot(s)
             for (iblock in 1:length(menuMethsIds)){
-                # Plot secondary plot(s)
                 if (iblock == imeth) next  # this is base plot
                 if (length(menuMethsIds[[iblock]]) == 0) next  # no methods to be plotted here
                 # Plot dummy box
@@ -334,56 +438,61 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                 #     ptsLegPlot <- append(methods[[nmethods]]$point, ptsLegPlot)
                 #     ltysLegPlot <- append(methods[[nmethods]]$ltype, ltysLegPlot)
                 # }
-                # locate 1024NM50000 and plot
-                # inm <- grep("1024NM", aliases, perl=TRUE)
-                # points(EkeV,fwhmGAINCORRE[,inm],pch=methods[[inm]]$point,
-                #        col=methods[[inm]]$color,
-                #        type=plttype,lty=methods[[inm]]$ltype)
-                # errbar(EkeV,fwhmGAINCORRE[,inm], type="n",cap=0, 
-                #        yplus=fwhmGAINCORRE[,inm]+fwhmGAINCORREErr[,inm],
-                #        yminus=fwhmGAINCORRE[,inm]-fwhmGAINCORREErr[,inm],
-                #        add=TRUE,errbar.col=methods[[inm]]$color)
-                # labsLegPlot <- append(methods[[inm]]$lab, labsLegPlot)
-                # colsLegPlot <- append(methods[[inm]]$color, colsLegPlot)
-                # ptsLegPlot <- append(methods[[inm]]$point, ptsLegPlot)
-                # ltysLegPlot <- append(methods[[inm]]$ltype, ltysLegPlot)
-                # 
-                # # locate WEIGHTN1024 and plot
-                # inm <- grep("WEIGHTN1024", aliases, perl=TRUE)
-                # points(EkeV,fwhmGAINCORRE[,inm],pch=methods[[inm]]$point,
-                #        col=methods[[inm]]$color,
-                #        type=plttype,lty=methods[[inm]]$ltype)
-                # errbar(EkeV,fwhmGAINCORRE[,inm], type="n",cap=0, 
-                #        yplus=fwhmGAINCORRE[,inm]+fwhmGAINCORREErr[,inm],
-                #        yminus=fwhmGAINCORRE[,inm]-fwhmGAINCORREErr[,inm],
-                #        add=TRUE,errbar.col=methods[[inm]]$color)
-                # labsLegPlot <- append(methods[[inm]]$lab, labsLegPlot)
-                # colsLegPlot <- append(methods[[inm]]$color, colsLegPlot)
-                # ptsLegPlot <- append(methods[[inm]]$point, ptsLegPlot)
-                # ltysLegPlot <- append(methods[[inm]]$ltype, ltysLegPlot)
+                if (alt == "y" || alt == "Y"){
+                    # locate 1024NM* and plot
+                    if(length(nms <- grep("1024NM", aliases, perl=TRUE))>0){
+                        for (im in nms){
+                            points(EkeV,fwhmGAINCORRE[,im],pch=methods[[im]]$point,
+                                    col=methods[[im]]$color,
+                                    type=plttype,lty=methods[[im]]$ltype)
+                            errbar(EkeV,fwhmGAINCORRE[,im], type="n",cap=0, 
+                                    yplus=fwhmGAINCORRE[,im]+fwhmGAINCORREErr[,im],
+                                    yminus=fwhmGAINCORRE[,im]-fwhmGAINCORREErr[,im],
+                                    add=TRUE,errbar.col=methods[[im]]$color)
+                            labsLegPlot <- append(methods[[im]]$lab, labsLegPlot)
+                            colsLegPlot <- append(methods[[im]]$color, colsLegPlot)
+                            ptsLegPlot <- append(methods[[im]]$point, ptsLegPlot)
+                            ltysLegPlot <- append(methods[[im]]$ltype, ltysLegPlot)
+                        }
+                    }
+                    # # locate WEIGHTN1024 and plot
+                    if(length(nms <- grep("WEIGHTN1024", aliases, perl=TRUE)) > 0){
+                        for (im in nms){
+                            points(EkeV,fwhmGAINCORRE[,im],pch=methods[[im]]$point,
+                                    col=methods[[im]]$color,
+                                    type=plttype,lty=methods[[im]]$ltype)
+                            errbar(EkeV,fwhmGAINCORRE[,im], type="n",cap=0, 
+                                    yplus=fwhmGAINCORRE[,im]+fwhmGAINCORREErr[,im],
+                                    yminus=fwhmGAINCORRE[,im]-fwhmGAINCORREErr[,im],
+                                    add=TRUE,errbar.col=methods[[im]]$color)
+                            labsLegPlot <- append(methods[[im]]$lab, labsLegPlot)
+                            colsLegPlot <- append(methods[[im]]$color, colsLegPlot)
+                            ptsLegPlot <- append(methods[[im]]$point, ptsLegPlot)
+                            ltysLegPlot <- append(methods[[im]]$ltype, ltysLegPlot)
+                        }
+                    }
                 
-                
-                # plot methods in alternative blocks
-                for (im in menuMethsIds[[iblock]]){ 
-                    if(length(grep("Sum0Filt", aliases[im], perl=TRUE))>0)next
-                    points(EkeV,fwhmGAINCORRE[,im],pch=methods[[im]]$point,
-                           col=colAlt, type=plttype, lty=methods[[im]]$ltype)
-                    errbar(EkeV,fwhmGAINCORRE[,im], type="n",cap=0,
-                           yplus=fwhmGAINCORRE[,im]+fwhmGAINCORREErr[,im],
-                           yminus=fwhmGAINCORRE[,im]-fwhmGAINCORREErr[,im],
-                           add=TRUE,errbar.col=colAlt)
-                    labsLegPlot <- append(methods[[im]]$lab, labsLegPlot)
-                    #colsLegPlot <- append(methods[[im]]$color, colsLegPlot)
-                    colsLegPlot <- append(colAlt, colsLegPlot)
-                    ptsLegPlot <- append(methods[[im]]$point, ptsLegPlot)
-                    ltysLegPlot <- append(methods[[im]]$ltype, ltysLegPlot)
-                    
-                    
-                    if(length(grep("R",methods[[im]]$name)>0)){
-                        legendCols <- append(legendCols,methods[[im]]$color)
+                    # plot methods in alternative blocks
+                    for (im in menuMethsIds[[iblock]]){ 
+                        if(length(grep("Sum0Filt", aliases[im], perl=TRUE))>0)next
+                        points(EkeV,fwhmGAINCORRE[,im],pch=methods[[im]]$point,
+                               col=colAlt, type=plttype, lty=methods[[im]]$ltype)
+                        errbar(EkeV,fwhmGAINCORRE[,im], type="n",cap=0,
+                               yplus=fwhmGAINCORRE[,im]+fwhmGAINCORREErr[,im],
+                               yminus=fwhmGAINCORRE[,im]-fwhmGAINCORREErr[,im],
+                               add=TRUE,errbar.col=colAlt)
+                        labsLegPlot <- append(methods[[im]]$lab, labsLegPlot)
+                        #colsLegPlot <- append(methods[[im]]$color, colsLegPlot)
+                        colsLegPlot <- append(colAlt, colsLegPlot)
+                        ptsLegPlot <- append(methods[[im]]$point, ptsLegPlot)
+                        ltysLegPlot <- append(methods[[im]]$ltype, ltysLegPlot)
+                        
+                        
+                        if(length(grep("R",methods[[im]]$name)>0)){
+                            legendCols <- append(legendCols,methods[[im]]$color)
+                        }
                     }
                 }
-                
                 # Base plot are methods in menuMethsIds[[imeth]]
                 for (im in menuMethsIds[[imeth]]){
                     if(length(grep("Sum0Filt", aliases[im], perl=TRUE))>0)next
@@ -401,7 +510,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                 # Print legend of base plot and alternative block
                 #legend("topleft", legend=labs, col=colors, pch=points, cex=0.6,
                 #       text.col=colors, bty="n",y.intersp=1., lty=ltys)
-                legend("topright", legend=labsLegPlot, col=colsLegPlot, pch=ptsLegPlot, cex=0.6,
+                legend("topright", legend=labsLegPlot, col=colsLegPlot, pch=ptsLegPlot, cex=0.4,
                               text.col=colsLegPlot, bty="n",y.intersp=1., lty=ltysLegPlot)
             
                 RNOL <- expression(R[NOL]*"=" * over(V[0],I)- R[L])
@@ -413,6 +522,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                 #legend("bottomright",legend=c(R, RFIT, RNOL),bty="n",cex=0.8,
                 #       text.col=legendCols)
                 #legend("bottomleft",legend=c(Ibias,Ifit),bty="n",cex=0.8)
+                if (alt == "n" || alt == "N") break
             }
         } # if plotFWHM_GAINCORRE
     } # if plotFWHM_GAINCORRS/plotFWHM_GAINCORRE
@@ -431,6 +541,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
         
         # READ recordlength and resolution from DATA
         # ===========================================
+        ims1D <- numeric()
         for (il in 1:length(rlens)){
             for (im in 1:nmethods){
                 nSamples = methods[[im]]$nSamples
@@ -442,6 +553,7 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                 bbfbStr <- methods[[im]]$bbfbStr
                 lib <- methods[[im]]$lib
                 name <- methods[[im]]$name
+                baseStr <- methods[[im]]$baseStr
                 alias <- paste("pL",pulseLength,"_",name,sep="")
                 
                 # for 8192, pulseLength AND ofLength must be 8192
@@ -450,9 +562,21 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
                 # for other record lengths, any of them must be == rlens[il]
                 if (pulseLength != rlens[il] && ofLength != rlens[il]) next
                 
-                eresolFile <- paste("eresol_",nSimPulses,"p_SIRENA",nSamples,
-                                    "_pL",pulseLength,"_", EkeV_rl,"keV_",
-                                    name,".json",sep="")
+                eresolFile1D <- paste("eresol_",nSimPulses,"p_SIRENA",nSamples,
+                                     "_pL",pulseLength,"_", EkeV_rl,"keV_",
+                                     name,".json1D",sep="")
+                if (length(grep("base",baseStr)) > 0){
+                    eresolFile1D <- paste(substring(baseStr,2),"/",eresolFile1D,sep="")
+                }
+                eresolFile2D <- paste("eresol_",nSimPulses,"p_SIRENA",nSamples,
+                                      "_pL",pulseLength,"_", EkeV_rl,"keV_",
+                                      name,".json2D",sep="")
+                if (calib == "curve" || !file.exists(eresolFile2D)){
+                    eresolFile <- eresolFile1D
+                    ims1D <- append(ims1D,im)
+                }else if (calib == "surface"){
+                    eresolFile <- eresolFile2D
+                }
                 
                 if(file.exists(eresolFile)){
                     # use data for selected separation (see initial definitions)
@@ -473,21 +597,21 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
         # PLOT ENERGY RESOLUTION CORRECTED vs. record length
         #===================================================
         # common part to all plots (1/method to create a movie)
-        drawLogPlotBox(xlimits=c(min(100),max(1E4)),ylimits=c(1,50),
-                       x2limits=c(min(rlens),max(rlens)),y2limits=c(1.5,7),
+        drawLogPlotBox(xlimits=c(min(100),max(1E4)),ylimits=c(1.5,30),
+                       x2limits=c(min(rlens),max(rlens)),y2limits=c(1.5,5),
                        logxy="xy", xlabel="Record length (samples)", 
                        ylabel="Energy Resolution FWHM (eV)",
                        naxes=c(T,T,T,T))
-        title(main=paste("ENERGY RESOLUTION (",array,")",sep=""))
+        #title(main=paste("ENERGY RESOLUTION (",array,")\n Surface Correction for jitter",sep=""))
         grid(nx=NA,ny=NULL)
         abline(v=2^(5:13),lty=3,col="grey50") # where pre-calc filters are
         # tabulated resolutions
         abline(h=2.5, lty=3, col="gray4")
-        text(0.9E4,2.5,"HR (>8192)",cex=0.4)
+        text(0.8E4,2.5,"HR (>8192)",cex=0.6)
         abline(h=3, lty=3, col="gray4")
-        text(0.9E4,3,"MR (512-8192)",cex=0.4)
+        text(0.8E4,3,"MR (512-8192)",cex=0.6)
         abline(h=7, lty=3, col="gray4")
-        text(0.9E4,7,"LR (256-512)",cex=0.4)
+        text(0.8E4,7,"LR (256-512)",cex=0.6)
         #abline(v=invalids,lty=3, col="gray4")# invalids
         
         uniqCols <- unique(colors)
@@ -498,27 +622,48 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
         #                             "ADC 0-padding-SUM0"),
         #        col=uniqCols, pch=c(1:(length(uniqCols)-1),0), cex=0.6,
         #        text.col=uniqCols, bty="n",y.intersp=1.)
-        legend(x=3000,y=60, legend=c("ADC 0-padding","ADC short filter", "ADC preBuffer",
-                                     "I2R 0-padding","I2R short filter", "I2R preBuffer50",
-                                     "I2R preBuffer100",
-                                     "ADC 1024NM50000", "ADC WEIGHTN1024NM50000"),
-               col=uniqCols, pch=c(1:length(uniqCols)), cex=0.6,
-               text.col=uniqCols, bty="n",y.intersp=1.)
-        
+        pchs <- c(1:length(uniqCols))
+        pchs[7] <- 0
+        pchs[9] <- 23
+        legend(x=1800,y=30, legend=c("ADC 0-padding","ADC short filter", 
+                                     paste("ADC preBuffer",preBuffer,sep=""),
+                                     "I2R 0-padding","I2R short filter", 
+                                     paste("I2R preBuffer",preBuffer,sep=""),
+                                     paste("I2R 0-pad preBuffer",preBuffer,sep=""),
+                                     "ADC short filter (central ct)",
+                                     "ADC 1024NM150000", 
+                                     "ADC WEIGHTN1024NM150000"),
+               col=uniqCols, pch=pchs, cex=0.65, pt.bg="grey",
+               text.col=uniqCols, bty="n",y.intersp=0.5)
+        #legend(x=3000,y=60, legend=c("ADC 0-padding","ADC short filter", 
+        #                             paste("ADC preBuffer",preBuffer,sep=""),
+        #                             "I2R 0-padding","I2R short filter", 
+        #                             paste("I2R preBuffer",preBuffer,sep="")),
+        #       col=uniqCols, pch=c(1:length(uniqCols)), cex=0.75,
+        #       text.col=uniqCols, bty="n",y.intersp=0.5)
+        #legend("topright", legend=c("ADC 0-padding","ADC 0-padding Base100", 
+        #                             "ADC 0-padding Base3000"),
+        #       col=uniqCols, pch=c(1:length(uniqCols)), cex=0.75,
+        #       text.col=uniqCols, bty="n",y.intersp=0.5)
         for (im in 1:nmethods){
-            pdfName <- paste("fwhmVSrlenght_methods_",sprintf("%02d",im),sep="")
-            outPDF <- paste("./PDFs/",pdfName,"_",subtitle,noiseMat,".pdf",sep="")
+            pdfName <- paste("fwhmVSrlength_methods_",sprintf("%02d",im),sep="")
+            outPDF <- paste("./PDFs/",pdfName,"_",subtitle,noiseMat,"_calib_",calib,".pdf",sep="")
             #pdf(outPDF,width=7, height=7)
             
             alias <- paste("pL",methods[[im]]$pLength,"_",methods[[im]]$name,sep="")
             pt <- which(methods[[im]]$color == uniqCols)
+            
             #if (im == nmethods) pt=0
             points(rlens,fwhmGAINCORRE[,im],col=methods[[im]]$color,type=plttype,
-                   pch=pt)
+                   pch=pchs[pt], bg="grey")
             errbar(rlens,fwhmGAINCORRE[,im], yplus=fwhmGAINCORRE[,im]+fwhmGAINCORREErr[,im],
                 type="n",cap=0, yminus=fwhmGAINCORRE[,im]-fwhmGAINCORREErr[,im],
                 add=TRUE,errbar.col=methods[[im]]$color)
-            cat("im=",im," (",alias,")\n")
+            #cat("im=",im," (",alias,")\n")
+            if (im %in% ims1D && calib == "surface"){
+                cat("Using 1D calibration (pt with a border box) for im=",im," (",alias,")\n")
+                #points(rlens,fwhmGAINCORRE[,im], pch=22,cex=2)
+            }
             #if(readline(prompt = "Press <Enter> to continue...(q to quit):") == "q") {
             #    dev.off()
             #    break
@@ -527,6 +672,110 @@ if (!subtitle %in% c("PERF" )){ # NOT PERF
             dev.print(pdf, outPDF, width=7, height=7)
         }
     } # plot rlength
+    
+    if(plotFWHM_pB){
+        
+        cat("#\n#Plotting FWHM vs. pB value \n#\n")
+        rlens <- c(8192, 4096, 2048, 1024, 512, 256, 128)
+        pBs <- c(5, 25, 50, 75, 85, 100)
+        EkeV_rl <- 7
+        
+        # INITIALIZE MATRICES #
+        # =======================
+        
+        fwhmGAINCORRE    <- matrix(NA,nrow=length(pBs), ncol=nmethods)
+        fwhmGAINCORREErr <- matrix(NA,nrow=length(pBs), ncol=nmethods)
+        
+        # READ pBs, methods  and resolution from DATA
+        # ===========================================
+        ims1D <- numeric()
+        for (ip in 1:length(pBs)){
+            pBstr <- paste("I2R.*_pB",pBs[ip],"_",sep="")
+            idx_pbs <- grep(pBstr, aliases, perl=TRUE) #I2R preBuffer
+            for (im in 1:nmethods){
+                pulseLength = methods[[im]]$pLength
+                name <- methods[[im]]$name
+                alias <- paste("pL",pulseLength,"_",name,sep="")
+                if (! alias %in% aliases[idx_pbs]) next
+                nSamples = methods[[im]]$nSamples
+                
+                eresolFile1D <- paste("eresol_",nSimPulses,"p_SIRENA",nSamples,
+                                      "_pL",pulseLength,"_", EkeV_rl,"keV_",
+                                      name,".json1D",sep="")
+                eresolFile2D <- paste("eresol_",nSimPulses,"p_SIRENA",nSamples,
+                                      "_pL",pulseLength,"_", EkeV_rl,"keV_",
+                                      name,".json2D",sep="")
+                if (calib == "curve" || !file.exists(eresolFile2D)){
+                    eresolFile <- eresolFile1D
+                    ims1D <- append(ims1D,im)
+                }else if (calib == "surface"){
+                    eresolFile <- eresolFile2D
+                }
+                cat("Reading file ",eresolFile,"\n")
+                stopifnot(file.exists(eresolFile))
+                # use data for selected separation (see initial definitions)
+                jsondata <- fromJSON(file=eresolFile)
+                idxSep <- which(sapply(jsondata,function(x) x$separation)==separation)
+                fwhmGAINCORRE[ip,im] <- as.numeric(jsondata[[idxSep]]$fwhmEreal$all)
+                fwhmGAINCORREErr[ip,im] <- as.numeric(jsondata[[idxSep]]$fwhmEreal_err$all)
+            } #method
+        }# pB
+        
+        # PLOT ENERGY RESOLUTION CORRECTED vs. prebuffer samples
+        #===================================================
+        pdfName <- paste("fwhmVSpb_methods",sep="")
+        outPDF <- paste("./PDFs/",pdfName,"_",subtitle,noiseMat,"_calib_",calib,".pdf",sep="")
+        pdf(outPDF,width=7, height=7)
+        plot(pBs,seq(1.5,10.,length.out=length(pBs)),
+             type="n",cex=2, xlab="pre-buffer values (samples)", 
+             ylab="Energy Resolution FWHM (eV)", 
+             main=paste("ENERGY RESOLUTION (",array,
+                        ")\n(Calculated from gain-scale-", calib,
+                        " calibrated energies)",sep=""))
+        axis(4,labels=FALSE)
+        minor.tick(nx=5,ny=5,tick.ratio=0.5)
+        grid(nx=NA,ny=NULL)
+        # tabulated resolutions
+        abline(h=2.5, lty=2, col="darkgreen")
+        text(9,2.55,"HR (>8192)",cex=0.4)
+        abline(h=3, lty=2, col="darkgreen")
+        text(9,3.05,"MR (512-8192)",cex=0.4)
+        abline(h=7, lty=2, col="darkgreen")
+        text(9,7.05,"LR (256-512)",cex=0.4)
+        
+        uniqPts <- unique(points)
+        colors=c()
+        #legend("topright", legend=labsLegPlot,
+        #       col=uniqCols, pch=c(1:length(uniqCols)), cex=0.75,
+        #       text.col=uniqCols, bty="n",y.intersp=0.5)
+        for (im in 1:nmethods){
+            alias <- paste("pL",methods[[im]]$pLength,"_",methods[[im]]$name,sep="")
+            color <- which(methods[[im]]$point == uniqPts)
+            colors <- append(colors,color)
+            #if (im == nmethods) pt=0
+            points(pBs,fwhmGAINCORRE[,im],col=color,  pch=methods[[im]]$point)
+            errbar(pBs,fwhmGAINCORRE[,im], yplus=fwhmGAINCORRE[,im]+fwhmGAINCORREErr[,im],
+                   type="n",cap=0, yminus=fwhmGAINCORRE[,im]-fwhmGAINCORREErr[,im],
+                   add=TRUE,errbar.col=color)
+            #cat("im=",im," (",alias,")\n")
+            if (im %in% ims1D && calib == "surface"){
+                cat("Using 1D calibration for im=",im," (",alias,")\n")
+                points(rlens,fwhmGAINCORRE[,im], pch=22,cex=2)
+            }
+            #if(readline(prompt = "Press <Enter> to continue...(q to quit):") == "q") {
+            #    dev.off()
+            #    break
+            #}
+            #dev.off()
+            #dev.print(pdf, outPDF, width=7, height=7)
+        }
+        legend("topright", legend=c("I2R 4096 samples","I2R 2048 samples",
+                                    "I2R 1024 samples", "I2R 512 samples",
+                                    "I2R 256 samples", "I2R 128 samples"),
+               col=unique(colors), pch=uniqPts, cex=0.75,
+               text.col=colors, bty="n")
+        dev.off()
+    } # plot pb_samples
     
     if(plotBiasCorrFit){ # pairs of pulses
         cat("#\n#Plotting Energy bias vs. Separation \n#\n")
