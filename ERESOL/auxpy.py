@@ -38,6 +38,7 @@ scaleFactor = 0
 def concatrows(inFile, ext, outFile, ncon):
     """
     Concatenate nrows contiguous rows in a fitsfile to get larger records
+
     :type inFile: str
     :param inFile: 1-col input FITS file name (with short records)
 
@@ -63,22 +64,24 @@ def concatrows(inFile, ext, outFile, ncon):
 
     nrows1 = nrows0//ncon
     coldim1 = int(coldim0) * ncon
-    if nrows0 > nrows1:
-        nrows1 = nrows1 + 1
     data2 = np.zeros((nrows1, coldim1))
     coldim1 = str(coldim1) + 'E'
 
     j = 0
     for i in range(0, nrows0, ncon):
-        j = j + 1
         if j > nrows1-1:
             break
-        data2[j] = np.concatenate((coldata[i], coldata[i+1], coldata[i+2]))
+        # data2[j] = np.concatenate((coldata[i], coldata[i+1], coldata[i+2]))
+        pp = coldata[i]
+        for k in range(1, ncon):
+            pp = np.concatenate((pp, coldata[i+k]))
+        data2[j] = pp
+        j = j + 1
 
-    # newcol1 = fits.Column(name=colname, format=coldim1, array=data2)
     newcol1 = fits.Column(name='ADC', format=coldim1, array=data2)
     t = fits.BinTableHDU.from_columns([newcol1, ])
     t.writeto(outFile)
+
 
 def addcolumn(inFile, ext, colname, datacol):
     """
@@ -1010,7 +1013,7 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
                 mono1EkeV, mono2EkeV, reconMethod, filterLength,
                 nsamples, pulseLength, nSimPulses, fdomain, detMethod,
                 tstartPulse1, tstartPulse2, nSimPulsesLib, coeffsFile,
-                libTmpl, simDir, outDir, detSP, pB, LbT, s0, lags, filterct,
+                libTmpl, simDir, outDir, detSP, pB, LbT, s0, lags, filterct, B0,
                 sepsStr):
     """
     :param pixName: Extension name for FITS pixel definition file
@@ -1058,6 +1061,8 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
     :param lags: Do parabola fit? lags=1 (YES), lags=0 (NO)
     :param filterct: Filters central part have been replaced by ct value? or use
                      derived filters from largest 8192 filter (fit)))
+    :param B0: if B0>0 processing will be done by B0 (baseline subtraction)
+                Otherwise, F0 (bin 0 freq.)
     :param sepsStr: blank spaces separated list of pulses separations
     :return: file with energy resolutions for the input pairs of pulses
     """
@@ -1126,7 +1131,12 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
     ctStr = ""
     if filterct:
         ctStr = "_" + filterct
-
+    # optimal filters B0 (baseline subtraction) or F0 (bin f=0) processing
+    B0str = ""
+    FMparam = " FilterMethod=F0"
+    if B0 > 0:
+        B0str = "_B0-" + str(B0)
+        FMparam = " FilterMethod=B0"
     # Lcrit
     LcStr = ""
     if not Lc == "":
@@ -1198,28 +1208,29 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
         # detection to be performed -> require different models:
         if tstartPulse1 == 0 and detMethod == "AD":
             libFile = (libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) +
-                       "_" + str(nSimPulsesLib) + "p" + smprtStr + jitterStr +
-                       noiseStr + bbfbStr + LcStr + pBStr + ctStr + ".fits")
+                       "_" + str(nSimPulsesLib) + "p" + smprtStr + B0str +
+                       jitterStr + noiseStr + bbfbStr + LcStr + pBStr +
+                       ctStr + ".fits")
         else:
             libFile = (libDir + "/library" + fixedEkeV + "keV_PL" +
                        str(nsamples) + "_" + str(nSimPulsesLib) + "p" +
-                       smprtStr + jitterStr + noiseStr + bbfbStr + LcStr +
-                       pBStr + ctStr + ".fits")
+                       smprtStr + B0str + jitterStr + noiseStr + bbfbStr +
+                       LcStr + pBStr + ctStr + ".fits")
     libFile = libFile.replace(".fits", libTmpl + ".fits")
 
     root = ''.join([str(nSimPulses), 'p_SIRENA', str(nsamples), '_pL',
                     str(pulseLength), '_', mono1EkeV, 'keV_', mono2EkeV,
                     'keV_', TRIGG, "_", str(fdomain), '_',
                     str(labelLib), '_', str(reconMethod), str(filterLength),
-                    reconMethod2, pBStr, LbTStr, smprtStr, jitterStr, noiseStr,
-                    bbfbStr, LcStr, s0Str, lagsStr, ctStr])
+                    reconMethod2, B0str, pBStr, LbTStr, smprtStr, jitterStr,
+                    noiseStr, bbfbStr, LcStr, s0Str, lagsStr, ctStr])
     if mono2EkeV == "0":
         root = ''.join([str(nSimPulses), 'p_SIRENA', str(nsamples), '_pL',
                         str(pulseLength), '_', mono1EkeV, 'keV_', TRIGG, "_",
                         str(fdomain), '_', str(labelLib),
                         '_', str(reconMethod), str(filterLength),
-                        reconMethod2, pBStr, LbTStr, smprtStr, jitterStr, 
-                        noiseStr, bbfbStr, LcStr, s0Str, lagsStr, ctStr])
+                        reconMethod2, B0str, pBStr, LbTStr, smprtStr,
+                        jitterStr, noiseStr, bbfbStr, LcStr, s0Str, lagsStr, ctStr])
 
     eresolFile = "eresol_" + root + ".json"
     eresolFile = eresolFile.replace(".json", libTmpl+".json")
@@ -1292,7 +1303,7 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
                     " OFNoise=" + ofnoise + " XMLFile=" + XMLsixte +
                     " filtEeV=" + str(filtEeV) + OFstrategy +
                     " preBuffer=" + str(pB) +
-                    " LbT=" + str(LbT) + s0Param)
+                    " LbT=" + str(LbT) + s0Param + FMparam)
             try:
                 print(comm)
                 args = shlex.split(comm)
@@ -1314,7 +1325,7 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
             evtf.close()
 
     return smprtStr, jitterStr, noiseStr, bbfbStr, LcStr, pBStr, LbTStr,\
-        s0Str, lagsStr, ctStr, evtFile, eresolFile
+        s0Str, lagsStr, ctStr, B0str, evtFile, eresolFile
 
 
 def convertEnergies(inFile, outFile, coeffsFile, alias):
