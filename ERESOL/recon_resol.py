@@ -67,8 +67,8 @@ if __name__ == "__main__":
                         choices=['', 'samprate2', 'samprate4'],
                         help="baseline, half_baseline, quarter baseline")
     parser.add_argument('--jitter', default="",
-                        choices=['', 'jitter'],
-                        help="no jitter, jitter")
+                        choices=['', 'jitter', 'jitter_M82'],
+                        help="no jitter, jitter, M82")
     parser.add_argument('--noise', default="",
                         choices=['', 'nonoise'],
                         help="noisy, nonoise")
@@ -109,7 +109,7 @@ if __name__ == "__main__":
                         R script polyfit2bias.R')
     parser.add_argument('--detMethod', default='AD',
                         choices=['AD', 'STC'])
-    parser.add_argument('--detectSP', default=1, type=int,
+    parser.add_argument('--detSP', default=1, type=int,
                         help='are Secondaries to be detected (1:yes; 0:no)')
     parser.add_argument('--resultsDir', default="",
                         help='directory for resulting evt and json files\
@@ -119,22 +119,29 @@ if __name__ == "__main__":
                         help='spaced list of separations between\
                         Prim & Sec pulses', default="")
     parser.add_argument('--bbfb', default="",
-                        choices=['', 'bbfb'],
-                        help="dobbfb=n, dobbfb=y")
+                        choices=['', 'bbfb', 'bbfb_NewPar', 'bbfb_040',
+                                 'bbfb_040_ct'], help="dobbfb=n, dobbfb=y")
     parser.add_argument('--Lc', default="",
                         help="Inductance over critical value")
-    parser.add_argument('--detSP', type=int, default=1,
-                        help='Detect secondary pulses? (1=Y, 0=N)\
-                        [default %(default)s]')
     parser.add_argument('--preBuffer', default=0, type=int,
                         help="preBuffer value for optimal filters")
+    parser.add_argument('--B0', default=0, type=int,
+                        help="B0 (baseline subtraction; B0>0) of \
+                        F0 (B0=0) optimal filter")
+    parser.add_argument('--LbT', default="0",
+                        help="Time (s) to average baseline to be subtracted")
     parser.add_argument('--Sum0Filt', default=0, type=int,
                         help="Optimal Filter SUM shoud be 0? (0=NO; 1=YES)")
-
+    parser.add_argument('--lags', default=1, type=int,
+                        help="Do parabola fit if lags=1")
+    parser.add_argument('--ct', default="",
+                        choices=['', 'ct', 'fit'],
+                        help="Filters central part replaced by constant? or\
+                        filters derived from largest 8192?")
     inargs = parser.parse_args()
 
     # print("array=",inargs.array)
-    
+
     # rename input parameters
     pixName = inargs.pixName
     labelLib = inargs.labelLib
@@ -162,15 +169,22 @@ if __name__ == "__main__":
     sepsStr = inargs.separations
     detSP = inargs.detSP
     pB = inargs.preBuffer
+    LbT = inargs.LbT
     s0 = inargs.Sum0Filt
+    lags = inargs.lags
+    filterct = inargs.ct
+    B0=inargs.B0
+
 
     # general definitions
     EURECAdir = "/dataj6/ceballos/INSTRUMEN/EURECA/"
     ERESOLdir = EURECAdir + "/ERESOL/"
     xifusim = "xifusim" + pixName
     simDir = ERESOLdir + "PAIRS/" + xifusim
-    if resultsDir == "gainScale":
-        simDir += "/gainScale/"
+    resultsDir = resultsDir.rstrip('\\')
+    resultsDir = resultsDir.lstrip('\\')
+    if ("gainScale" in resultsDir) or ("base" in resultsDir):
+        simDir += "/" + resultsDir
     outDir = ERESOLdir + "PAIRS/eresol" + pixName + "/" + resultsDir
     classAries = ["primaries", "secondaries", "all"]
     if tstartPulse2 == 0:
@@ -195,27 +209,20 @@ if __name__ == "__main__":
 
     # to be able to use shorter filters or long filter shortened in FWHM curve
     Hres = min(filterLength, pulseLength)
-    pBStr = ""
-    if pB > 0:
-        Hres = filterLength - pB
-        pBStr = "_pB" + str(pB)
-
-    s0Str = ""
-    if s0 == 1:
-        s0Str = "_Sum0Filt"
     print("Hres=", Hres)
     print("filterLength=", filterLength)
     print("pulseLength=", pulseLength)
 
     # 1) Reconstruct energies
     # ------------------------
-    smprtStr, jitterStr, noiseStr, bbfbStr, LcStr, evtFile, eresolFile = \
+    smprtStr, jitterStr, noiseStr, bbfbStr, LcStr, pBStr, LbTStr, \
+        s0Str, lagsStr, ctStr, B0str, evtFile, eresolFile = \
         auxpy.reconstruct(pixName, labelLib, samprate, jitter, dcmt,
                           noise, bbfb, Lc, mono1EkeV, mono2EkeV, reconMethod,
-                          filterLength, nsamples, pulseLength,
-                          nSimPulses, fdomain, detMethod, tstartPulse1,
-                          tstartPulse2, nSimPulsesLib, coeffsFile,
-                          libTmpl, resultsDir, detSP, pB, s0, sepsStr)
+                          filterLength, nsamples, pulseLength, nSimPulses,
+                          fdomain, detMethod, tstartPulse1, tstartPulse2,
+                          nSimPulsesLib, coeffsFile, libTmpl, simDir, outDir,
+                          detSP, pB, LbT, s0, lags, filterct, B0, sepsStr)
 
     # 2) Calibrate (AND/OR) extract Energy resolution info to .json files
     # --------------------------------------------------------------------
@@ -325,20 +332,46 @@ if __name__ == "__main__":
                 print("=============================================")
                 print("CALIBRATING ENERGIES.........................")
                 print("=============================================")
-                evtcalib = evt.replace(".fits", ".calib")
+
+                with open(coeffsFile, "rt") as f:
+                    fileCont = f.read()   # JSON file
+                    if 'surface' in fileCont:
+                        ftype = "surface"
+                    elif fileCont[0] == '{':
+                        ftype = 'json'
+                    else:
+                        ftype = 'poly'
+
+                if ftype == 'poly':
+                    evtcalib = evt.replace(".fits", ".calib1D")
+                    eresolFile = eresolFile.replace(".json", ".json1D")
+                elif ftype == 'surface':
+                    evtcalib = evt.replace(".fits", ".calib2D")
+                    eresolFile = eresolFile.replace(".json", ".json2D")
+                elif ftype == 'json':
+                    evtcalib = evt.replace(".fits", ".calibItr")
+                    eresolFile = eresolFile.replace(".json", ".jsonItr")
+                else:
+                    raise ValueError("Incorrect Coeffs file type")
+
                 # locate coefficients in coeffs table
                 # ------------------------------------
                 alias = ("pL" + str(pulseLength) + "_" + detMethod + "_" +
                          fdomain + "_" + labelLib + "_" +
-                         reconMethod + str(filterLength) + pBStr +
+                         reconMethod + str(filterLength) + pBStr + LbTStr +
                          smprtStr + jitterStr + noiseStr + bbfbStr +
-                         LcStr + s0Str)
+                         LcStr + s0Str + lagsStr + ctStr)
+                #alias = ("pL" + str(pulseLength) + "_" + detMethod + "_" +
+                #         fdomain + "_" + labelLib + "_" +
+                #         reconMethod + str(filterLength) + pBStr +
+                #         smprtStr + jitterStr + noiseStr + bbfbStr +
+                #         LcStr + s0Str + "_base100")
                 if "NM" in reconMethod:
                     alias = ("pL" + str(pulseLength) + "_" + detMethod + "_" +
                              fdomain + "_" + labelLib + "_" +
                              reconMethod.split("NM")[0] + str(filterLength) +
-                             "NM" + reconMethod.split("NM")[1] + smprtStr +
-                             jitterStr + noiseStr + bbfbStr + LcStr)
+                             "NM" + reconMethod.split("NM")[1] + LbTStr +
+                             smprtStr + jitterStr + noiseStr + bbfbStr + LcStr)
                 # unchecked option...
                 # if 'fixedlib' in labelLib and 'OF' not in labelLib:
                 #    alias = (detMethod + "_" + labelLib + "OF_" + "_" +

@@ -32,13 +32,14 @@ gainScaleID <-"methods_allFilter_ADC_I2R"   # !!!! CHECK METHODS BELOW !!!!!
 #gainScaleID <-"methods_040_nojitter_nonoise"   # !!!! CHECK METHODS BELOW !!!!! (bias voltage sensitivity)
 #gainScaleID <-"methods_040_nojitter_nonoise_ct"   # !!!! CHECK METHODS BELOW !!!!! (bias voltage sensitivity)
 #gainScaleID <-"methods_040_nojitter"   # !!!! CHECK METHODS BELOW !!!!! (ADU sensitivity)
+gainScaleID <-"methods_040_Rs"   # !!!! CHECK METHODS BELOW !!!!! (for Gamil)
 #gainScaleID <-"methods_nojitter_nolags"   # !!!! CHECK METHODS BELOW !!!!! (parabola study)
 #gainScaleID <-"methods_nojitter"   # !!!! CHECK METHODS BELOW !!!!! (parabola study)
 #gainScaleID <-"methods_ct"   # !!!! CHECK METHODS BELOW !!!!! (constant central part of filter)
-gainScaleID <-"methods_fit"   # !!!! CHECK METHODS BELOW !!!!! (filters derived from 8192 filter)
+#gainScaleID <-"methods_fit"   # !!!! CHECK METHODS BELOW !!!!! (filters derived from 8192 filter)
 LbT="0.64E-3"
 #LbT="5.76E-3"
-gainScaleID <-paste("methods_040_LbT", LbT,sep="")   # !!!! CHECK METHODS BELOW !!!!! (ADU sensitivity)
+#gainScaleID <-paste("methods_040_LbT", LbT,sep="")   # !!!! CHECK METHODS BELOW !!!!! (ADU sensitivity)
 
 
 EkeV <- c(0.2,0.5,1,2,3,4,5,6,7,8)
@@ -809,6 +810,13 @@ pL8192fixed6OF4smprtSTCBbfb <-
 
 
 ##### I2R BBFB ########
+pL8192fixed6I2R8192smprtSTCBbfb040 <-
+    list(name=paste("STC_T_fixedlib6OF_I2R8192_jitter_bbfb_040",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
+         bbfbStr="_bbfb_040", detMethod="STC", lib="fixedlib6OF_I2R", ofLength=8192,
+         color=i2r0cols[1], point=1, ltype=1,
+         lab="OF_R (pL8192,ofL8192,6keV, STC, s1, bbfb_040)")
+
 pL8192fixed6I2R8192smprtSTCBbfb <-
     list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
          nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
@@ -1228,6 +1236,13 @@ pL8192fixed6I2RFITTED8192smprtSTCBbfb <-
          noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2RFITTED", ofLength=8192,
          color="green", point=0, ltype=1,
          lab="OF_RFITTED (pL8192,ofL8192,6keV, STC, s1, bbfb)")
+pL8192fixed6I2RFITTED8192smprtSTCBbfb040 <-
+    list(name="STC_T_fixedlib6OF_I2RFITTED8192_jitter_bbfb_040",
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
+         bbfbStr="_bbfb_040", detMethod="STC", lib="fixedlib6OF_I2RFITTED", ofLength=8192,
+         color=i2r0cols[1], point=1, ltype=1,
+         lab="OF_RFITTED (pL8192,ofL8192,6keV, STC, s1, bbfb_040)")
+
 
 # WEIGHTNOF   
 pL1024multilibWEIGHTN1024NM150000smprtSTCBbfb <-
@@ -1396,6 +1411,8 @@ save(
     pL8192fixed6OF512smprtSTCBbfb040,  pL8192fixed6OF256smprtSTCBbfb040,
     pL8192fixed6OF128smprtSTCBbfb040, 
     
+    pL8192fixed6I2R8192smprtSTCBbfb040,pL8192fixed6I2RFITTED8192smprtSTCBbfb040,
+    
     pL8192fixed6OF8192smprtSTCM82, pL4096fixed6OF8192smprtSTCM82, 
     pL2048fixed6OF8192smprtSTCM82, pL1024fixed6OF8192smprtSTCM82, 
     pL512fixed6OF8192smprtSTCM82,  pL256fixed6OF8192smprtSTCM82,  
@@ -1414,6 +1431,7 @@ save(
      pL2048fixed6OF8192smprtSTCBbfb, pL1024fixed6OF8192smprtSTCBbfb, 
      pL512fixed6OF8192smprtSTCBbfb,  pL256fixed6OF8192smprtSTCBbfb,  
      pL128fixed6OF8192smprtSTCBbfb,  pL4fixed6OF8192smprtSTCBbfb,
+    
      pL8192fixed6I2R8192smprtSTCBbfb, pL4096fixed6I2R8192smprtSTCBbfb,
      pL2048fixed6I2R8192smprtSTCBbfb, pL1024fixed6I2R8192smprtSTCBbfb,
      pL512fixed6I2R8192smprtSTCBbfb,  pL256fixed6I2R8192smprtSTCBbfb,
@@ -1590,6 +1608,8 @@ if (length(grep("shortFilters",gainScaleID)) > 0){
                     pL8192fixed6OF256smprtSTCBbfbNewPar,  pL8192fixed6OF128smprtSTCBbfbNewPar)
 }else if(length(grep("040_nojitter_nonoise_ct",gainScaleID)) > 0){
     methods <- list(pL8192fixed6OF8192smprtSTCBbfb040njnn, pL8192fixed6OF8192smprtSTCBbfb040njnnct)
+}else if(length(grep("040_Rs",gainScaleID)) > 0){
+    methods <- list(pL8192fixed6I2R8192smprtSTCBbfb040, pL8192fixed6I2RFITTED8192smprtSTCBbfb040)
 }else if(length(grep("_ct",gainScaleID)) > 0){
     methods <- list(pL8192fixed6OF8192smprtSTCBbfb, 
                     pL8192fixed6OF8192smprtSTCBbfbCT, pL8192fixed6OF4096smprtSTCBbfbCT,

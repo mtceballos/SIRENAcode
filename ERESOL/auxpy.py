@@ -11,6 +11,9 @@ from astropy.io import fits, ascii
 from astropy.table import Table
 import json
 from scipy.interpolate import interp1d
+import matplotlib.pyplot as plt
+from astropy.modeling import models, fitting
+
 
 
 # import xml.etree.ElementTree as ET
@@ -1794,3 +1797,397 @@ def VLtoFL(inputFile, extnum, outputFile):
         print(comm)
         raise
 
+
+class RxLines:
+    def __init__(self, complabel, ilabels, energies_eV,
+                 fwhms_eV, rel_amplitudes):
+        self.complabel = complabel
+        self.ilabels = ilabels
+        self.energies_eV = energies_eV
+        self.fwhms_eV = fwhms_eV
+        self.rel_amplitudes = rel_amplitudes
+
+    def getNumber(self):
+        '''Get number of lines'''
+        return len(self.ilabels)
+
+    def plotLorentz(self):
+        '''Ploting Lorentzian profiles for every line'''
+        fig = plt.figure(figsize=(9, 6))
+        ax1 = fig.add_subplot(1, 1, 1)
+        minx = min(self.energies_eV)-20
+        maxx = max(self.energies_eV)+20
+        x_interval = np.linspace(minx, maxx, 1000)
+        LmodSum = models.Lorentz1D(x_0=0, amplitude=0., fwhm=0.)
+        nlines = self.getNumber()
+        for i in range(nlines):
+            Lmod = models.Lorentz1D(x_0=self.energies_eV[i],
+                                    amplitude=self.rel_amplitudes[i],
+                                    fwhm=self.fwhms_eV[i])
+            LmodSum += Lmod
+            ax1.plot(x_interval, Lmod(x_interval), label=self.ilabels[i])
+
+        title = self.complabel + ' line complex'
+        ax1.plot(x_interval, LmodSum(x_interval), marker='.',
+                 label=(self.complabel + ' complex'))
+        ax1.set_xlabel("Energy (eV)")
+        ax1.set_ylabel("Relative Intensity")
+        ax1.set_title(title)
+        ax1.legend()
+
+    def broadGauss(self, sigma):
+        '''Broad Lorentz lines profile with a Gaussian of given std_dev
+        and plot results
+
+        Parameters:
+        sigma: standard deviation of the Gaussian to broaden the line profile
+
+        '''
+        fwhm = sigma*2*np.sqrt(2*np.log(2))
+        fig = plt.figure(figsize=(9, 6))
+        ax1 = fig.add_subplot(1, 1, 1)
+        minx = min(self.energies_eV)-20
+        maxx = max(self.energies_eV)+20
+        x_interval = np.linspace(minx, maxx, 1000)
+        LmodSum = models.Voigt1D(x_0=0, amplitude_L=0., fwhm_L=1., fwhm_G=1.)
+        nlines = self.getNumber()
+        for i in range(nlines):
+            Lmod = models.Voigt1D(x_0=self.energies_eV[i],
+                                  amplitude_L=self.rel_amplitudes[i],
+                                  fwhm_L=self.fwhms_eV[i], fwhm_G=fwhm)
+            LmodSum += Lmod
+            ax1.plot(x_interval, Lmod(x_interval), label=self.ilabels[i])
+
+        title = (self.complabel + ' Gauss-widened (sigma=' +
+                 str(sigma) + 'eV) line complex')
+        ax1.plot(x_interval, LmodSum(x_interval), marker='.',
+                 label=(self.complabel + ' complex'))
+        ax1.set_xlabel("Energy (eV)")
+        ax1.set_ylabel("Relative Intensity")
+        ax1.set_title(title)
+        ax1.legend()
+
+
+def fit2GaussAndRatio(data=None, a1=50, a2=90, mean1=5800, mean2=5900,
+                      sig1=5, sig2=5, nbins1=200, ratio=None,
+                      xlab=None, xlim=(0,0), ylim=(0,0)):
+
+    """"
+
+    Fit 2 Gaussians (Ka1, Ka2) to Kas histogram
+    Histograms are created and plotted with matplotlib.pyplot.hist in Density
+    Gaussians functions from astropy.fitting module (fitting by LevMarLSQFitter)
+
+    data1: (array) data for 1st histogram
+    a1: (float) initial amplitude for Gaussian1
+    a2: (float)initial amplitude for Gaussian2
+    mean1: (float)initial mean for Gaussian1
+    mean2: (float)initial mean for Gaussian2
+    sig1: (float)std dev for Gaussian1
+    sig2: (float)std dev for Gaussian2
+    nbins1: number of bins for first (Kas) histogram
+    ratio: GaussKa2/GaussKa1 ratio to select Ka2 photons
+    xlab: xlabel of histogram plot
+
+    returns:
+        PHmin,PHmax: x limiting values for Ka2 complex
+    """
+
+    fig = plt.figure(figsize=(16, 6))
+    ax1 = fig.add_subplot(1, 2, 1)
+
+    # create histogram
+    bin_heights, bin_borders, _ = ax1.hist(data, bins=nbins1, density=True,
+                                           label="Histogram", alpha=0.5)
+    bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
+    x_interval_for_fit = np.linspace(bin_borders[0], bin_borders[-1], 10000)
+
+    # fit two gaussians to density-histogram (also "curve_fit" ?)
+    gg_init = (models.Gaussian1D(amplitude=a1, mean=mean1, stddev=sig1) +
+               models.Gaussian1D(amplitude=a2, mean=mean2, stddev=sig2))
+    # fitter = fitting.SLSQPLSQFitter()
+    fitter = fitting.LevMarLSQFitter()
+    gg_fit = fitter(gg_init, bin_centers, bin_heights)
+    print("Message (Kas)=", fitter.fit_info['message'])
+
+    # C1 = gg_fit.param_sets[0][0]
+    # mean1 = gg_fit.param_sets[1][0] #u.a.
+    # sigma1 = gg_fit.param_sets[2][0] #u.a.
+    # C2 = gg_fit.param_sets[3][0]
+    # mean2 = gg_fit.param_sets[4][0] #u.a.
+    # sigma2 = gg_fit.param_sets[5][0] #u.a.
+
+    C1 = gg_fit.amplitude_0[0]
+    mean1 = gg_fit.mean_0[0]
+    sigma1 = gg_fit.stddev_0[0]
+    fwhm1 = sigma1 * 2 * np.sqrt(2*np.log(2))
+    C2 = gg_fit.amplitude_1[0]
+    mean2 = gg_fit.mean_1[0]
+    sigma2 = gg_fit.stddev_1[0]
+    fwhm2 = sigma2 * 2 * np.sqrt(2*np.log(2))
+    # gg_fit.fit_info['residuals']
+    g1 = models.Gaussian1D(amplitude=C1, mean=mean1, stddev=sigma1)
+    g2 = models.Gaussian1D(amplitude=C2, mean=mean2, stddev=sigma2)
+    ratioGG = g2(x_interval_for_fit)/g1(x_interval_for_fit)
+    # print("minGG=",min(ratioGG), "maxGG=",max(ratioGG))
+
+    # plot histogram and Gaussians fit
+    ax1.plot(x_interval_for_fit, gg_fit(x_interval_for_fit), label='Gauss fit')
+    ax1.plot(x_interval_for_fit, g1(x_interval_for_fit), label="Gauss Ka1")
+    ax1.plot(x_interval_for_fit, g2(x_interval_for_fit), label="Gauss Ka2")
+    ax1.plot(x_interval_for_fit, ratioGG, label="ratio G2/G1")
+    ax1.axhline(ratio, linestyle='--', color='tab:purple')
+    maxy = max(bin_heights)
+    xtxt = min(data)
+    ax1.text(xtxt, maxy, "Double Gaussian", color='tab:orange')
+    ax1.text(xtxt, maxy-10, ("Mean(Ka1)=" + '{:0.3f}'.format(mean1) +
+                             "a.u"), color='tab:green')
+    ax1.text(xtxt, maxy-20, ("FWHM(Ka1)=" + '{:0.3f}'.format(fwhm1) +
+                             "ma.u"), color='tab:green')
+    ax1.text(xtxt, maxy-30, ("Mean(Ka2)=" + '{:0.3f}'.format(mean2) +
+                             "a.u"), color='tab:red')
+    ax1.text(xtxt, maxy-40, ("FWHM(Ka2)=" + '{:0.3f}'.format(fwhm2) +
+                             "ma.u"), color='tab:red')
+    ax1.set_xlabel(xlab)
+    ax1.set_ylabel("Density")
+    ax1.set_xlim(xlim)
+    plt.legend()
+    plt.show()
+    PHmin = x_interval_for_fit[ratioGG >= ratio][0]
+    PHmax = min(x_interval_for_fit[ratioGG >= ratio][-1], (mean2+10*sigma2))
+    print("Ka2 PHs in [" + '{:0.3f}'.format(PHmin) + "," +
+          '{:0.3f}'.format(PHmax) + "] a.u.")
+    return((PHmin, PHmax))
+
+
+def fit3gauss2hist(data1=None, data2=None, a1=50, a2=90, a3=50,
+                   mean1=5800, mean2=5900, mean3=6500,
+                   sig1=5, sig2=5, sig3=5,
+                   nbins1=200, nbins2=200, plot=True):
+    """"
+
+    Fit 2 Gaussians (Ka1, Ka2) to Kas histogram and 1 Gaussian to Kb histogram
+    Histograms are created and plotted with matplotlib.pyplot.hist in Density
+    Gaussians functions from astropy.fitting module (fitting by LevMarLSQFitter)
+
+    data1: (array) data for 1st histogram
+    data2: (array) data for 2st histogram
+    a1: (float) initial amplitude for Gaussian1
+    a2: (float)initial amplitude for Gaussian2
+    a3: (float)initial amplitude for Gaussian3
+    mean1: (float)initial mean for Gaussian1
+    mean2: (float)initial mean for Gaussian2
+    mean3: (float)initial mean for Gaussian3
+    sig1: (float)std dev for Gaussian1
+    sig2: (float)std dev for Gaussian2
+    sig3: (float)std dev for Gaussian3
+    nbins1: number of bins for first (Kas) histogram
+    nbins2: number of bins for second (Kb) histogram
+    plot: (bool) should histogram and fit be plotted?
+
+    returns:
+        (mean1, mean2, mean3): tuple of gaussians centres
+    """
+    fig = plt.figure(figsize=(20, 6))
+    ax1 = fig.add_subplot(1, 2, 1)
+
+    # create histogram
+    bin_heights, bin_borders, _ = ax1.hist(data1, bins=nbins1, density=True,
+                                           label="Histogram", alpha=0.5)
+    if not plot:
+        plt.clf()
+
+    bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
+    x_interval_for_fit = np.linspace(bin_borders[0], bin_borders[-1], 10000)
+
+    # fit two gaussians to density-histogram (also "curve_fit" ?)
+    gg_init = (models.Gaussian1D(amplitude=a1, mean=mean1, stddev=sig1) +
+               models.Gaussian1D(amplitude=a2, mean=mean2, stddev=sig2))
+    # fitter = fitting.SLSQPLSQFitter()
+    # fitter = fitting.LinearLSQFitter()
+    #     -> model is not linear in parameters: linear fit should not be used
+    fitter = fitting.LevMarLSQFitter()
+    gg_fit = fitter(gg_init, bin_centers, bin_heights)
+    print("Message (Kas)=", fitter.fit_info['message'])
+
+    C1 = gg_fit.amplitude_0[0]
+    mean1 = gg_fit.mean_0[0]
+    sigma1 = gg_fit.stddev_0[0]
+    fwhm1 = sigma1 * 2 * np.sqrt(2*np.log(2))
+    C2 = gg_fit.amplitude_1[0]
+    mean2 = gg_fit.mean_1[0]
+    sigma2 = gg_fit.stddev_1[0]
+    fwhm2 = sigma2 * 2 * np.sqrt(2*np.log(2))
+    g1 = models.Gaussian1D(amplitude=C1, mean=mean1, stddev=sigma1)
+    g2 = models.Gaussian1D(amplitude=C2, mean=mean2, stddev=sigma2)
+
+    if plot:
+        # plot 1st histogram and 2 Gaussians fit
+        ax1.plot(x_interval_for_fit, gg_fit(x_interval_for_fit),
+                 label='Gauss fit')
+        ax1.plot(x_interval_for_fit, g1(x_interval_for_fit), label="Gauss Ka1")
+        ax1.plot(x_interval_for_fit, g2(x_interval_for_fit), label="Gauss Ka2")
+        maxy = max(bin_heights)
+        xtxt = min(data1)
+        ax1.text(xtxt, maxy, "Double Gaussian", color='tab:orange')
+        ax1.text(xtxt, maxy-10, ("Mean(Ka1)=" + '{:0.3f}'.format(mean1) +
+                                 "a.u"), color='tab:green')
+        ax1.text(xtxt, maxy-20, ("FWHM(Ka1)=" + '{:0.3f}'.format(fwhm1) +
+                                 "ma.u"), color='tab:green')
+        ax1.text(xtxt, maxy-30, ("Mean(Ka2)=" + '{:0.3f}'.format(mean2) +
+                                 "a.u"), color='tab:red')
+        ax1.text(xtxt, maxy-40, ("FWHM(Ka2)=" + '{:0.3f}'.format(fwhm2) +
+                                 "ma.u"), color='tab:red')
+        ax1.set_xlabel("Reconstructed PH")
+        ax1.set_ylabel("Density")
+        ax1.legend()
+
+    ax2 = fig.add_subplot(1, 2, 2)
+
+    # create 2nd histogram
+    bin_heights, bin_borders, _ = ax2.hist(data2, bins=nbins2, density=True,
+                                           label="Histogram", alpha=0.5)
+    if not plot:
+        plt.clf()
+    bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
+    x_interval_for_fit = np.linspace(bin_borders[0], bin_borders[-1], 10000)
+    # fit 1 gaussian to density-histogram (also "curve_fit" ?)
+    g_init = models.Gaussian1D(amplitude=a3, mean=mean3, stddev=sig3)
+    fitter = fitting.LevMarLSQFitter()
+    g_fit = fitter(g_init, bin_centers, bin_heights)
+    print("Message (Kb)=", fitter.fit_info['message'])
+
+    C3 = g_fit.amplitude[0]
+    mean3 = g_fit.mean[0]
+    sigma3 = g_fit.stddev[0]
+    fwhm3 = sigma3 * 2 * np.sqrt(2*np.log(2))
+
+    if plot:
+        # plot histogram and Gaussians fit
+        ax2.plot(x_interval_for_fit, g_fit(x_interval_for_fit),
+                 label='Gauss fit')
+        maxy = max(bin_heights)
+        xtxt = min(data2)
+        ax2.text(xtxt, maxy, ("Mean(Kb)=" + '{:0.3f}'.format(mean3) +
+                              "a.u"), color='tab:orange')
+        ax2.text(xtxt, maxy-10, ("FWHM(Kb)=" + '{:0.3f}'.format(fwhm3) +
+                                 "ma.u"), color='tab:orange')
+        ax2.set_xlabel("Reconstructed PH")
+        ax2.set_ylabel("Density")
+        ax2.legend()
+
+    return((mean1, mean2, mean3))
+
+def fit3Voigt2hist(data1=None, data2=None, a1=50, a2=90, a3=50,
+                   x0_1=5800, x0_2=5900, x0_3=6500,
+                   fwhm_L1=5, fwhm_L2=5, fwhm_L3=5,
+                   fwhm_G1=5, fwhm_G2=5, fwhm_G3=5,
+                   nbins1=200, nbins2=200):
+    """
+
+    Fit 2 Voigt (Ka1, Ka2) to Kas histogram and 1 Voigt to Kb histogram
+    Histograms are created and plotted with matplotlib.pyplot.hist in Density
+    Voigt functions from astropy.fitting module (fitting by LevMarLSQFitter)
+
+    data1: (array) data for 1st histogram
+    data2: (array) data for 2st histogram
+    a1: (float) initial amplitude for Voigt1
+    a2: (float)initial amplitude for Voigt2
+    a3: (float)initial amplitude for Voigt3
+    x0_1: (float)initial center for Voigt1
+    x0_2: (float)initial center for Voigt2
+    x0_3: (float)initial center for Voigt3
+    fwhm_L1: (float) FWHM for Lorentzian 1
+    fwhm_L2: (float) FWHM for Lorentzian 2
+    fwhm_L3: (float) FWHM for Lorentzian 3
+    fwhm_G1: (float) FWHM for Gaussian1
+    fwhm_G2: (float) FWHM for Gaussian2
+    fwhm_G3: (float) FWHM for Gaussian3
+    nbins1: number of bins for first (Kas) histogram
+    nbins2: number of bins for second (Kb) histogram
+
+    """
+    fig = plt.figure(figsize=(20, 6))
+    ax1 = fig.add_subplot(1, 2, 1)
+
+    # create histogram
+    bin_heights, bin_borders, _ = ax1.hist(data1, bins=nbins1, density=True,
+                                           label="Histogram", alpha=0.5)
+    bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
+    x_interval_for_fit = np.linspace(bin_borders[0], bin_borders[-1], 10000)
+
+    # fit two Voigts to density-histogram (also "curve_fit" ?)
+    vv_init = (models.Voigt1D(x_0=x0_1, amplitude_L=a1, fwhm_L=fwhm_L1,
+                              fwhm_G=fwhm_G1) +
+               models.Voigt1D(x_0=x0_2, amplitude_L=a2, fwhm_L=fwhm_L2,
+                              fwhm_G=fwhm_G2))
+    fitter = fitting.LevMarLSQFitter()
+    vv_fit = fitter(vv_init, bin_centers, bin_heights)
+    print("Message (Kas)=", fitter.fit_info['message'])
+
+    amp1 = vv_fit.amplitude_L_0[0]
+    center1 = vv_fit.x_0_0[0]
+    fwhm_L1 = vv_fit.fwhm_L_0[0]
+    fwhm_G1 = vv_fit.fwhm_G_0[0]
+    amp2 = vv_fit.amplitude_L_1[0]
+    center2 = vv_fit.x_0_1[0]
+    fwhm_L2 = vv_fit.fwhm_L_1[0]
+    fwhm_G2 = vv_fit.fwhm_G_1[0]
+
+    v1 = models.Voigt1D(x_0=center1, amplitude_L=amp1, fwhm_L=fwhm_L1,
+                        fwhm_G=fwhm_G1)
+    v2 = models.Voigt1D(x_0=center2, amplitude_L=amp2, fwhm_L=fwhm_L2,
+                        fwhm_G=fwhm_G2)
+
+    # plot histogram and 2 Voigt fit
+    ax1.plot(x_interval_for_fit, vv_fit(x_interval_for_fit), label='Voigt fit')
+    ax1.plot(x_interval_for_fit, v1(x_interval_for_fit), label="Voigt Ka1")
+    ax1.plot(x_interval_for_fit, v2(x_interval_for_fit), label="Voigt Ka2")
+    maxy = max(bin_heights)
+    xtxt = min(data1)
+    ax1.text(xtxt, maxy, "Double Voigt", color='tab:orange')
+    ax1.text(xtxt, maxy-5, "Mean(Ka1)=" + '{:0.3f}'.format(center1) + "eV",
+             color='tab:green')
+    ax1.text(xtxt, maxy-10, "FWHM_L(Ka1)=" + '{:0.3f}'.format(fwhm_L1) + "eV",
+             color='tab:green')
+    ax1.text(xtxt, maxy-15, "FWHM_G(Ka1)=" + '{:0.3f}'.format(fwhm_G1) + "eV",
+             color='tab:green')
+    ax1.text(xtxt, maxy-20, "Mean(Ka2)=" + '{:0.3f}'.format(center2) + "eV", color='tab:red')
+    ax1.text(xtxt, maxy-25, "FWHM_L(Ka2)=" + '{:0.3f}'.format(fwhm_L2) + "eV", color='tab:red')
+    ax1.text(xtxt, maxy-30, "FWHM_G(Ka2)=" + '{:0.3f}'.format(fwhm_G2) + "eV", color='tab:red')
+    ax1.axvline(Ka1keV,linestyle='--', color='gray')
+    ax1.axvline(Ka2keV,linestyle='--', color='gray')
+    ax1.set_xlabel("Energy (keV)")
+    ax1.set_ylabel("Density")
+    ax1.set_xlim(5.85, 5.94)
+    ax1.legend()
+
+    ax2 = fig.add_subplot(1, 2, 2)
+    
+    # create histogram
+    bin_heights, bin_borders, _ = ax2.hist(data2, bins=nbins2, density=True,label="Histogram", alpha=0.5)
+    bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
+    x_interval_for_fit = np.linspace(bin_borders[0], bin_borders[-1], 10000)
+
+    # fit 1 Voigt to density-histogram (also "curve_fit" ?)
+    v_init = models.Voigt1D(x_0=x0_3, amplitude_L=a3, fwhm_L=fwhm_L3, fwhm_G=fwhm_G3) 
+    fitter = fitting.LevMarLSQFitter()
+    v_fit = fitter(v_init, bin_centers, bin_heights)
+    print("Message (Kb)=", fitter.fit_info['message'])
+
+    amp3 = v_fit.amplitude_L[0]
+    center3 = v_fit.x_0[0]
+    fwhm_L3 = v_fit.fwhm_L[0]
+    fwhm_G3 = v_fit.fwhm_G[0]
+    ax2.axvline(KbkeV,linestyle='--', color='gray')
+
+    # plot histogram and Voigt fit
+    ax2.plot(x_interval_for_fit, v_fit(x_interval_for_fit), label='Voigt fit',color='tab:orange')
+    maxy = max(bin_heights)
+    ax2.text(6.4,maxy, "Center(Kb)=" + '{:0.3f}'.format(center3) + "keV", color='tab:orange')
+    ax2.text(6.4,maxy-5, "FWHM_L(Kb)=" + '{:0.3f}'.format(fwhm_L3*1e3) + "eV", color='tab:orange')
+    ax2.text(6.4,maxy-10, "FWHM_G(Kb)=" + '{:0.3f}'.format(fwhm_G3*1e3) + "eV", color='tab:orange')
+    ax2.set_xlabel("Energy (keV)")
+    ax2.set_ylabel("Density")
+    ax2.set_xlim(6.35, 6.6)
+    ax2.legend()

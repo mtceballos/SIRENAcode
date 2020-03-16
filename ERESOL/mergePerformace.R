@@ -1,0 +1,6 @@
+nfiles<-c(100,200,  300,  400,  500,  1000,1500,  2000,  2500) 
+times<-c(9.72,18.58,26.17,34.36,42.49,82.6,123.67,163.9,204.11)
+plot(nfiles,times)
+fit <- lm(times~nfiles)
+summary(fit)
+abline(fit)

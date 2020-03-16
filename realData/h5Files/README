@@ -1,0 +1,115 @@
+PROCEDURE:
+
+0) Populate PH_ID column with row number
+-------------------------------------------
+
+> fcalc infile=file2.fits+8 outfile=file2_phid.fits  clname=PH_ID expr='#ROW'
+
+1) Select records only with Ka1 and Ka2 pulses
+------------------------------------------------
+> fselect  infile=file2_phid.fits+8 outfile=file2_Kas.fits 	 expr='max(ADC)>159000 && max(ADC)<161000'
+
+2) Create a library with this new file (runLib.sh)
+--------------------------------------------------
+
+> tesreconstruction \
+  		    Recordfile=file2_Kas.fits \
+		    TesEventFile=pp1581607613.fits \
+		    Rcmethod='SIRENA' \
+		    PulseLength=8192 \
+		    LibraryFile=library_file2_Kas_8192.fits \
+		    scaleFactor=0 samplesUp=3 nSgms=5 samplesDown=4 \
+		    opmode=0 OFLib=yes FilterDomain=F detectionMode=STC \
+		    detectSP=1 FilterMethod=F0 clobber=yes \
+		    EnergyMethod=OPTFILT LagsOrNot=1 \
+		    OFNoise=NSD XMLFile=/dataj4/software/SIXTE/git/gitInstall/share/sixte/instruments/athena-xifu//xifu_detector_lpa_75um_AR0.5_pixoffset_mux40_pitch275um.xml \
+		    OFStrategy=FIXED OFLength=8192 \
+		    NoiseFile=noise1_8192_noisespec.fits \
+		    monoenergy=5895   preBuffer=0
+
+3) Reconstruct file2_Kas.fits with this library
+-------------------------------------------------
+
+> tesreconstruction Recordfile=file2_Kas.fits TesEventFile=evt_file2_libfile2Kas_OPTFILT8192.fits Rcmethod='SIRENA' PulseLength=8192  LibraryFile=library_file2_Kas_8192.fits  scaleFactor=0 samplesUp=3 nSgms=5 samplesDown=4 opmode=1 OFLib=yes FilterDomain=F detectionMode=STC detectSP=1 FilterMethod=F0 clobber=yes EnergyMethod=OPTFILT LagsOrNot=1 OFNoise=NSD XMLFile=/dataj4/software/SIXTE/git/gitInstall/share/sixte/instruments/athena-xifu//xifu_detector_lpa_75um_AR0.5_pixoffset_mux40_pitch275um.xml filtEeV=5895 OFStrategy=FIXED OFLength=8192 preBuffer=0
+
+4) Select only HR events from those of evt_file2_libfile2Kas_OPTFILT8192.fits 
+------------------------------------------------------------------------------
+
+> fselect infile=evt_file2_libfile2Kas_OPTFILT8192.fits+1 outfile=evt_file2_libfile2Kas_OPTFILT8192_HR.fits expr='GRADE1==8192 && GRADE2==8192'
+
+==============================================================================
+
+(createLib_hist.R)
+
+5) Fit Single gaussian to histogram of evt_file2_libfile2Kas_OPTFILT8192_HR.fits
+
+6) Use mean of this gaussian as calibration energy -> create calibrated EVT file
+
+7) Fit 2 Gaussians to calibrated file
+
+8) Select only Ka2 lines using [E1,E2] and discarding records with two lines (to be sure that library in re-created only with Ka2 lines). E1, E2 are the energies where gaussian(Ka2)/Gaussian(Ka1)>=5
+
+> fselect infile=file2_Kas.fits+8 outfile=file2_Ka2.fits  expr='PH_ID in singles-list and in [E1,E2]'
+
+==============================================================================
+
+9) Recreate lib with file_Ka2.fits  (runLib_Ka2.sh)
+--------------------------------------------------
+
+> tesreconstruction \
+  		    Recordfile=file2_Ka2.fits \
+		    TesEventFile=ppxxxx.fits \
+		    Rcmethod='SIRENA' \
+		    PulseLength=8192 \
+		    LibraryFile=library_file2_Ka2_8192.fits \
+		    scaleFactor=0 samplesUp=3 nSgms=5 samplesDown=4 \
+		    opmode=0 OFLib=yes FilterDomain=F detectionMode=STC \
+		    detectSP=1 FilterMethod=F0 clobber=yes \
+		    EnergyMethod=OPTFILT LagsOrNot=1 \
+		    OFNoise=NSD XMLFile=/dataj4/software/SIXTE/git/gitInstall/share/sixte/instruments/athena-xifu//xifu_detector_lpa_75um_AR0.5_pixoffset_mux40_pitch275um.xml \
+		    OFStrategy=FIXED OFLength=8192 \
+		    NoiseFile=noise1_8192_noisespec.fits \
+		    monoenergy=5898.75 preBuffer=0
+
+10) Reconstruct file2_Kas.fits with new library library_file2_Ka2_8192.fits 
+------------------------------------------------------------------------------
+> tesreconstruction  Recordfile=file2_Kas.fits TesEventFile=evt_file2_libfile2Ka2_OPTFILT8192.fits Rcmethod='SIRENA' PulseLength=8192 LibraryFile=library_file2_Ka2_8192.fits scaleFactor=0 samplesUp=3 nSgms=5 samplesDown=4 opmode=1 OFLib=yes FilterDomain=F detectionMode=STC  detectSP=1 FilterMethod=F0 clobber=yes EnergyMethod=OPTFILT LagsOrNot=1 OFNoise=NSD XMLFile=/dataj4/software/SIXTE/git/gitInstall/share/sixte/instruments/athena-xifu/xifu_detector_lpa_75um_AR0.5_pixoffset_mux40_pitch275um.xml  filtEeV=5898.75 OFStrategy=FIXED OFLength=8192 preBuffer=0
+
+11)Select only HR events from those of evt_file2_libfile2Ka2_OPTFILT8192.fits 
+------------------------------------------------------------------------------
+
+> fselect infile=evt_file2_libfile2Ka2_OPTFILT8192.fits+1 outfile=evt_file2_libfile2Ka2_OPTFILT8192_HR.fits expr='GRADE1==8192 && GRADE2==8192'
+
+
+SOME CONCLUSIONS:
+================
+1.- Moving from ratio=5 (4523 pulses) to ratio=10 (3257) to ratio=20 (2204) does not solve high FWHM
+                                                RATIO=5                      RATIO=10                      RATIO=20
+Ka1 (5.88765)                        5.887                                5.887                                    5.887      (keV)
+FWHM1                                  12.683                            12.683                                  12.57          (eV)
+Ka2  (5.89875)                        5.899                                5.899                                   5.899      (keV)
+FWHM2                                     9.187                                  9.187                                    9.313        (eV)
+Kb  (6.49045)                          6.490
+FWHM_b                                  8.661
+
+2. Analysis of file1 with lib_file2_Ka2 (noise1):
+
+        Method                          FWHM
+OPTFILT8192                        12.544 +/-0.4,  8.810+/-0.15
+OPTFILT4096                       13.933+/-0.4, 9.016+/-0.15
+OPTFILT2048                        14.688+/-0.5, 9.037+/-0.16
+OPTFILT1024                          14.086+/-0.4, 9.597+/-0.16
+
+0PAD4096                                13.370+/-0.5,8.610+/-0.16
+0PAD2048                                13.777+/-0.4, 8.668+/-0.16
+0PAD1024                                 13.718+/-0.4, 8.750+/-0.14
+
+pB75OPTFILT8192                 18.828+/-0.7, 11.537+/-0.2        energía Ka1 descentrada
+pB75OPTFILT4096                 19.072+/-0.8, 11.827+/-0.3
+pB75OPTFILT2048                 19.772+/-0.7, 12.918+/-0.3
+
+pB85OPTFILT8192                 18.709, 11.741   energía Ka1 descentrada
+pB100OPTFILT8192               18.539, 11.658   energía Ka1 descentrada
+
+
+
