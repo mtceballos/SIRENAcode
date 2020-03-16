@@ -18,11 +18,16 @@ source("~/R/Rfunctions/drawLogPlotBox.r")
 #array <- "LPA2shunt"
 array <- "LPA75um" #"LPA2shunt"
 nSimPulses <- "5000" # "20000"
+<<<<<<< HEAD
 #nSimPulses <- "1"
+=======
+nSimPulses <- "1"
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
 separation <- 40000 #for samprate (corrected below for samprate2)
 gainScaleID <-"methods_shortFilters"   # !!!! CHECK METHODS BELOW !!!!!
 gainScaleID <-"methods_longFilter_zeroPadding"   # !!!! CHECK METHODS BELOW !!!!!
 gainScaleID <-"methods_longFilter_zeroPadding_ADC_I2R"   # !!!! CHECK METHODS BELOW !!!!!
+<<<<<<< HEAD
 gainScaleID <-"methods_allFilter_ADC_I2R"   # !!!! CHECK METHODS BELOW !!!!!
 #gainScaleID <-"methods_M82"   # !!!! CHECK METHODS BELOW !!!!!
 #gainScaleID <-"methods_LOWRES"   # !!!! CHECK METHODS BELOW !!!!!
@@ -44,6 +49,15 @@ LbT="0.64E-3"
 
 EkeV <- c(0.2,0.5,1,2,3,4,5,6,7,8)
 #EkeV <- c(1,2,3,4,5,6,7,8) # parabola studies
+=======
+#gainScaleID <-"methods_allFilter_ADC_I2R"   # !!!! CHECK METHODS BELOW !!!!!
+#gainScaleID <-"methods_M82"   # !!!! CHECK METHODS BELOW !!!!!
+#gainScaleID <-"methods_LOWRES"   # !!!! CHECK METHODS BELOW !!!!!
+#gainScaleID <-"methods_4samNolags"   # !!!! CHECK METHODS BELOW !!!!!
+gainScaleID <-"methods_NewPar"   # !!!! CHECK METHODS BELOW !!!!!
+EkeV <- c(0.2,0.5,1,2,3,4,5,6,7,8)
+#EkeV <- c(0.2,0.5,1,2,3,4,5,6,7)
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
 #nIntervals <- 50000
 nIntervals <- 0
 noiseMat<-""
@@ -61,6 +75,7 @@ if (dcmt > 1){
 } else {
     jitterStr="_jitter"
 }
+<<<<<<< HEAD
 if (length(grep("NewPar",gainScaleID)) >0) {
     jitterStr=""
 }
@@ -68,6 +83,11 @@ if (length(grep("nojitter",gainScaleID))> 0){
     jitterStr=""
 }
 
+=======
+if (length(grep("NewPar",gainScaleID)) > 0){
+    jitterStr=""
+}
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
 
 # FUNCTIONS
 #============
@@ -124,6 +144,7 @@ adcNMcols = rep("turquoise",9)
 
 i2r0cols = rep("darkorange4",9)
 i2rSHcols = rep("darkorange",9)
+<<<<<<< HEAD
 i2rPB5cols = rep("cyan",9)
 i2rPB25cols = rep("blue",9)
 i2rPB50cols = rep("red",9)
@@ -131,6 +152,12 @@ i2rPB75cols = rep("chocolate4",9)
 i2r0padPB75cols = rep("red",9)
 i2rPB85cols = rep("darkgreen",9)
 i2rPB100cols = rep("magenta",9)
+=======
+i2rPB75cols = rep("chocolate4",9)
+i2rPB25cols = rep("blue",9)
+i2rPB50cols = rep("red",9)
+i2rPB85cols = rep("green",9)
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
 i2rNMcols = rep("orange",9)
 
 ###### OPTFILT  ############
@@ -166,6 +193,7 @@ pL8192fixed6OF8192smprtSTCBbfb0.35Lc <-
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_OPTFILT", ofLength=8192,
          color=adccols[1], point=1, ltype=1,
          lab="OF_ADC (pL8192,ofL8192,6keV, STC, s1, bbfb, 0.35Lc)")
+<<<<<<< HEAD
 #-- Nojitter - parabola
 pL8192fixed6OF8192smprtSTCBbfbNojitterNolags <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_bbfb_nolags",sep=""),
@@ -180,6 +208,8 @@ pL8192fixed6OF8192smprtSTCBbfbNojitter <-
          color=adc0cols[1], point=1, ltype=1,
          lab="OF_ADC (pL8192,ofL8192,6keV, STC, s1, bbfb, nojitter)")
 
+=======
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
 #-- NewPar
 pL8192fixed6OF8192smprtSTCBbfbNewPar <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_nonoise_bbfb_NewPar",sep=""),
@@ -260,6 +290,7 @@ pL8192fixed6OF128smprtSTCBbfbNewPar <-
          color=adc0cols[7], point=7, ltype=1,
          lab="OF_ADC (pL8192,ofL128,6keV, STC, s1, bbfb_NewPar)")
 
+<<<<<<< HEAD
 #-- 040 nojitter nonoise ctfilter (ADU sensitivity)
 pL8192fixed6OF8192smprtSTCBbfb040njnnct <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_nonoise_bbfb_040_ct",sep=""),
@@ -540,6 +571,8 @@ pL8192fixed6OF128smprtSTCBbfbFIT <-
 
 
 
+=======
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
 #--
 pL8192fixed6OF8192smprtSTCBbfb <-
     list(name=paste("STC_T_fixedlib6OF_OPTFILT8192_jitter_bbfb",sep=""),
@@ -836,6 +869,7 @@ pL8192fixed6I2R4096smprtSTCBbfb <-
          noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=4096,
          color=i2rSHcols[2], point=2, ltype=1,
          lab="OF_R (pL8192,ofL4096,6keV, STC, s1, bbfb)")
+<<<<<<< HEAD
 
 pL2048fixed6I2R8192smprtSTCBbfb <-
     list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
@@ -948,11 +982,14 @@ pL8192fixed6I2R4096smprtSTCBbfb_pB100 <-
          noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=4096,
          color=i2rPB100cols[2], point=2, ltype=4,
          lab="OF_R (pL8192,ofL4096,6keV, STC, s1, bbfb, pB100)")
+=======
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
 
 pL8192fixed6I2R2048smprtSTCBbfb_pB5 <-
     list(name="STC_T_fixedlib6OF_I2R2048_pB5_jitter_bbfb", 
          nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
          noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=2048,
+<<<<<<< HEAD
          color=i2rPB5cols[3], point=3, ltype=3,
          lab="OF_R (pL8192,ofL2048,6keV, STC, s1, bbfb, pB5)")
 pL8192fixed6I2R2048smprtSTCBbfb_pB25 <-
@@ -1103,6 +1140,198 @@ pL8192fixed6I2R128smprtSTCBbfb_pB5 <-
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_I2R", ofLength=128,
          color=i2rPB5cols[7], point=7, ltype=3, 
          lab="OF_R (pL8192,ofL128,6keV, STC, s1, bbfb, pB5)")
+=======
+         color=i2rSHcols[3], point=3, ltype=1,
+         lab="OF_R (pL8192,ofL2048,6keV, STC, s1, bbfb)")
+pL1024fixed6I2R8192smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=1024,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
+         color=i2r0cols[4], point=4, ltype=1,
+         lab="OF_R (pL1024,ofL8192,6keV, STC, s1, bbfb)")
+pL8192fixed6I2R1024smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R1024_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=1024,
+         color=i2rSHcols[4], point=4, ltype=1,
+         lab="OF_R (pL8192,ofL1024,6keV, STC, s1, bbfb)")
+pL512fixed6I2R8192smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=512,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
+         color=i2r0cols[5], point=5, ltype=1,
+         lab="OF_R (pL512,ofL8192,6keV, STC, s1, bbfb)")
+pL8192fixed6I2R512smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R512_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=512,
+         color=i2rSHcols[5], point=5, ltype=1,
+         lab="OF_R (pL8192,ofL512,6keV, STC, s1, bbfb)")
+pL256fixed6I2R8192smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=256,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
+         color=i2r0cols[6], point=6, ltype=1,
+         lab="OF_R (pL256,ofL8192,6keV, STC, s1, bbfb)")
+pL8192fixed6I2R256smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R256_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=256,
+         color=i2rSHcols[6], point=6, ltype=1,
+         lab="OF_R (pL8192,ofL256,6keV, STC, s1, bbfb)")
+
+pL128fixed6I2R8192smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=128,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
+         color=i2r0cols[7], point=7, ltype=1,
+         lab="OF_R (pL128,ofL8192,6keV, STC, s1, bbfb)")
+pL8192fixed6I2R128smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R128_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=128,
+         color=i2rSHcols[7], point=7, ltype=1,
+         lab="OF_R (pL8192,ofL128,6keV, STC, s1, bbfb)")
+pL4fixed6I2R8192smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R8192_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=4,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=8192,
+         color=i2r0cols[8], point=8, ltype=1,
+         lab="OF_R (pL4,ofL8192,6keV, STC, s1, bbfb)")
+pL8192fixed6I2R4smprtSTCBbfb <-
+    list(name="STC_T_fixedlib6OF_I2R4_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=4,
+         color=i2rSHcols[8], point=8, ltype=1,
+         lab="OF_R (pL8192,ofL4,6keV, STC, s1, bbfb)")
+
+# I2R pB
+pL8192fixed6I2R4096smprtSTCBbfb_pB25 <-
+    list(name="STC_T_fixedlib6OF_I2R4096_pB25_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=4096,
+         color=i2rPB25cols[2], point=2, ltype=3,
+         lab="OF_R (pL8192,ofL4096,6keV, STC, s1, bbfb, pB25)")
+pL8192fixed6I2R4096smprtSTCBbfb_pB50 <-
+    list(name="STC_T_fixedlib6OF_I2R4096_pB50_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=4096,
+         color=i2rPB50cols[2], point=2, ltype=1,
+         lab="OF_R (pL8192,ofL4096,6keV, STC, s1, bbfb, pB50)")
+pL8192fixed6I2R4096smprtSTCBbfb_pB75 <-
+    list(name="STC_T_fixedlib6OF_I2R4096_pB75_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=4096,
+         color=i2rPB75cols[2], point=2, ltype=2,
+         lab="OF_R (pL8192,ofL4096,6keV, STC, s1, bbfb, pB75)")
+pL8192fixed6I2R4096smprtSTCBbfb_pB85 <-
+    list(name="STC_T_fixedlib6OF_I2R4096_pB85_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=4096,
+         color=i2rPB85cols[2], point=2, ltype=4,
+         lab="OF_R (pL8192,ofL4096,6keV, STC, s1, bbfb, pB85)")
+
+pL8192fixed6I2R2048smprtSTCBbfb_pB25 <-
+    list(name="STC_T_fixedlib6OF_I2R2048_pB25_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=2048,
+         color=i2rPB25cols[3], point=3, ltype=3,
+         lab="OF_R (pL8192,ofL2048,6keV, STC, s1, bbfb, pB25)")
+pL8192fixed6I2R2048smprtSTCBbfb_pB50 <-
+    list(name="STC_T_fixedlib6OF_I2R2048_pB50_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=2048,
+         color=i2rPB50cols[3], point=3, ltype=1,
+         lab="OF_R (pL8192,ofL2048,6keV, STC, s1, bbfb, pB50)")
+pL8192fixed6I2R2048smprtSTCBbfb_pB75 <-
+    list(name="STC_T_fixedlib6OF_I2R2048_pB75_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=2048,
+         color=i2rPB75cols[3], point=3, ltype=2,
+         lab="OF_R (pL8192,ofL2048,6keV, STC, s1, bbfb, pB75)")
+pL8192fixed6I2R2048smprtSTCBbfb_pB85 <-
+    list(name="STC_T_fixedlib6OF_I2R2048_pB85_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=2048,
+         color=i2rPB85cols[3], point=3, ltype=4,
+         lab="OF_R (pL8192,ofL2048,6keV, STC, s1, bbfb, pB85)")
+
+pL8192fixed6I2R1024smprtSTCBbfb_pB25 <-
+    list(name="STC_T_fixedlib6OF_I2R1024_pB25_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=1024,
+         color=i2rPB25cols[4], point=4, ltype=3,
+         lab="OF_R (pL8192,ofL1024,6keV, STC, s1, bbfb, pB25)")
+pL8192fixed6I2R1024smprtSTCBbfb_pB50 <-
+    list(name="STC_T_fixedlib6OF_I2R1024_pB50_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=1024,
+         color=i2rPB50cols[4], point=4, ltype=1,
+         lab="OF_R (pL8192,ofL1024,6keV, STC, s1, bbfb, pB50)")
+pL8192fixed6I2R1024smprtSTCBbfb_pB75 <-
+    list(name="STC_T_fixedlib6OF_I2R1024_pB75_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=1024,
+         color=i2rPB75cols[4], point=4, ltype=2,
+         lab="OF_R (pL8192,ofL1024,6keV, STC, s1, bbfb, pB75)")
+pL8192fixed6I2R1024smprtSTCBbfb_pB85 <-
+    list(name="STC_T_fixedlib6OF_I2R1024_pB85_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=1024,
+         color=i2rPB85cols[4], point=4, ltype=4,
+         lab="OF_R (pL8192,ofL1024,6keV, STC, s1, bbfb, pB85)")
+
+pL8192fixed6I2R512smprtSTCBbfb_pB25 <-
+    list(name="STC_T_fixedlib6OF_I2R512_pB25_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=512,
+         color=i2rPB25cols[5], point=5, ltype=3,
+         lab="OF_R (pL8192,ofL512,6keV, STC, s1, bbfb, pB25)")
+pL8192fixed6I2R512smprtSTCBbfb_pB50 <-
+    list(name="STC_T_fixedlib6OF_I2R512_pB50_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=512,
+         color=i2rPB50cols[5], point=5, ltype=1,
+         lab="OF_R (pL8192,ofL512,6keV, STC, s1, bbfb, pB50)")
+pL8192fixed6I2R512smprtSTCBbfb_pB75 <-
+    list(name="STC_T_fixedlib6OF_I2R512_pB75_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=512,
+         color=i2rPB75cols[5], point=5, ltype=2,
+         lab="OF_R (pL8192,ofL512,6keV, STC, s1, bbfb, pB75)")
+pL8192fixed6I2R512smprtSTCBbfb_pB85 <-
+    list(name="STC_T_fixedlib6OF_I2R512_pB85_jitter_bbfb", 
+         nSamples=8192, samprateStr="", jitterStr="_jitter", detMethod="STC",pLength=8192,
+         noiseStr="", bbfbStr="_bbfb", lib="fixedlib6OF_I2R", ofLength=512,
+         color=i2rPB85cols[5], point=5, ltype=4,
+         lab="OF_R (pL8192,ofL512,6keV, STC, s1, bbfb, pB85)")
+
+pL8192fixed6I2R256smprtSTCBbfb_pB25 <-
+    list(name=paste("STC_T_fixedlib6OF_I2R256_pB25_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_I2R", ofLength=256,
+         color=i2rPB25cols[6], point=6, ltype=3, 
+         lab="OF_R (pL8192,ofL256,6keV, STC, s1, bbfb, pB25)")
+pL8192fixed6I2R256smprtSTCBbfb_pB50 <-
+    list(name=paste("STC_T_fixedlib6OF_I2R256_pB50_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_I2R", ofLength=256,
+         color=i2rPB50cols[6], point=6, ltype=1, 
+         lab="OF_R (pL8192,ofL256,6keV, STC, s1, bbfb, pB50)")
+pL8192fixed6I2R256smprtSTCBbfb_pB75 <-
+    list(name=paste("STC_T_fixedlib6OF_I2R256_pB75_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_I2R", ofLength=256,
+         color=i2rPB75cols[6], point=6, ltype=2, 
+         lab="OF_R (pL8192,ofL256,6keV, STC, s1, bbfb, pB75)")
+pL8192fixed6I2R256smprtSTCBbfb_pB85 <-
+    list(name=paste("STC_T_fixedlib6OF_I2R256_pB85_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_I2R", ofLength=256,
+         color=i2rPB85cols[6], point=6, ltype=4, 
+         lab="OF_R (pL8192,ofL256,6keV, STC, s1, bbfb, pB85)")
+
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
 pL8192fixed6I2R128smprtSTCBbfb_pB25 <-
     list(name=paste("STC_T_fixedlib6OF_I2R128_pB25_jitter_bbfb",sep=""),
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
@@ -1117,6 +1346,7 @@ pL8192fixed6I2R128smprtSTCBbfb_pB50 <-
          lab="OF_R (pL8192,ofL128,6keV, STC, s1, bbfb, pB50)")
 pL8192fixed6I2R128smprtSTCBbfb_pB75 <-
     list(name=paste("STC_T_fixedlib6OF_I2R128_pB75_jitter_bbfb",sep=""),
+<<<<<<< HEAD
          nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_I2R", ofLength=128,
          color=i2rPB75cols[7], point=7, ltype=2, 
@@ -1133,6 +1363,18 @@ pL8192fixed6I2R128smprtSTCBbfb_pB100 <-
          bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_I2R", ofLength=128,
          color=i2rPB100cols[7], point=7, ltype=4, 
          lab="OF_R (pL8192,ofL128,6keV, STC, s1, bbfb, pB100)")
+=======
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_I2R", ofLength=128,
+         color=i2rPB75cols[7], point=7, ltype=2, 
+         lab="OF_R (pL8192,ofL128,6keV, STC, s1, bbfb, pB75)")
+pL8192fixed6I2R128smprtSTCBbfb_pB85 <-
+    list(name=paste("STC_T_fixedlib6OF_I2R128_pB85_jitter_bbfb",sep=""),
+         nSamples=8192, samprateStr="", jitterStr="_jitter", noiseStr="",pLength=8192,
+         bbfbStr="_bbfb", detMethod="STC", lib="fixedlib6OF_I2R", ofLength=128,
+         color=i2rPB85cols[7], point=7, ltype=4, 
+         lab="OF_R (pL8192,ofL128,6keV, STC, s1, bbfb, pB85)")
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
 
 # I2R PB75 0-padd
 pL4096fixed6I2R8192smprtSTCBbfb_pB75 <-
@@ -1371,7 +1613,10 @@ pL4fixed6OF8192smprtSTCM82 <-
 #     fixed6OF8192smprtSTCBbfb0.35Lc,
 #     file="/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat")
 save(
+<<<<<<< HEAD
     pL8192fixed6OF8192smprtSTCBbfbNojitter, pL8192fixed6OF8192smprtSTCBbfbNojitterNolags,
+=======
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
     pL8192fixed6OF8192smprtSTCBbfbNewPar, pL4096fixed6OF8192smprtSTCBbfbNewPar,
     pL2048fixed6OF8192smprtSTCBbfbNewPar, pL1024fixed6OF8192smprtSTCBbfbNewPar, 
     pL512fixed6OF8192smprtSTCBbfbNewPar,  pL256fixed6OF8192smprtSTCBbfbNewPar, 
@@ -1379,6 +1624,7 @@ save(
     pL8192fixed6OF4096smprtSTCBbfbNewPar, pL8192fixed6OF2048smprtSTCBbfbNewPar, 
     pL8192fixed6OF1024smprtSTCBbfbNewPar, pL8192fixed6OF512smprtSTCBbfbNewPar,  
     pL8192fixed6OF256smprtSTCBbfbNewPar,  pL8192fixed6OF128smprtSTCBbfbNewPar, 
+<<<<<<< HEAD
     
     pL8192fixed6OF8192smprtSTCBbfb040njnnct, 
     pL8192fixed6OF8192smprtSTCBbfbCT, pL8192fixed6OF4096smprtSTCBbfbCT,
@@ -1413,6 +1659,8 @@ save(
     
     pL8192fixed6I2R8192smprtSTCBbfb040,pL8192fixed6I2RFITTED8192smprtSTCBbfb040,
     
+=======
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
     pL8192fixed6OF8192smprtSTCM82, pL4096fixed6OF8192smprtSTCM82, 
     pL2048fixed6OF8192smprtSTCM82, pL1024fixed6OF8192smprtSTCM82, 
     pL512fixed6OF8192smprtSTCM82,  pL256fixed6OF8192smprtSTCM82,  
@@ -1431,15 +1679,21 @@ save(
      pL2048fixed6OF8192smprtSTCBbfb, pL1024fixed6OF8192smprtSTCBbfb, 
      pL512fixed6OF8192smprtSTCBbfb,  pL256fixed6OF8192smprtSTCBbfb,  
      pL128fixed6OF8192smprtSTCBbfb,  pL4fixed6OF8192smprtSTCBbfb,
+<<<<<<< HEAD
     
+=======
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
      pL8192fixed6I2R8192smprtSTCBbfb, pL4096fixed6I2R8192smprtSTCBbfb,
      pL2048fixed6I2R8192smprtSTCBbfb, pL1024fixed6I2R8192smprtSTCBbfb,
      pL512fixed6I2R8192smprtSTCBbfb,  pL256fixed6I2R8192smprtSTCBbfb,
      pL128fixed6I2R8192smprtSTCBbfb,  pL4fixed6I2R8192smprtSTCBbfb,
+<<<<<<< HEAD
     
     pL8192fixed6I2R4096smprtSTCBbfb_pB5, pL8192fixed6I2R2048smprtSTCBbfb_pB5,
     pL8192fixed6I2R1024smprtSTCBbfb_pB5, pL8192fixed6I2R512smprtSTCBbfb_pB5,
     pL8192fixed6I2R256smprtSTCBbfb_pB5,  pL8192fixed6I2R128smprtSTCBbfb_pB5,
+=======
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
      pL8192fixed6I2R4096smprtSTCBbfb_pB25, pL8192fixed6I2R2048smprtSTCBbfb_pB25,
      pL8192fixed6I2R1024smprtSTCBbfb_pB25, pL8192fixed6I2R512smprtSTCBbfb_pB25,
      pL8192fixed6I2R256smprtSTCBbfb_pB25,  pL8192fixed6I2R128smprtSTCBbfb_pB25,
@@ -1452,6 +1706,7 @@ save(
     pL8192fixed6I2R4096smprtSTCBbfb_pB85, pL8192fixed6I2R2048smprtSTCBbfb_pB85,
     pL8192fixed6I2R1024smprtSTCBbfb_pB85, pL8192fixed6I2R512smprtSTCBbfb_pB85,
     pL8192fixed6I2R256smprtSTCBbfb_pB85,  pL8192fixed6I2R128smprtSTCBbfb_pB85,
+<<<<<<< HEAD
     pL8192fixed6I2R4096smprtSTCBbfb_pB100, pL8192fixed6I2R2048smprtSTCBbfb_pB100,
     pL8192fixed6I2R1024smprtSTCBbfb_pB100, pL8192fixed6I2R512smprtSTCBbfb_pB100,
     pL8192fixed6I2R256smprtSTCBbfb_pB100,  pL8192fixed6I2R128smprtSTCBbfb_pB100,
@@ -1460,6 +1715,8 @@ save(
     pL1024fixed6I2R8192smprtSTCBbfb_pB75, pL512fixed6I2R8192smprtSTCBbfb_pB75,
     pL256fixed6I2R8192smprtSTCBbfb_pB75, pL128fixed6I2R8192smprtSTCBbfb_pB75,
     
+=======
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
      pL8192fixed6I2R4096smprtSTCBbfb, pL8192fixed6I2R2048smprtSTCBbfb,
      pL8192fixed6I2R1024smprtSTCBbfb, pL8192fixed6I2R512smprtSTCBbfb,
      pL8192fixed6I2R256smprtSTCBbfb,  pL8192fixed6I2R128smprtSTCBbfb, 
@@ -1567,13 +1824,17 @@ if (length(grep("shortFilters",gainScaleID)) > 0){
                     #pL8192fixed6I2R4096smprtSTCBbfb_pB85, pL8192fixed6I2R2048smprtSTCBbfb_pB85,
                     #pL8192fixed6I2R1024smprtSTCBbfb_pB85, pL8192fixed6I2R512smprtSTCBbfb_pB85,
                     #pL8192fixed6I2R256smprtSTCBbfb_pB85,  pL8192fixed6I2R128smprtSTCBbfb_pB85,
+<<<<<<< HEAD
                     pL4096fixed6I2R8192smprtSTCBbfb_pB75, pL2048fixed6I2R8192smprtSTCBbfb_pB75,
                     pL1024fixed6I2R8192smprtSTCBbfb_pB75, pL512fixed6I2R8192smprtSTCBbfb_pB75,
                     pL256fixed6I2R8192smprtSTCBbfb_pB75, pL128fixed6I2R8192smprtSTCBbfb_pB75,
+=======
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
                     pL1024fixed6OF1024NM200000smprtSTCBbfb,
                     pL1024fixed6OF1024NM150000smprtSTCBbfb,
                     pL1024fixed6OF1024NM50000smprtSTCBbfb,
                     #pL1024fixed6I2R1024NM150000smprtSTCBbfb,
+<<<<<<< HEAD
                     pL1024multilibWEIGHTN1024NM150000smprtSTCBbfb,
                     pL8192fixed6OF8192smprtSTCBbfbBase100, 
                     pL4096fixed6OF8192smprtSTCBbfbBase100,
@@ -1589,6 +1850,9 @@ if (length(grep("shortFilters",gainScaleID)) > 0){
                     pL512fixed6OF8192smprtSTCBbfbBase3000,  
                     pL256fixed6OF8192smprtSTCBbfbBase3000, 
                     pL128fixed6OF8192smprtSTCBbfbBase3000
+=======
+                    pL1024multilibWEIGHTN1024NM150000smprtSTCBbfb
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
                     #pL512fixed6OF8192smprtSTCBbfbSUM0
     )
     #methods <- list(pL1024multilibWEIGHTN1024NM50000smprtSTCBbfb)
@@ -1606,6 +1870,7 @@ if (length(grep("shortFilters",gainScaleID)) > 0){
                     pL8192fixed6OF4096smprtSTCBbfbNewPar, pL8192fixed6OF2048smprtSTCBbfbNewPar, 
                     pL8192fixed6OF1024smprtSTCBbfbNewPar, pL8192fixed6OF512smprtSTCBbfbNewPar,  
                     pL8192fixed6OF256smprtSTCBbfbNewPar,  pL8192fixed6OF128smprtSTCBbfbNewPar)
+<<<<<<< HEAD
 }else if(length(grep("040_nojitter_nonoise_ct",gainScaleID)) > 0){
     methods <- list(pL8192fixed6OF8192smprtSTCBbfb040njnn, pL8192fixed6OF8192smprtSTCBbfb040njnnct)
 }else if(length(grep("040_Rs",gainScaleID)) > 0){
@@ -1641,6 +1906,8 @@ if (length(grep("shortFilters",gainScaleID)) > 0){
                     pL8192fixed6OF1024smprtSTCBbfb040, pL8192fixed6OF512smprtSTCBbfb040,  
                     pL8192fixed6OF256smprtSTCBbfb040,  pL8192fixed6OF128smprtSTCBbfb040)
     
+=======
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
 }else if(length(grep("LOWRES",gainScaleID)) > 0){
     methods <- list(pL4fixed6OF8192smprtSTCBbfb, pL8192fixed6OF4smprtSTCBbfb,
                     pL4fixed6I2R8192smprtSTCBbfb, pL8192fixed6I2R4smprtSTCBbfb,
@@ -1650,6 +1917,7 @@ if (length(grep("shortFilters",gainScaleID)) > 0){
     methods <- list(pL8192fixed6OF4smprtSTCBbfb,
                     pL8192fixed6I2R4smprtSTCBbfb
                     )
+<<<<<<< HEAD
 }else if(length(grep("methods_base0pad",gainScaleID)) > 0){
     methods <- list(pL8192fixed6OF8192smprtSTCBbfb, pL4096fixed6OF8192smprtSTCBbfb,
                     pL2048fixed6OF8192smprtSTCBbfb, pL1024fixed6OF8192smprtSTCBbfb, 
@@ -1674,6 +1942,10 @@ if (length(grep("shortFilters",gainScaleID)) > 0){
 }else if(length(grep("nojitter",gainScaleID)) > 0){
     methods <- list(pL8192fixed6OF8192smprtSTCBbfbNojitter)
 }    
+=======
+}
+
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
 
 
 nmethods <- length(methods)
@@ -1706,6 +1978,7 @@ for (ie in 1:length(EkeV)){
         separation <- 40000
         if(samprateStr == "_samprate2") separation <- 20000
         if(samprateStr == "_samprate4") separation <- 10000
+<<<<<<< HEAD
         
         eventsFile <- paste("gainScale/events_sep",separation,"sam_",nSimPulses,"p_SIRENA",
                             nSamples,"_pL",pulseLength,"_", EkeV[ie],"keV_",
@@ -1715,6 +1988,34 @@ for (ie in 1:length(EkeV)){
                                 nSamples,"_pL",pulseLength,"_", EkeV[ie],"keV_",
                                 methods[[im]]$name,"_HR.fits",sep="")
         }
+=======
+        #eresolFile <- paste("gainScale/eresol_",nSimPulses,"p_SIRENA",nSamples,
+        #                    "_pL",pulseLength,"_", EkeV[ie],"keV_",TRIGG,"_T_", 
+        #                    lib,ofLength,samprateStr,jitterStr,noiseStr,bbfbStr,".json",sep="")
+        ##########eresolFile <- paste("gainScale/eresol_",nSimPulses,"p_SIRENA",nSamples,
+        ##########            "_pL",pulseLength,"_", EkeV[ie],"keV_",methods[[im]]$name,".json",sep="")
+        #eventsFile <- paste("gainScale/events_sep",separation,"sam_",nSimPulses,"p_SIRENA",nSamples,
+        #                    "_pL",pulseLength,"_", EkeV[ie],"keV_",TRIGG,"_T_", 
+        #                    lib,ofLength,samprateStr,jitterStr,noiseStr,bbfbStr,"_HR.fits",sep="")
+        eventsFile <- paste("gainScale/events_sep",separation,"sam_",nSimPulses,"p_SIRENA",
+                            nSamples,"_pL",pulseLength,"_", EkeV[ie],"keV_",
+                            methods[[im]]$name,"_HR.fits",sep="")
+        ##########if(file.exists(eresolFile)){
+        ##########    #data <- read.table(eresolFile,header=TRUE)
+        ##########    # use data for selected separation (see initial definitions)
+        ##########    cat("Reading file ",eresolFile,"\n")
+        ##########    #cat("Separation= ",separation,"\n")
+        ##########    #cat("   ie,im=",ie,im,"\n")
+        ##########    jsondata <- fromJSON(file=eresolFile)
+        ##########    idxSep <- which(sapply(jsondata,function(x) x$separation)==separation)
+        ##########    #cat("   idxSep=",idxSep,"\n")
+        ##########    fwhmUNCORR[ie,im]  <- as.numeric(jsondata[[idxSep]]$fwhmErecons[[pulsesCateg]])
+        ##########            
+        ##########}else{
+        ##########    warning("Not-existing file:", eresolFile)
+        ##########    fwhmUNCORR[ie,im]  <- NaN
+        ##########}
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
         cat("Reading file ",eventsFile,"\n")
         stopifnot(file.exists(eventsFile))
         zz <- file(description = eventsFile, open = "rb")
@@ -1731,6 +2032,12 @@ for (ie in 1:length(EkeV)){
         errmean[ie,im] <- sd(EkeVrecons)/sqrt(nreconPulses)
         sigrobust[ie,im] <- 0.7413*(quantile(EkeVrecons,0.75)-quantile(EkeVrecons,0.25))
 
+<<<<<<< HEAD
+=======
+        ##########if(all(is.nan(fwhmUNCORR[ie,im]))){
+        ##########    warning("Error in ",eresolFile,"\n","  Non numerical values in eresol files: check event files")
+        ##########}
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
     } # for each method
 } # foreach energy
 cat("Writing coeffs:",coeffsFile,"\n")

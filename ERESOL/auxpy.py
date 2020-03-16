@@ -1016,8 +1016,12 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
                 mono1EkeV, mono2EkeV, reconMethod, filterLength,
                 nsamples, pulseLength, nSimPulses, fdomain, detMethod,
                 tstartPulse1, tstartPulse2, nSimPulsesLib, coeffsFile,
+<<<<<<< HEAD
                 libTmpl, simDir, outDir, detSP, pB, LbT, s0, lags, filterct, B0,
                 sepsStr):
+=======
+                libTmpl, resultsDir, detSP, pB, s0, lags, sepsStr):
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
     """
     :param pixName: Extension name for FITS pixel definition file
                     (SPA*, LPA1*, LPA2*, LPA3*)
@@ -1062,10 +1066,13 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
     :param LbT: Time (s) to average baseline to be subtracted
     :param s0: Optimal Filters' SUM should be '0'?: s0=0 (NO); s0=1 (YES)
     :param lags: Do parabola fit? lags=1 (YES), lags=0 (NO)
+<<<<<<< HEAD
     :param filterct: Filters central part have been replaced by ct value? or use
                      derived filters from largest 8192 filter (fit)))
     :param B0: if B0>0 processing will be done by B0 (baseline subtraction)
                 Otherwise, F0 (bin 0 freq.)
+=======
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
     :param sepsStr: blank spaces separated list of pulses separations
     :return: file with energy resolutions for the input pairs of pulses
     """
@@ -1130,6 +1137,7 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
     if lags == 0:
         lagsStr = "_nolags"
 
+<<<<<<< HEAD
     # optimal filters' (constant central part or derived-from-8192 filters)
     ctStr = ""
     if filterct:
@@ -1140,6 +1148,8 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
     if B0 > 0:
         B0str = "_B0-" + str(B0)
         FMparam = " FilterMethod=B0"
+=======
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
     # Lcrit
     LcStr = ""
     if not Lc == "":
@@ -1225,15 +1235,25 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
                     str(pulseLength), '_', mono1EkeV, 'keV_', mono2EkeV,
                     'keV_', TRIGG, "_", str(fdomain), '_',
                     str(labelLib), '_', str(reconMethod), str(filterLength),
+<<<<<<< HEAD
                     reconMethod2, B0str, pBStr, LbTStr, smprtStr, jitterStr,
                     noiseStr, bbfbStr, LcStr, s0Str, lagsStr, ctStr])
+=======
+                    reconMethod2, pBStr + smprtStr, jitterStr, noiseStr,
+                    bbfbStr, LcStr, s0Str, lagsStr])
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
     if mono2EkeV == "0":
         root = ''.join([str(nSimPulses), 'p_SIRENA', str(nsamples), '_pL',
                         str(pulseLength), '_', mono1EkeV, 'keV_', TRIGG, "_",
                         str(fdomain), '_', str(labelLib),
                         '_', str(reconMethod), str(filterLength),
+<<<<<<< HEAD
                         reconMethod2, B0str, pBStr, LbTStr, smprtStr,
                         jitterStr, noiseStr, bbfbStr, LcStr, s0Str, lagsStr, ctStr])
+=======
+                        reconMethod2, pBStr, smprtStr, jitterStr, noiseStr,
+                        bbfbStr, LcStr, s0Str, lagsStr])
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
 
     eresolFile = "eresol_" + root + ".json"
     eresolFile = eresolFile.replace(".json", libTmpl+".json")
@@ -1261,7 +1281,14 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
                       ".fits")
 
         evtFile = "events_sep" + sep12 + "sam_" + root + ".fits"
+<<<<<<< HEAD
         evtFile = evtFile.replace(".fits", libTmpl + ".fits")
+=======
+        evtFile = evtFile.replace(
+                jitterStr + noiseStr + bbfbStr + LcStr + lagsStr + ".fits",
+                libTmpl + jitterStr + noiseStr + bbfbStr + LcStr + lagsStr +
+                ".fits")
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
         print("=============================================")
         print("RECONSTRUCTING ENERGIES.....................")
         print("Working in:", outDir)
@@ -1797,6 +1824,7 @@ def VLtoFL(inputFile, extnum, outputFile):
         print(comm)
         raise
 
+<<<<<<< HEAD
 
 class RxLines:
     def __init__(self, complabel, ilabels, energies_eV,
@@ -2191,3 +2219,5 @@ def fit3Voigt2hist(data1=None, data2=None, a1=50, a2=90, a3=50,
     ax2.set_ylabel("Density")
     ax2.set_xlim(6.35, 6.6)
     ax2.legend()
+=======
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1

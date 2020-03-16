@@ -134,10 +134,14 @@ if __name__ == "__main__":
                         help="Optimal Filter SUM shoud be 0? (0=NO; 1=YES)")
     parser.add_argument('--lags', default=1, type=int,
                         help="Do parabola fit if lags=1")
+<<<<<<< HEAD
     parser.add_argument('--ct', default="",
                         choices=['', 'ct', 'fit'],
                         help="Filters central part replaced by constant? or\
                         filters derived from largest 8192?")
+=======
+
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
     inargs = parser.parse_args()
 
     # print("array=",inargs.array)
@@ -171,10 +175,14 @@ if __name__ == "__main__":
     pB = inargs.preBuffer
     LbT = inargs.LbT
     s0 = inargs.Sum0Filt
+<<<<<<< HEAD
     lags = inargs.lags
     filterct = inargs.ct
     B0=inargs.B0
 
+=======
+    lags=inargs.lags
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
 
     # general definitions
     EURECAdir = "/dataj6/ceballos/INSTRUMEN/EURECA/"
@@ -209,6 +217,17 @@ if __name__ == "__main__":
 
     # to be able to use shorter filters or long filter shortened in FWHM curve
     Hres = min(filterLength, pulseLength)
+<<<<<<< HEAD
+=======
+    pBStr = ""
+    if pB > 0:
+        #Hres = filterLength - pB
+        pBStr = "_pB" + str(pB)
+
+    s0Str = ""
+    if s0 == 1:
+        s0Str = "_Sum0Filt"
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
     print("Hres=", Hres)
     print("filterLength=", filterLength)
     print("pulseLength=", pulseLength)
@@ -219,10 +238,17 @@ if __name__ == "__main__":
         s0Str, lagsStr, ctStr, B0str, evtFile, eresolFile = \
         auxpy.reconstruct(pixName, labelLib, samprate, jitter, dcmt,
                           noise, bbfb, Lc, mono1EkeV, mono2EkeV, reconMethod,
+<<<<<<< HEAD
                           filterLength, nsamples, pulseLength, nSimPulses,
                           fdomain, detMethod, tstartPulse1, tstartPulse2,
                           nSimPulsesLib, coeffsFile, libTmpl, simDir, outDir,
                           detSP, pB, LbT, s0, lags, filterct, B0, sepsStr)
+=======
+                          filterLength, nsamples, pulseLength,
+                          nSimPulses, fdomain, detMethod, tstartPulse1,
+                          tstartPulse2, nSimPulsesLib, coeffsFile,
+                          libTmpl, resultsDir, detSP, pB, s0, lags, sepsStr)
+>>>>>>> 748dfa9e83d694452820ee66eb1cb84f7f0fa9d1
 
     # 2) Calibrate (AND/OR) extract Energy resolution info to .json files
     # --------------------------------------------------------------------
