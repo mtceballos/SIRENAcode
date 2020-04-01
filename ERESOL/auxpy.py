@@ -1,5 +1,6 @@
 from __future__ import print_function
 import os
+# from sys import exit
 import shlex
 from shutil import copy, rmtree
 import tempfile
@@ -9,11 +10,15 @@ import numpy.polynomial.polynomial as poly
 import math
 from subprocess import check_call, STDOUT
 from astropy.io import fits, ascii
-from astropy.table import Table
+# from astropy.table import Table
 import json
 from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 from astropy.modeling import models, fitting
+import seaborn as sns
+from scipy.signal import argrelextrema
+import scipy.integrate as integrate
+
 
 
 # import xml.etree.ElementTree as ET
@@ -1829,23 +1834,20 @@ class RxLines:
         LmodSum = models.Lorentz1D(x_0=0, amplitude=0., fwhm=0.)
         nlines = self.getNumber()
         for i in range(nlines):
-            Lmod = models.Lorentz1D(x_0=self.energies_eV[i],
-                                    amplitude=self.rel_amplitudes[i],
+            Lmod = models.Lorentz1D(x_0=self.energies_eV[i], amplitude=self.rel_amplitudes[i],
                                     fwhm=self.fwhms_eV[i])
             LmodSum += Lmod
             ax1.plot(x_interval, Lmod(x_interval), label=self.ilabels[i])
 
         title = self.complabel + ' line complex'
-        ax1.plot(x_interval, LmodSum(x_interval), marker='.',
-                 label=(self.complabel + ' complex'))
+        ax1.plot(x_interval, LmodSum(x_interval), marker='.', label=(self.complabel + ' complex'))
         ax1.set_xlabel("Energy (eV)")
         ax1.set_ylabel("Relative Intensity")
         ax1.set_title(title)
         ax1.legend()
 
     def broadGauss(self, sigma):
-        '''Broad Lorentz lines profile with a Gaussian of given std_dev
-        and plot results
+        '''Broad Lorentz lines profile with a Gaussian of given std_dev and plot results
 
         Parameters:
         sigma: standard deviation of the Gaussian to broaden the line profile
@@ -1860,24 +1862,20 @@ class RxLines:
         LmodSum = models.Voigt1D(x_0=0, amplitude_L=0., fwhm_L=1., fwhm_G=1.)
         nlines = self.getNumber()
         for i in range(nlines):
-            Lmod = models.Voigt1D(x_0=self.energies_eV[i],
-                                  amplitude_L=self.rel_amplitudes[i],
+            Lmod = models.Voigt1D(x_0=self.energies_eV[i], amplitude_L=self.rel_amplitudes[i],
                                   fwhm_L=self.fwhms_eV[i], fwhm_G=fwhm)
             LmodSum += Lmod
             ax1.plot(x_interval, Lmod(x_interval), label=self.ilabels[i])
 
-        title = (self.complabel + ' Gauss-widened (sigma=' +
-                 str(sigma) + 'eV) line complex')
-        ax1.plot(x_interval, LmodSum(x_interval), marker='.',
-                 label=(self.complabel + ' complex'))
+        title = (self.complabel + ' Gauss-widened (sigma=' + str(sigma) + 'eV) line complex')
+        ax1.plot(x_interval, LmodSum(x_interval), marker='.', label=(self.complabel + ' complex'))
         ax1.set_xlabel("Energy (eV)")
         ax1.set_ylabel("Relative Intensity")
         ax1.set_title(title)
         ax1.legend()
 
 
-def fit2GaussAndRatio(data=None, a1=50, a2=90, mean1=5800, mean2=5900,
-                      sig1=5, sig2=5, nbins1=200, ratio=None,
+def fit2GaussAndRatio(data=None, a1=50, a2=90, mean1=5800, mean2=5900, sig1=5, sig2=5, nbins1=200, ratio=None,
                       xlab=None, xlim=(0, 0), ylim=(0, 0)):
 
     """"
@@ -1907,8 +1905,7 @@ def fit2GaussAndRatio(data=None, a1=50, a2=90, mean1=5800, mean2=5900,
     ax1 = fig.add_subplot(1, 2, 1)
 
     # create histogram
-    bin_heights, bin_borders, _ = ax1.hist(data, bins=nbins1, density=True,
-                                           label="Histogram", alpha=0.5)
+    bin_heights, bin_borders, _ = ax1.hist(data, bins=nbins1, density=True, label="Histogram", alpha=0.5)
     bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
     x_interval_for_fit = np.linspace(bin_borders[0], bin_borders[-1], 10000)
 
@@ -1947,17 +1944,6 @@ def fit2GaussAndRatio(data=None, a1=50, a2=90, mean1=5800, mean2=5900,
     ax1.plot(x_interval_for_fit, g1(x_interval_for_fit), label="Gauss Ka1")
     ax1.plot(x_interval_for_fit, g2(x_interval_for_fit), label="Gauss Ka2")
     ax1.plot(x_interval_for_fit, ratioGG, label="ratio G2/G1")
-    # maxy = max(bin_heights)
-    # xtxt = min(data)
-    # ax1.text(xtxt, maxy-0.03, "Double Gaussian", color='tab:orange')
-    # ax1.text(xtxt, maxy-0.04, ("Mean(Ka1)=" + '{:0.3f}'.format(mean1) +
-    #                           "a.u"), color='tab:green')
-    # ax1.text(xtxt, maxy-0.05, ("FWHM(Ka1)=" + '{:0.3f}'.format(fwhm1) +
-    #                           "ma.u"), color='tab:green')
-    # ax1.text(xtxt, maxy-0.06, ("Mean(Ka2)=" + '{:0.3f}'.format(mean2) +
-    #                           "a.u"), color='tab:red')
-    # ax1.text(xtxt, maxy-0.07, ("FWHM(Ka2)=" + '{:0.3f}'.format(fwhm2) +
-    #                           "ma.u"), color='tab:red')
     ax1.set_xlabel(xlab)
     ax1.set_ylabel("Density")
     if (xlim[0] > 0 or xlim[1] > 0):
@@ -1966,21 +1952,17 @@ def fit2GaussAndRatio(data=None, a1=50, a2=90, mean1=5800, mean2=5900,
         ax1.set_ylim(ylim)
     PHmin = x_interval_for_fit[ratioGG >= ratio][0]
     PHmax = min(x_interval_for_fit[ratioGG >= ratio][-1], (mean2+10*sigma2))
-    ax1.axvline(PHmin, linestyle='--', color='tab:purple',
-                label="Region for ratio")
+    ax1.axvline(PHmin, linestyle='--', color='tab:purple', label="Region for ratio")
     ax1.axvline(PHmax, linestyle='--', color='tab:purple')
     plt.legend()
     plt.show()
 
-    print("Ka2 PHs in [" + '{:0.3f}'.format(PHmin) + "," +
-          '{:0.3f}'.format(PHmax) + "] a.u.")
+    print("Ka2 PHs in [" + '{:0.3f}'.format(PHmin) + "," + '{:0.3f}'.format(PHmax) + "] a.u.")
     return((PHmin, PHmax))
 
 
-def fit3gauss2hist(data1=None, data2=None, a1=0.05, a2=0.09, a3=0.05,
-                   mean1=5800, mean2=5900, mean3=6500,
-                   sig1=5, sig2=5, sig3=5, nbins1=200, nbins2=200,
-                   xlab=None, plot=True):
+def fit3gauss2hist(data1=None, data2=None, a1=0.05, a2=0.09, a3=0.05, mean1=5800, mean2=5900, mean3=6500,
+                   sig1=5, sig2=5, sig3=5, nbins1=200, nbins2=200, xlab=None, plot=True):
     """"
 
     Fit 2 Gaussians (Ka1, Ka2) to Kas histogram and 1 Gaussian to Kb histogram
@@ -2010,8 +1992,7 @@ def fit3gauss2hist(data1=None, data2=None, a1=0.05, a2=0.09, a3=0.05,
     ax1 = fig.add_subplot(1, 2, 1)
 
     # create histogram
-    bin_heights, bin_borders, _ = ax1.hist(data1, bins=nbins1, density=True,
-                                           label="Histogram", alpha=0.5)
+    bin_heights, bin_borders, _ = ax1.hist(data1, bins=nbins1, density=True, label="Histogram", alpha=0.5)
     if not plot:
         plt.clf()
 
@@ -2026,7 +2007,10 @@ def fit3gauss2hist(data1=None, data2=None, a1=0.05, a2=0.09, a3=0.05,
     #     -> model is not linear in parameters: linear fit should not be used
     fitter = fitting.LevMarLSQFitter()
     gg_fit = fitter(gg_init, bin_centers, bin_heights, maxiter=300)
-    print("Message (Kas)=", fitter.fit_info['message'])
+    # check there are no errors in fitting
+    if not fitter.fit_info['ierr'] in [1,2,3,4]:
+        print("Solution not found for fit")
+        print("Message (Kas) =", fitter.fit_info['message'])
 
     C1 = gg_fit.amplitude_0[0]
     mean1 = gg_fit.mean_0[0]
@@ -2041,21 +2025,16 @@ def fit3gauss2hist(data1=None, data2=None, a1=0.05, a2=0.09, a3=0.05,
 
     if plot:
         # plot 1st histogram and 2 Gaussians fit
-        ax1.plot(x_interval_for_fit, gg_fit(x_interval_for_fit),
-                 label='Gauss fit')
+        ax1.plot(x_interval_for_fit, gg_fit(x_interval_for_fit), label='Gauss fit')
         ax1.plot(x_interval_for_fit, g1(x_interval_for_fit), label="Gauss Ka1")
         ax1.plot(x_interval_for_fit, g2(x_interval_for_fit), label="Gauss Ka2")
         maxy = max(bin_heights)
         xtxt = min(data1)
         ax1.text(xtxt, maxy-0.03, "Double Gaussian", color='tab:orange')
-        ax1.text(xtxt, maxy-0.04, ("Mean(Ka1)=" + '{:0.3f}'.format(mean1) +
-                                   "a.u"), color='tab:green')
-        ax1.text(xtxt, maxy-0.05, ("FWHM(Ka1)=" + '{:0.3f}'.format(fwhm1) +
-                                   "ma.u"), color='tab:green')
-        ax1.text(xtxt, maxy-0.06, ("Mean(Ka2)=" + '{:0.3f}'.format(mean2) +
-                                   "a.u"), color='tab:red')
-        ax1.text(xtxt, maxy-0.07, ("FWHM(Ka2)=" + '{:0.3f}'.format(fwhm2) +
-                                   "ma.u"), color='tab:red')
+        ax1.text(xtxt, maxy-0.04, ("Mean(Ka1)=" + '{:0.3f}'.format(mean1) + "a.u"), color='tab:green')
+        ax1.text(xtxt, maxy-0.05, ("FWHM(Ka1)=" + '{:0.3f}'.format(fwhm1) + "ma.u"), color='tab:green')
+        ax1.text(xtxt, maxy-0.06, ("Mean(Ka2)=" + '{:0.3f}'.format(mean2) + "a.u"), color='tab:red')
+        ax1.text(xtxt, maxy-0.07, ("FWHM(Ka2)=" + '{:0.3f}'.format(fwhm2) + "ma.u"), color='tab:red')
         ax1.set_xlabel(xlab)
         ax1.set_ylabel("Density")
         ax1.legend()
@@ -2063,8 +2042,7 @@ def fit3gauss2hist(data1=None, data2=None, a1=0.05, a2=0.09, a3=0.05,
     ax2 = fig.add_subplot(1, 2, 2)
 
     # create 2nd histogram
-    bin_heights, bin_borders, _ = ax2.hist(data2, bins=nbins2, density=True,
-                                           label="Histogram", alpha=0.5)
+    bin_heights, bin_borders, _ = ax2.hist(data2, bins=nbins2, density=True, label="Histogram", alpha=0.5)
     if not plot:
         plt.clf()
     bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
@@ -2073,7 +2051,11 @@ def fit3gauss2hist(data1=None, data2=None, a1=0.05, a2=0.09, a3=0.05,
     g_init = models.Gaussian1D(amplitude=a3, mean=mean3, stddev=sig3)
     fitter = fitting.LevMarLSQFitter()
     g_fit = fitter(g_init, bin_centers, bin_heights)
-    print("Message (Kb)=", fitter.fit_info['message'])
+
+    # check there are no errors in fitting
+    if not fitter.fit_info['ierr'] in [1,2,3,4]:
+        print("Solution not found for fit")
+        print("Message (Kb) =", fitter.fit_info['message'])
 
     # C3 = g_fit.amplitude[0]
     mean3 = g_fit.mean[0]
@@ -2082,14 +2064,11 @@ def fit3gauss2hist(data1=None, data2=None, a1=0.05, a2=0.09, a3=0.05,
 
     if plot:
         # plot histogram and Gaussians fit
-        ax2.plot(x_interval_for_fit, g_fit(x_interval_for_fit),
-                 label='Gauss fit')
+        ax2.plot(x_interval_for_fit, g_fit(x_interval_for_fit), label='Gauss fit')
         maxy = max(bin_heights)
         xtxt = min(data2)
-        ax2.text(xtxt, maxy-0.03, ("Mean(Kb)=" + '{:0.3f}'.format(mean3) +
-                                   "a.u"), color='tab:orange')
-        ax2.text(xtxt, maxy-0.04, ("FWHM(Kb)=" + '{:0.3f}'.format(fwhm3) +
-                                   "ma.u"), color='tab:orange')
+        ax2.text(xtxt, maxy-0.03, ("Mean(Kb)=" + '{:0.3f}'.format(mean3) + "a.u"), color='tab:orange')
+        ax2.text(xtxt, maxy-0.04, ("FWHM(Kb)=" + '{:0.3f}'.format(fwhm3) + "ma.u"), color='tab:orange')
         ax2.set_xlabel(xlab)
         ax2.set_ylabel("Density")
         ax2.legend()
@@ -2121,8 +2100,7 @@ def checkLine(lineComplex, lineComplex_fit):
         amp_fit_i = lineComplex_fit.rel_amplitudes[i]
         ratioAmp_fit = amp_fit_i/amp_fit_0
         if abs(ratioAmp-ratioAmp_fit)/ratioAmp > 1e-3:
-            print("Inconsistent ratio of amplitudes for",
-                  lineComplex.ilabel[i], ":", ratioAmp, ratioAmp_fit)
+            print("Inconsistent ratio of amplitudes for", lineComplex.ilabel[i], ":", ratioAmp, ratioAmp_fit)
             return 1
 
         x0 = lineComplex.energies_eV[0]
@@ -2131,15 +2109,12 @@ def checkLine(lineComplex, lineComplex_fit):
         x0_fit = lineComplex_fit.energies_eV[0]
         xi_fit = lineComplex_fit.energies_eV[i]
         ratio_x0_fit = xi_fit/x0_fit
-        # print("Ratio of line centres for", lineComplex.ilabels[i], ":",
-        #       ratio_x0, ratio_x0_fit)
+        # print("Ratio of line centres for", lineComplex.ilabels[i], ":", ratio_x0, ratio_x0_fit)
         # print("Line:", lineComplex.energies_eV[i],lineComplex.energies_eV[0])
-        # print("Line fit:", lineComplex_fit.energies_eV[i],
-        #       lineComplex_fit.energies_eV[0])
+        # print("Line fit:", lineComplex_fit.energies_eV[i], lineComplex_fit.energies_eV[0])
 
         if abs(ratio_x0-ratio_x0_fit)/ratio_x0 > 1e-5:
-            print("Inconsistent ratio of line centres for",
-                  lineComplex.ilabels[i], ":", ratio_x0, ratio_x0_fit)
+            print("Inconsistent ratio of line centres for", lineComplex.ilabels[i], ":", ratio_x0, ratio_x0_fit)
             return 1
 
         if lineComplex.fwhms_eV[i] != lineComplex_fit.fwhms_eV[i]:
@@ -2149,27 +2124,58 @@ def checkLine(lineComplex, lineComplex_fit):
     return 0
 
 
-def fitVoigt2hist(data1=None, data2=None, lines1=None, lines2=None,
-                  nbins1=200, nbins2=200, outfig=None):
+def ecdf(data):
+    """Compute the Empirical Cumulative Distribution Function
+         or from statsmodels.distributions.empirical_distribution import ECDF
     """
-    Fit Voigt profiles (according to description in lines1/2 to data1/2
-    histograms
-    Histograms are created and plotted with matplotlib.pyplot.hist in Density
+    x = np.sort(data)
+    n = x.size
+    y = np.arange(1, n + 1) / n
+    return x, y
+
+def cdf_interp(model, minx, maxx, nsteps):
+    """ Compute approx. (by cumsum) CDF for a model function over equispaced-data
+        between minx and maxx over nsteps
+
+        xdata: (array) x data to evaluate model
+        model: (func or astropy model)
+        returns:
+            model_cdf_int: (func) interpolated & computed CDF
+
+    """
+    xdata = np.linspace(minx, maxx, nsteps)
+    # calculate CDF of model fit
+    bsize = xdata[1] - xdata[0]
+    model_xdata = model(xdata)
+    model05_xdata = model(xdata-0.5*bsize)
+    # remove triangles in excess of the approx. CDF
+    model_cdf  = np.cumsum(model_xdata)*bsize - model_xdata *bsize/2. - (model_xdata-model05_xdata)*bsize/8.
+    model_cdf_int = interp1d(xdata, model_cdf)
+    return model_cdf_int
+
+def fitVoigt2hist(data=None, lines=None, nbins=None, outfig=None, ax=None):
+    """
+    Fit Voigt profiles (according to description in lines to data histogram) or
+    compute curve of residuals vs. number of bins
+    Histogram is created and plotted with matplotlib.pyplot.hist in Density
     Voigt functions from astropy.fitting module (fitting by LevMarLSQFitter)
 
-    data1: (array) data for 1st histogram
-    data2: (array) data for 2st histogram
-    lines1: (RxLines) lines complex for 1st histo
-    lines2: (RxLines) lines complex for 2nd histo
-    nbins1: number of bins for first histogram
-    nbins2: number of bins for second histogram
+    data: (array) data for 1st histogram
+    lines: (RxLines) lines complex for histo
+    nbins: (array) number of bins for histogram.
+        If single value, perform fit and plot for this number of bins
+        If array: do fit for each binning, calculate CDF for ech fit and
+                  residuals. Plot comparative of CDF and residuals plot
+    ax: (object) ax object from figure to plot results
     outfig: file to save final figure
+
+    returns:
+        fwhm_G: fwhm of Gaussian broadening (if run in single model (scalar nbins))
 
     Voigt relative intensities keep tied
     Lorentzian FWHMs are kept fixed
     Gaussian broadening are the same for all lines
     """
-    fig = plt.figure(figsize=(20, 6))
 
     # define functions and function-builders to tie parameters
     # Tie FWHM of Gaussians:
@@ -2190,195 +2196,149 @@ def fitVoigt2hist(data1=None, data2=None, lines1=None, lines2=None,
             return model.x_0_0 / line.energies_eV[0] * line.energies_eV[i]
         return tie_x0
 
-    # FIT and PLOT for HISTOGRAM 1
-    # ----------------------------
-    ax1 = fig.add_subplot(1, 2, 1)
-    # create histogram
-    bin_heights, bin_borders, _ = ax1.hist(data1, bins=nbins1, density=True,
-                                           label="Histogram", alpha=0.5)
-    bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
-    x_interval_for_fit = np.linspace(bin_borders[0], bin_borders[-1], 10000)
 
-    nlines1 = lines1.getNumber()
+    def fitVoigtLines(nbins=0, plotFit=False):
+        """Fit Voigt profiles (according to description in lines to data histogram
+        Histogram is created and plotted with matplotlib.pyplot.hist in Density
+        Voigt functions from astropy.fitting module (fitting by LevMarLSQFitter)
 
-    # create dictionary of functions for L_amplitude ties
-    dict_tie_ampl = {}
-    for i in range(0, nlines1):
-        func_name = "tie_ampl_" + str(i)
-        dict_tie_ampl[func_name] = tie_amplitude_builder(lines1, i)
+        data: (array) data for 1st histogram
+        lines: (RxLines) lines complex for histo
+        nbins: number of bins for histogram.
+        plotFit: if fit is to be plot
 
-    # create dict of functions for centres ties
-    dict_tie_x0 = {}
-    for i in range(0, nlines1):
-        func_name = "tie_x0_" + str(i)
-        dict_tie_x0[func_name] = tie_x0_builder(lines1, i)
+        returns:
+            fitted model (astropy.fitting Voigt profiles object model)
 
-    # define models (initial values, fixed params and ties)
-    Vmods = list()
-    Vmods.append(models.Voigt1D(x_0=lines1.energies_eV[0],
-                                amplitude_L=lines1.rel_amplitudes[0],
-                                fwhm_L=lines1.fwhms_eV[0], fwhm_G=2.,
-                                fixed={'fwhm_L': True}))
-    sumVoigt = Vmods[0]
-    # print("Model=", sumVoigt)
-    for i in range(1, nlines1):
-        Vmods.append(models.Voigt1D(x_0=lines1.energies_eV[i],
-                                    amplitude_L=lines1.rel_amplitudes[i],
-                                    fwhm_L=lines1.fwhms_eV[i], fwhm_G=2.,
-                                    fixed={'fwhm_L': True}))
-        Vmods[i].fwhm_G.tied = tie_gauss
-        Vmods[i].amplitude_L.tied = dict_tie_ampl["tie_ampl_" + str(i)]
-        Vmods[i].x_0.tied = dict_tie_x0["tie_x0_" + str(i)]
+        Voigt relative intensities keep tied
+        Lorentzian FWHMs are kept fixed
+        Gaussian broadening are the same for all lines
+        """
 
-        sumVoigt += Vmods[i]
-        # print("Adding Model=", Vmods[i])
+        nlines = lines.getNumber()
+        # create dictionary of functions for L_amplitude ties
+        dict_tie_ampl = {}
+        for i in range(0, nlines):
+            func_name = "tie_ampl_" + str(i)
+            dict_tie_ampl[func_name] = tie_amplitude_builder(lines, i)
 
-    # fit nlines1 Voigts to density-histogram
-    fitter = fitting.LevMarLSQFitter()
-    vv_fit = fitter(sumVoigt, bin_centers, bin_heights, maxiter=300)
-    print("Message (", lines1.complabel, ")=", fitter.fit_info['message'])
+        # create dict of functions for centres ties
+        dict_tie_x0 = {}
+        for i in range(0, nlines):
+            func_name = "tie_x0_" + str(i)
+            dict_tie_x0[func_name] = tie_x0_builder(lines, i)
 
-    # check fitting (ratios ,etc)
-    ilabels_fit = [s + "_fit" for s in lines1.ilabels]
-    energies_eV_fit = np.zeros(nlines1, dtype=np.float64)
-    fwhms_eV_fit = np.zeros(nlines1, dtype=np.float64)
-    rel_amplitudes_fit = np.zeros(nlines1, dtype=np.float64)
+        # define models (initial values, fixed params and ties)
+        Vmods = list()
+        Vmods.append(models.Voigt1D(x_0=lines.energies_eV[0], amplitude_L=lines.rel_amplitudes[0],
+                                    fwhm_L=lines.fwhms_eV[0], fwhm_G=2., fixed={'fwhm_L': True}))
+        #Vmods[0].fwhm_G.min = 1.e-6
+        sumVoigt = Vmods[0]
+        # print("Model=", sumVoigt)
+        for i in range(1, nlines):
+            Vmods.append(models.Voigt1D(x_0=lines.energies_eV[i], amplitude_L=lines.rel_amplitudes[i],
+                                        fwhm_L=lines.fwhms_eV[i], fwhm_G=2., fixed={'fwhm_L': True}))
+            Vmods[i].fwhm_G.tied = tie_gauss
+            Vmods[i].amplitude_L.tied = dict_tie_ampl["tie_ampl_" + str(i)]
+            Vmods[i].x_0.tied = dict_tie_x0["tie_x0_" + str(i)]
 
-    # fit lines and plot lines
-    for i in range(nlines1):
-        # print("Line:", lines1.ilabels[i])
-        energies_eV_fit[i] = vv_fit.param_sets[i*4][0]
-        rel_amplitudes_fit[i] = vv_fit.param_sets[i*4+1][0]
-        fwhms_eV_fit[i] = vv_fit.param_sets[i*4+2][0]
-        fwhm_G = vv_fit.param_sets[i*4+3][0]
-        # print("x0=", energies_eV_fit[i])
-        # print("Ampl=", rel_amplitudes_fit[i])
-        # print("FWHM_L=", fwhms_eV_fit[i])
-        # print("FWHM_G=", fwhm_G)
-        v = models.Voigt1D(x_0=energies_eV_fit[i],
-                           amplitude_L=rel_amplitudes_fit[i],
+            sumVoigt += Vmods[i]
+            # print("Adding Model=", Vmods[i])
+
+        # create histogram
+        bin_heights, bin_borders = np.histogram(data, bins=nbins,  density=True)
+        if plotFit:
+            ax.hist(data, bins=bin_borders, density=True, alpha=0.5, label="Histogram")
+
+        bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
+        x_interval_for_fit = np.linspace(bin_borders[0], bin_borders[-1], 10000)
+
+        # fit nlines1 Voigts to density-histogram
+        fitter = fitting.LevMarLSQFitter()
+        vv_fit = fitter(sumVoigt, bin_centers, bin_heights, maxiter=300)
+
+        # check there are no errors in fitting
+        if not fitter.fit_info['ierr'] in [1,2,3,4]:
+            print("Solution not found for nbins=", nbins)
+            print("Message (", lines.complabel, ")=", fitter.fit_info['message'])
+
+        # check fitting (ratios ,etc)
+        ilabels_fit = [s + "_fit" for s in lines.ilabels]
+        energies_eV_fit = np.zeros(nlines, dtype=np.float64)
+        fwhms_eV_fit = np.zeros(nlines, dtype=np.float64)
+        rel_amplitudes_fit = np.zeros(nlines, dtype=np.float64)
+
+        # plot individual line and global model
+        for i in range(nlines):
+            # print("Line:", lines1.ilabels[i])
+            energies_eV_fit[i] = vv_fit.param_sets[i*4][0]
+            rel_amplitudes_fit[i] = vv_fit.param_sets[i*4+1][0]
+            fwhms_eV_fit[i] = vv_fit.param_sets[i*4+2][0]
+            fwhm_G = vv_fit.param_sets[i*4+3][0]
+            # print("x0=", energies_eV_fit[i])
+            # print("Ampl=", rel_amplitudes_fit[i])
+            # print("FWHM_L=", fwhms_eV_fit[i])
+            # print("FWHM_G=", fwhm_G)
+            v = models.Voigt1D(x_0=energies_eV_fit[i], amplitude_L=rel_amplitudes_fit[i],
                            fwhm_L=fwhms_eV_fit[i], fwhm_G=fwhm_G)
-        ax1.plot(x_interval_for_fit, v(x_interval_for_fit),
-                 label="Voigt " + lines1.ilabels[i])
-        ax1.axvline(lines1.energies_eV[i], linestyle='--', color='gray')
+            if plotFit:
+                ax.plot(x_interval_for_fit, v(x_interval_for_fit), label="Voigt " + lines.ilabels[i])
 
-    lines1_fit = RxLines(complabel=lines1.complabel + "_fit",
-                         ilabels=ilabels_fit, energies_eV=energies_eV_fit,
-                         fwhms_eV=fwhms_eV_fit,
-                         rel_amplitudes=rel_amplitudes_fit)
-    # check fitting consistency
-    status = checkLine(lines1, lines1_fit)
-    if status:
-        raise RuntimeError
-    print("Line consistency check status:", status, "(0 = OK)")
 
-    # plot global fit
-    ax1.plot(x_interval_for_fit, vv_fit(x_interval_for_fit), label='Voigt fit',
-             color='black')
-    maxy = max(bin_heights)
-    xtxt = min(data1)
-    ax1.text(xtxt, maxy-0.01, "FWHM_G=" + '{:0.2f}'.format(fwhm_G) + "eV")
-    ax1.set_xlabel("Energy (eV)")
-    ax1.set_ylabel("Density")
-    ax1.legend()
+        err_fwhm_G = 0.
+        param_cov = fitter.fit_info['param_cov']
+        if (param_cov is None):
+            print("Matrix for ", lines.complabel, " is singular for nbins=", nbins)
+        else:
+            npars = param_cov.shape[0]
+            err_fwhm_G = np.sqrt(param_cov[(npars-1), (npars-1)])
 
-    # FIT and PLOT for HISTOGRAM 2
-    # =============================
-    ax2 = fig.add_subplot(1, 2, 2)
-    # create histogram
-    bin_heights, bin_borders, _ = ax2.hist(data2, bins=nbins2, density=True,
-                                           label="Histogram", alpha=0.5)
-    bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
-    x_interval_for_fit = np.linspace(bin_borders[0], bin_borders[-1], 10000)
+        # check fitting consistency
+        lines_fit = RxLines(complabel=lines.complabel + "_fit", ilabels=ilabels_fit, energies_eV=energies_eV_fit,
+                         fwhms_eV=fwhms_eV_fit, rel_amplitudes=rel_amplitudes_fit)
+        status = checkLine(lines, lines_fit)
+        if status:
+            raise RuntimeError
+            print("Line consistency check status:", status, "(0 = OK)")
 
-    nlines2 = lines2.getNumber()
+        if plotFit:
+            ax.plot(x_interval_for_fit, vv_fit(x_interval_for_fit), label='Voigt fit', color='black')
+            maxy = max(bin_heights)
+            xtxt = min(data)
+            ax.text(xtxt, maxy-0.01, "FWHM_G=" + '{:0.2f}'.format(fwhm_G) + "+/-" + '{:0.2f}'.format(err_fwhm_G) + "eV")
+            ax.set_xlabel("Energy (eV)")
+            ax.set_ylabel("Density")
+            ax.legend()
 
-    # create dictiionary of amplitude tie functions
-    dict_tie_ampl = {}
-    for i in range(0, nlines2):
-        func_name = "tie_ampl_" + str(i)
-        dict_tie_ampl[func_name] = tie_amplitude_builder(lines2, i)
+        return (fwhm_G, err_fwhm_G, vv_fit)
 
-    # create dictionary of centres tie functions
-    dict_tie_x0 = {}
-    for i in range(0, nlines2):
-        func_name = "tie_x0_" + str(i)
-        dict_tie_x0[func_name] = tie_x0_builder(lines2, i)
 
-    # define models (initial values, fixed params and ties)
-    Vmods = list()
-    Vmods.append(models.Voigt1D(x_0=lines2.energies_eV[0],
-                                amplitude_L=lines2.rel_amplitudes[0],
-                                fwhm_L=lines2.fwhms_eV[0], fwhm_G=2.,
-                                fixed={'fwhm_L': True}))
-    sumVoigt = Vmods[0]
-    # print("Model=", sumVoigt)
-    for i in range(1, nlines2):
-        Vmods.append(models.Voigt1D(x_0=lines2.energies_eV[i],
-                                    amplitude_L=lines2.rel_amplitudes[i],
-                                    fwhm_L=lines2.fwhms_eV[i], fwhm_G=2.,
-                                    fixed={'fwhm_L': True}))
-        Vmods[i].fwhm_G.tied = tie_gauss
-        Vmods[i].amplitude_L.tied = dict_tie_ampl["tie_ampl_" + str(i)]
-        Vmods[i].x_0.tied = dict_tie_x0["tie_x0_" + str(i)]
+    if isinstance(nbins, int):  # if just a single value for nbins
 
-        sumVoigt += Vmods[i]
-        # print("Adding Model=", Vmods[i])
+        fwhm_G, err_fwhm_G, vv_model_fit = fitVoigtLines(nbins=nbins, plotFit=True)
+        return (fwhm_G, err_fwhm_G)
 
-    # fit nlines2 Voigts to density-histogram
-    fitter = fitting.LevMarLSQFitter()
-    vv_fit = fitter(sumVoigt, bin_centers, bin_heights, maxiter=300)
-    print("Message (", lines2.complabel, ")=", fitter.fit_info['message'])
+    else:  # calculate residuals in diff of CDFs for different number of bins
+        # calculate ECDF of data
+        x_ecdf, y_ecdf = ecdf(data)
+        residuals = np.zeros(len(nbins))
 
-    # check fitting (ratios ,etc)
-    ilabels_fit = [s + "_fit" for s in lines2.ilabels]
-    energies_eV_fit = np.zeros(nlines2, dtype=np.float64)
-    fwhms_eV_fit = np.zeros(nlines2, dtype=np.float64)
-    rel_amplitudes_fit = np.zeros(nlines2, dtype=np.float64)
+        for ib in range(0, len(nbins)):
+            # calculate CDF of model fit
+            fwhm_G, err_fwhm_G, vv_model_fit = fitVoigtLines(nbins=nbins[ib], plotFit=False)
+            vv_model_cdf_int = cdf_interp(vv_model_fit, min(data)-30, max(data)+30, 10000)
+            model_cdf = vv_model_cdf_int(x_ecdf)
+            #ax.plot(x_ecdf, y_ecdf)
+            #ax.plot(x_ecdf, model_cdf)
+            residuals[ib] = np.sum((y_ecdf-model_cdf)**2)
+        ax.plot(nbins, residuals)
+        ax.set_xlabel("nbins")
+        ax.set_ylabel("residuals: SUM(data_ECDF-model_CDF)²")
 
-    # fit lines and plot lines
-    for i in range(nlines2):
-        # print("Line:", lines2.ilabels[i])
-        energies_eV_fit[i] = vv_fit.param_sets[i*4][0]
-        rel_amplitudes_fit[i] = vv_fit.param_sets[i*4+1][0]
-        fwhms_eV_fit[i] = vv_fit.param_sets[i*4+2][0]
-        fwhm_G = vv_fit.param_sets[i*4+3][0]
-        # print("x0=", energies_eV_fit[i])
-        # print("Ampl=", rel_amplitudes_fit[i])
-        # print("FWHM_L=", fwhms_eV_fit[i])
-        # print("FWHM_G=", fwhm_G)
-        v = models.Voigt1D(x_0=energies_eV_fit[i],
-                           amplitude_L=rel_amplitudes_fit[i],
-                           fwhm_L=fwhms_eV_fit[i], fwhm_G=fwhm_G)
-        ax2.plot(x_interval_for_fit, v(x_interval_for_fit),
-                 label="Voigt " + lines2.ilabels[i])
-        ax2.axvline(lines2.energies_eV[i], linestyle='--', color='gray')
-
-    lines2_fit = RxLines(complabel=lines2.complabel + "_fit",
-                         ilabels=ilabels_fit, energies_eV=energies_eV_fit,
-                         fwhms_eV=fwhms_eV_fit,
-                         rel_amplitudes=rel_amplitudes_fit)
-    status = checkLine(lines2, lines2_fit)
-    if status:
-        raise RuntimeError
-    print("Line consistency check status:", status, "(0 = OK)")
-
-    # plot global fit
-    ax2.plot(x_interval_for_fit, vv_fit(x_interval_for_fit), label='Voigt fit',
-             color='black')
-    maxy = max(bin_heights)
-    xtxt = min(data2)
-    ax2.text(xtxt, maxy-0.01, "FWHM_G=" + '{:0.2f}'.format(fwhm_G) + "eV")
-    ax2.set_xlabel("Energy (eV)")
-    ax2.set_ylabel("Density")
-    ax2.legend()
-
-    if outfig:
-        plt.savefig(outfig, bbox_inches='tight')
 
 def gainScaleLinearFit(xData=None, yData=None, ylab="Lines energies (eV)"):
     """
-    Fit a linear model to the input lines and return slope and intercept
+    Fit a linear model to the input data (lines) and return slope and intercept
 
     xData: (array) x data
     yData: (array) y data
@@ -2415,17 +2375,15 @@ def gainScaleLinearFit(xData=None, yData=None, ylab="Lines energies (eV)"):
     fig = plt.figure(figsize=(16, 6))
     ax1 = fig.add_subplot(1, 2, 1)
     ax1.plot(xData, yData, 'ko', label='Data')
-    ax1.plot(xData, fitted_line(xData), 'k-', label='Fitted Model',
-             color="red")
+    ax1.plot(xData, fitted_line(xData), 'k-', label='Fitted Model', color="red")
     ax1.set_xlabel('reconstructed lines (a.u.)')
     ax1.set_ylabel(ylab)
-    ax1.set_xlim(xData[0]-0.01, xData[1]+0.01)
-    ax1.set_ylim(yData[0]-0.01, yData[1]+0.01)
+    ax1.set_xlim(xData[0]-5, xData[1]+5)
+    ax1.set_ylim(yData[0]-5, yData[1]+5)
     ax1.legend()
     ax2 = fig.add_subplot(1, 2, 2)
     ax2.plot(xData, yData, 'ko', label='Data')
-    ax2.plot(xData, fitted_line(xData), 'k-', label='Fitted Model',
-             color="red")
+    ax2.plot(xData, fitted_line(xData), 'k-', label='Fitted Model', color="red")
     ax2.set_xlabel('reconstructed lines (a.u.)')
     ax2.set_ylabel(ylab)
     ax2.legend()
@@ -2434,17 +2392,17 @@ def gainScaleLinearFit(xData=None, yData=None, ylab="Lines energies (eV)"):
 
 
 def jitterCorr(reconPH=None, phase=None):
-    
+
     """
-    Calculate jitter correction: dependance of recons PH vs Phase 
+    Calculate jitter correction: dependance of recons PH vs Phase
     Fit a polynomial (deg 2) and subtract effect
     Return: reconstructed PH with jitter removed
-    
-    reconPH: (array) reconstructed PH 
-    phase1: (array) phase information 
-    
+
+    reconPH: (array) reconstructed PH
+    phase1: (array) phase information
+
     """
-    
+
     # plot phases
     fig = plt.figure(figsize=(20,6))
     ax1 = fig.add_subplot(1, 2, 1)
@@ -2453,13 +2411,12 @@ def jitterCorr(reconPH=None, phase=None):
     x_interval_for_fit = np.linspace(min(phase), max(phase), 10000)
     ##poly1 = np.poly1d(np.polyfit(phaseKas_HR, enerKas_HR, 2))
     # poly.polyfit recommended instead of np.polyfit + np.poly1d
-    coefs = poly.polyfit(x=phase, y=reconPH, deg=2) 
+    coefs = poly.polyfit(x=phase, y=reconPH, deg=2)
     ffit = poly.polyval(x_interval_for_fit, coefs)
     ax1.plot(x_interval_for_fit, ffit,'-', color="red")
     ax1.set_xlabel("Phase (samples)")
     ax1.set_ylabel("PH Kas (a.u.)")
-    print("Fit Kas=",'{:0.3f}'.format(coefs[0]) + "+ (" +
-          '{:0.3f}'.format(coefs[1]) + ")*x" +
+    print("Fit Kas=",'{:0.3f}'.format(coefs[0]) + "+ (" + '{:0.3f}'.format(coefs[1]) + ")*x" +
           "+(" + '{:0.3f}'.format(coefs[2]) + ")*x²" )
     # subtract polynomial (flat jitter effect)
     ax2 = fig.add_subplot(1, 2, 2)
@@ -2468,9 +2425,39 @@ def jitterCorr(reconPH=None, phase=None):
     ax2.set_xlabel("Phase (samples)")
     ax2.set_ylabel("Corrected PH Kas (a.u.)")
     coefsJ = poly.polyfit(x=phase, y=reconPH_jitter, deg=2)
-    print("Fit Kas (corrected)=",'{:0.3f}'.format(coefsJ[0]) + "+ (" +
-          '{:0.3f}'.format(coefsJ[1]) + ")*x" + "+(" +
-          '{:0.3f}'.format(coefsJ[2]) + ")*x²" )
+    print("Fit Kas (corrected)=",'{:0.3f}'.format(coefsJ[0]) + "+ (" + '{:0.3f}'.format(coefsJ[1]) +
+          ")*x" + "+(" + '{:0.3f}'.format(coefsJ[2]) + ")*x²" )
     ffitJ = poly.polyval(x_interval_for_fit, coefsJ)
     ax2.plot(x_interval_for_fit, ffitJ,'-', color="white")
     return(reconPH_jitter)
+
+
+def getMaximaDensity(data=None, nmaxima=0, intervalmin=0., intervalmax=0.):
+    """ Get x coordinate(s) for maxima of density plot in histogram
+        Kernel Density Curve obtained by seaborn.distplot
+
+    data: (array) data in histogram
+    nmaxima: number of maxima to locate
+    intervalmin.intervalmax:
+        (float) limits of range in x where maxima must be enclosed
+    return
+        centres: (numpy array) with maxima location
+    """
+    # For a complete plot:
+    # fig = plt.figure(figsize=(20, 6))
+    # ax1 = fig.add_subplot(1, 2, 1)
+    # sns.distplot(1e3*dataKas_HR.SIGNAL, hist=True, kde=True,
+    #              bins=nbinsKas, color = 'darkblue',
+    #              hist_kws={'edgecolor':'black'},
+    #              kde_kws={'linewidth': 3, "label": "KDE"})
+    x,y = sns.distplot(data).get_lines()[0].get_data()
+    plt.clf() # clear all Axes
+    xlines = x[(x>intervalmin) & (x<intervalmax)]
+    ylines = y[(x>intervalmin) & (x<intervalmax)]
+    ymaxima = argrelextrema(ylines, np.greater)
+    centres = xlines[ymaxima]
+    # [ax1.axvline(c, color="gray", linestyle='--') for c in centres]
+    if len(centres) > nmaxima:
+        print("Too many maxima locations:", centres)
+        raise RuntimeError
+    return centres
