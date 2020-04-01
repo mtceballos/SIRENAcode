@@ -1034,7 +1034,7 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
                     "" (baseline), "samprate2" (half_baseline),
                     samprate4 (quarter baseline)
     :param jitter: jitter option ("" for no_jitter and "jitter" for jitter or
-                                  "jitter_M82" for M82 special case)
+                                  "jitter_M82_040" for M82 special case)
     :param dcmt: decimation factor for xifusim jitter
     :param bbfb: ("") for dobbfb=n or ("bbfb") for dobbfb=y
     :param Lc: ("" for L=Lcrit; otherwise, L/Lcrit)
@@ -1102,8 +1102,8 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
         jitterStr = "_jitter"
     if jitter == "jitter" and dcmt > 1:
         jitterStr = "_jitter_dcmt" + str(dcmt)
-    if jitter == "jitter_M82":
-        jitterStr = "_jitter_M82"
+    if jitter == "jitter_M82_040":
+        jitterStr = "_jitter_M82_040"
 
     # noise
     noiseStr = ""
@@ -1318,8 +1318,7 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
                     " tstartPulse2=" + str(tstartPulse2) +
                     " OFNoise=" + ofnoise + " XMLFile=" + XMLsixte +
                     " filtEeV=" + str(filtEeV) + OFstrategy +
-                    " preBuffer=" + str(pB) +
-                    " LbT=" + str(LbT) + s0Param + FMparam)
+                    " preBuffer=" + str(pB) + str(LbT) + s0Param + FMparam)
             try:
                 print(comm)
                 args = shlex.split(comm)

@@ -67,8 +67,8 @@ if __name__ == "__main__":
                         choices=['', 'samprate2', 'samprate4'],
                         help="baseline, half_baseline, quarter baseline")
     parser.add_argument('--jitter', default="",
-                        choices=['', 'jitter', 'jitter_M82'],
-                        help="no jitter, jitter, M82")
+                        choices=['', 'jitter', 'jitter_M82_040'],
+                        help="no jitter, jitter, M82_040")
     parser.add_argument('--noise', default="",
                         choices=['', 'nonoise'],
                         help="noisy, nonoise")
