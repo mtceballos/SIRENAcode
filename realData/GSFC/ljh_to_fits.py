@@ -38,6 +38,11 @@ def ljh_to_fits(input_ljh_file, output_fits_file, model_fits_file, verbosity=0, 
     if verbosity > 0:
         print("Reading from ljh file...")
 
+
+    if (clobber.lower()=="yes" or clobber.lower()=="y") and os.path.isfile(output_fits_file):
+        print("Output file", output_fits_file, "exists and it will be overwritten")
+        os.remove(output_fits_file)
+
     # read information form LJH file
     units = xcp.UnitPars(xcu.RAW)
     ljh = xcp.LJHFile(input_ljh_file)
@@ -45,7 +50,16 @@ def ljh_to_fits(input_ljh_file, output_fits_file, model_fits_file, verbosity=0, 
     channel = ljh.channel
     rec = ljh.readRecord(0,units=units)
     record_length = ljh.numSamples
-    delta_t = rec.source.sampleTime
+    deltat = rec.source.sampleTime
+
+    # check consistency of file name with channel info
+    channel_from_name = input_ljh_file[10:-5]
+    if not int(channel_from_name) == channel:
+        print("Filename does not seems to be consistent with channel info stored in LJH file")
+        proceed = input("Do you want to continue?[Y]/N:")
+        if proceed == "N" or proceed=="n":
+            print("File ", input_ljh_file, "has not been converted to FITS")
+            return
 
     # inititalize storage of ADC and TIME columns
     records = np.zeros((numrecs,record_length))
@@ -58,7 +72,11 @@ def ljh_to_fits(input_ljh_file, output_fits_file, model_fits_file, verbosity=0, 
         rec = ljh.readRecord(ir,units=units)
         if not rec.source.numSamples == record_length:
             print("Warning: need to check variable length records")
-        records[ir,:] = abs(rec.record)
+        # flip record about horizontal line of ~baseline and then subtract baseline
+        constant = 40000
+        flip = 47000
+        newrec = (2.*flip - rec.record) - constant
+        records[ir,:] = newrec
         times[ir] = rec.time
         ph_id[ir] = ir
 
@@ -75,8 +93,6 @@ def ljh_to_fits(input_ljh_file, output_fits_file, model_fits_file, verbosity=0, 
     coldimTIME = str(coldimTIME) + 'D'
     newcolTIME = fits.Column(name='TIME', format=coldimTIME, array=times)
     TIME = fits.BinTableHDU.from_columns([newcolTIME, ])
-    if clobber.lower()=="yes" or clobber.lower()=="y":
-        os.remove(output_fits_file)
     TIME.writeto(output_fits_file)
     if verbosity > 0:
         print("TIME column created")
@@ -109,7 +125,7 @@ def ljh_to_fits(input_ljh_file, output_fits_file, model_fits_file, verbosity=0, 
         raise
     os.remove("fileADC.fits")
     if verbosity > 0:
-        print("TIME+ADC => File fileADC.fits removed!")
+        print("ADC => File fileADC.fits removed!")
 
     comm = "faddcol " + output_fits_file + " filePIXID.fits PIXID"
     try:
@@ -122,7 +138,7 @@ def ljh_to_fits(input_ljh_file, output_fits_file, model_fits_file, verbosity=0, 
         raise
     os.remove("filePIXID.fits")
     if verbosity > 0:
-        print("TIME+ADC+PIXID => File filePIXID.fits removed!")
+        print("PIXID => File filePIXID.fits removed!")
 
     comm = "faddcol " + output_fits_file + " filePH_ID.fits PH_ID"
     try:
@@ -134,7 +150,7 @@ def ljh_to_fits(input_ljh_file, output_fits_file, model_fits_file, verbosity=0, 
         raise
     os.remove("filePH_ID.fits")
     if verbosity > 0:
-        print("TIME+ADC+PIXID+PH_ID => File filePH_ID.fits removed!")
+        print("PH_ID => File filePH_ID.fits removed!")
         print("Copying TESRECORDS header in the new extension...")
 
     comm = "cphead infile=" + model_fits_file + "[1] outfile=" + output_fits_file + "[1]"
@@ -148,8 +164,8 @@ def ljh_to_fits(input_ljh_file, output_fits_file, model_fits_file, verbosity=0, 
 
     # Update header with real values
     f = fits.open(output_fits_file, mode='update')
-    f["TESRECORDS"].header["DELTA_T"] = delta_t
-    f["TESRECORDS"].header["RECLEN"] = record_length
+    f["TESRECORDS"].header["DELTAT"] = (deltat, "Sample time (s); inverse of sampling rate")
+    f["TESRECORDS"].header["RECLEN"] = (record_length, "Record length (samples)")
     now = datetime.now()
     date_time = now.strftime("%Y-%m-%dT%H:%M:%S")
     f["TESRECORDS"].header["DATE-HDU"] = date_time.rstrip()

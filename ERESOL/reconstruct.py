@@ -11,19 +11,18 @@ import shlex
 from astropy.io import fits
 from subprocess import check_call, STDOUT
 from shutil import rmtree
-from sixtevars import XMLsixte, sampids, sampStrs, separations, samplesUps,\
+from sixtevars import XMLfll, XMLsixte, sampids, sampStrs, separations, samplesUps,\
     samplesDowns, nSigmss, scaleFactor
 import tempfile
 
 
 tmpDir = tempfile.mkdtemp()
 
-
 def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
                 mono1EkeV, mono2EkeV, reconMethod, filterLength,
                 nsamples, pulseLength, nSimPulses, fdomain, detMethod,
                 tstartPulse1, tstartPulse2, nSimPulsesLib, coeffsFile,
-                libTmpl, simDir, outDir, detSP, pB, LbT, s0, lags,
+                libTmpl, simDir, outDir, detSP, pB, Ifit, LbT, s0, lags,
                 filterct, B0, sepsStr):
 
     """
@@ -67,6 +66,7 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
     :param outDir: directory for resulting evt and json files
     :param detSP: 1 secondary pulses will be detected (default), 0 otherwise
     :param pB: preBuffer value for optimal filters
+    :param Ifit: fitted constant for I2RFITTED conversion
     :param LbT: Time (s) to average baseline to be subtracted
     :param s0: Optimal Filters' SUM should be '0'?: s0=0 (NO); s0=1 (YES)
     :param lags: Do parabola fit? lags=1 (YES), lags=0 (NO)
@@ -113,8 +113,13 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
 
     # bbfb
     bbfbStr = ""
+    XML = XMLsixte
     if bbfb == "bbfb":
         bbfbStr = "_bbfb"
+    elif bbfb == "fll":
+        bbfbStr = "_fll"
+        XML = XMLfll
+
     if "NewPar" in bbfb or "040" in bbfb:
         bbfbStr = "_" + bbfb
         bbfb = "bbfb"
@@ -123,10 +128,18 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
     pBStr = ""
     if pB > 0:
         pBStr = "_pB" + str(pB)
+
+    # I2RFITTED Ifit value
+    IfitStr = ""
+    if Ifit > 0:
+        IfitStr = "_Ifit_" + str(int(Ifit))
+    elif Ifit < 0:
+        IfitStr = "_Ifit_m" + str(int(abs(Ifit)))
+
     # baseline average samples
     LbTStr = ""
-    if float(LbT) > 0:
-        LbTStr = "_LbT" + str(LbT)
+    #if float(LbT) > 0:
+    #    LbTStr = "_LbT" + str(LbT)
     # optimal filter's SUM
     s0Str = ""
     s0Param = ""
@@ -221,27 +234,27 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
         if tstartPulse1 == 0 and detMethod == "AD":
             libFile = (libDir + "/libraryMultiE_GLOBAL_PL" + str(nsamples) +
                        "_" + str(nSimPulsesLib) + "p" + smprtStr + B0str +
-                       jitterStr + noiseStr + bbfbStr + LcStr + pBStr +
+                       jitterStr + noiseStr + bbfbStr + LcStr + pBStr + IfitStr +
                        ctStr + ".fits")
         else:
             libFile = (libDir + "/library" + fixedEkeV + "keV_PL" +
                        str(nsamples) + "_" + str(nSimPulsesLib) + "p" +
                        smprtStr + B0str + jitterStr + noiseStr + bbfbStr +
-                       LcStr + pBStr + ctStr + ".fits")
+                       LcStr + pBStr + IfitStr + ctStr + ".fits")
     libFile = libFile.replace(".fits", libTmpl + ".fits")
 
     root = ''.join([str(nSimPulses), 'p_SIRENA', str(nsamples), '_pL',
                     str(pulseLength), '_', mono1EkeV, 'keV_', mono2EkeV,
                     'keV_', TRIGG, "_", str(fdomain), '_',
                     str(labelLib), '_', str(reconMethod), str(filterLength),
-                    reconMethod2, B0str, pBStr, LbTStr, smprtStr, jitterStr,
+                    reconMethod2, B0str, pBStr, IfitStr, LbTStr, smprtStr, jitterStr,
                     noiseStr, bbfbStr, LcStr, s0Str, lagsStr, ctStr])
     if mono2EkeV == "0":
         root = ''.join([str(nSimPulses), 'p_SIRENA', str(nsamples), '_pL',
                         str(pulseLength), '_', mono1EkeV, 'keV_', TRIGG, "_",
                         str(fdomain), '_', str(labelLib),
                         '_', str(reconMethod), str(filterLength),
-                        reconMethod2, B0str, pBStr, LbTStr, smprtStr,
+                        reconMethod2, B0str, pBStr, LbTStr, IfitStr, smprtStr,
                         jitterStr, noiseStr, bbfbStr, LcStr, s0Str,
                         lagsStr, ctStr])
 
@@ -300,7 +313,7 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
             ndetpulses = 0
             print("\nRunning SIRENA for detection & reconstruction")
             print("filtEev=", filtEeV)
-            print("XMLFile=", XMLsixte)
+            print("XMLFile=", XML)
             comm = ("tesreconstruction Recordfile=" + inFile +
                     " TesEventFile=" + evtFile +
                     " Rcmethod='SIRENA'" +
@@ -317,9 +330,10 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
                     " LagsOrNot=" + str(lags) +
                     " tstartPulse1=" + str(tstartPulse1) +
                     " tstartPulse2=" + str(tstartPulse2) +
-                    " OFNoise=" + ofnoise + " XMLFile=" + XMLsixte +
+                    " OFNoise=" + ofnoise + " XMLFile=" + XML +
                     " filtEeV=" + str(filtEeV) + OFstrategy +
                     " preBuffer=" + str(pB) +
+                    " Ifit=" + str(Ifit) +
                     " LbT=" + str(LbT) + s0Param + FMparam)
             try:
                 print(comm)
@@ -341,5 +355,5 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
                   nTrigPulses, "/", ndetpulses)
             evtf.close()
 
-    return smprtStr, jitterStr, noiseStr, bbfbStr, LcStr, pBStr, LbTStr,\
+    return smprtStr, jitterStr, noiseStr, bbfbStr, LcStr, pBStr, IfitStr, LbTStr,\
         s0Str, lagsStr, ctStr, B0str, evtFile, eresolFile

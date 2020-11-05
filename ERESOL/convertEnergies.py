@@ -6,7 +6,7 @@ Created on Thu Apr 16 12:36:32 2020
 @author: ceballos
 """
 
-from os import copy
+from shutil import copy
 import numpy as np
 from astropy.io import fits
 from enerToCalEner import enerToCalEner

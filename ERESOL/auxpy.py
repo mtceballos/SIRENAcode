@@ -20,7 +20,8 @@ from fit2GaussAndRatio import fit2GaussAndRatio
 from fit3gauss2hist import fit3gauss2hist
 from fitsVerify import fitsVerify
 from fitVoigt2hist import fitVoigt2hist
-from gainScaleLinearFit import gainScaleLinearFit
+from gainScaleFit import gainScaleLinearFit
+from gainScaleFit import gainScalePolyFit
 from getMaximaDensity import getMaximaDensity
 from jitterCorr import jitterCorr
 from reconstruct import reconstruct
@@ -32,6 +33,8 @@ from simulPairs import simulPairs
 from simulSingles import simulSingles
 from updateHISTORY import updateHISTORY
 from VLtoFL import VLtoFL
+import os
 
-
+separations = ["40000", "20000", "10000"]
+sampids = ["", "samprate2", "samprate4"]
 

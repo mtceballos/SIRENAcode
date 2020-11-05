@@ -18,11 +18,14 @@ polyCurve <- function(x,coeffs) {
 }
 npolyInit <- 3 # degree of polynomial to be fitted
 
-gainDir <- "/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/PAIRS/eresolLPA75um/gainScale"
+#gainDir <- "/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/PAIRS/eresolLPA75um/gainScale"
+gainDir <- "/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/PAIRS/eresol/gainScale"
 Ndata<- 5016
 EkeVs <- c(0.2,0.5,1,2,3,4,5,6,7,8)
-Ifits<-c(13,14,15,16,17)
-rownames<-paste(Ifits, "muA",sep="")
+#Ifits<-c(13,14,15,16,17)
+Ifits<-c(-19000, -20000, -21000)
+#rownames<-paste(Ifits, "muA",sep="")
+rownames<-paste(Ifits, "ADU",sep="")
 colnames<-paste(EkeVs,"keV",sep="")
 Erecons <-matrix(NA,nrow=length(Ifits), ncol=length(EkeVs),dimnames=list(rownames,colnames))
 Erecons_SE <-matrix(NA,nrow=length(Ifits), ncol=length(EkeVs),dimnames=list(rownames,colnames))
@@ -30,10 +33,15 @@ Erecons_SE <-matrix(NA,nrow=length(Ifits), ncol=length(EkeVs),dimnames=list(rown
 # read reconstructed data at different Ifits and Energies
 for (ii in 1:length(Ifits)){
     Ifit <- Ifits[ii]
+    IfitStr <- paste("Ifit_",Ifit,sep="")
+    if (Ifit < 0) IfitStr <- paste("Ifit_m",abs(Ifit),sep="")
+    cat("IfitStr=", IfitStr)
     for (ie in 1:length(EkeVs)){
         EkeV <- EkeVs[ie]
-        evtfile <- paste(gainDir,"/Ifit",Ifit,"muA/events_sep40000sam_5000p_SIRENA8192_pL8192_",
-                         EkeV,"keV_STC_F0F_fixedlib6OF_I2RFITTED8192_jitter_bbfb_HR.fits",sep="")
+        #evtfile <- paste(gainDir,"/Ifit",Ifit,"muA/events_sep40000sam_5000p_SIRENA8192_pL8192_",
+        #                 EkeV,"keV_STC_F0F_fixedlib6OF_I2RFITTED8192_jitter_bbfb_HR.fits",sep="")
+        evtfile <- paste(gainDir,"/events_sep40000sam_5000p_SIRENA8192_pL8192_",
+                         EkeV,"keV_STC_T_fixedlib6OF_I2RFITTED8192_",IfitStr,"_fll_HR.fits",sep="")
         #evtfile <- paste(gainDir,"/events_pp",EkeV,".fits",sep="")
         zz <- file(description = evtfile, open = "rb")
         header0 <- readFITSheader(zz, fixHdr = 'remove') # read primary header
@@ -60,7 +68,7 @@ for (i in 1:length(EkeVs)){
     errbar(Ifits,as.numeric(Erecons[,i]), col=colors[i],pch=16, 
            yplus=as.numeric(Erecons[,i])+as.numeric(Erecons_SE[,i]), 
            yminus=as.numeric(Erecons[,i])-as.numeric(Erecons_SE[,i]),
-           xlab="Ifitted (muA)", ylab="E+/-SE (keV)", 
+           xlab="Ifit", ylab="E+/-SE (keV)", 
            errbar.col=colors[i])
            title(main=paste("Reconstructed energy (",colnames(Erecons)[i],")",sep=""))
     #lfit <- lm(Erecons[,i]~Ifits, weights = Erecons_sigma[,i]**2)

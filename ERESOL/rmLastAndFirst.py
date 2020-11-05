@@ -8,7 +8,7 @@ Created on Thu Apr 16 12:53:39 2020
 
 from astropy.io import fits
 import tempfile
-from os import copy
+from shutil import copy
 from subprocess import check_call, STDOUT
 import shlex
 from fitsVerify import fitsVerify

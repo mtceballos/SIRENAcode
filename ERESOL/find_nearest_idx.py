@@ -26,7 +26,8 @@ def find_nearest_idx(array, values):
     # convert to numpy array if idxs is an integer
     if idxs.size == 1:
         idxs = np.array([idxs])
-    if values.size == 1:
+    #if values.size == 1:
+    if isinstance(values, float):
         values = np.array([values])
 
     for i in range(0, idxs.size):

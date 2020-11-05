@@ -14,7 +14,7 @@ from checkLine import checkLine
 from ecdf import ecdf
 from cdf_interp import cdf_interp
 
-def fitVoigt2hist(data=None, lines=None, nbins=None, ax0=None):
+def fitVoigt2hist(data=None, lines=None, nbins=None, ax0=None, legend=True):
     """
     Fit Voigt profiles (according to description in lines to data histogram) or
     compute curve of residuals vs. number of bins
@@ -28,7 +28,7 @@ def fitVoigt2hist(data=None, lines=None, nbins=None, ax0=None):
         If array: do fit for each binning, calculate CDF for ech fit and
                   residuals. Plot comparative of CDF and residuals plot
     ax0: (object) ax object from figure to plot results
-    outfig: file to save final figure
+    legend: (bool) if legend is to be plotted
 
     returns:
         fwhm_G: fwhm of Gaussian broadening (if run in single model (scalar nbins))
@@ -150,7 +150,8 @@ def fitVoigt2hist(data=None, lines=None, nbins=None, ax0=None):
                            fwhm_L=fwhms_eV_fit[i], fwhm_G=fwhm_G)
             if plotFit:
                 colorStr = "C" + str(int(i)+1)
-                ax0.plot(x_interval_for_fit, v(x_interval_for_fit), color=colorStr, label="Fit " + lines.ilabels[i])
+                #ax0.plot(x_interval_for_fit, v(x_interval_for_fit), color=colorStr, label="Fit " + lines.ilabels[i])
+                ax0.plot(x_interval_for_fit, v(x_interval_for_fit), color=colorStr)
                 ax0.axvline(lines.energies_eV[i], ls="--", color=colorStr, label="CalibVoigt " + lines.ilabels[i])
 
         # calculate model-data residuals
@@ -242,7 +243,8 @@ def fitVoigt2hist(data=None, lines=None, nbins=None, ax0=None):
             axb.tick_params(axis='both', which='major', labelsize=14)
 
             #print("Total counts=", numberCounts)
-            ax0.legend()
+            if legend:
+                ax0.legend()
 
         return (fwhm_G, err_fwhm_G, vv_fit)
 

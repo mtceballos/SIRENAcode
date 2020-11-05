@@ -18,6 +18,8 @@ SIXTEinst = environ["SIXTE"] + "/share/sixte/instruments/athena-xifu/"
 XIFUSIMinst = environ["SIXTE"] + "/share/xifusim/instruments/"
 XMLsixte = (SIXTEinst +
             "/xifu_detector_lpa_75um_AR0.5_pixoffset_mux40_pitch275um.xml")
+XMLfll = (XIFUSIMinst +
+          "1pix_lpa2.5a_fll.xml")
 # samplerate-dependent quantities
 sampfreqs = (156250., 78125, 39062.5)  # Hz
 sampids = ("", "samprate2", "samprate4")

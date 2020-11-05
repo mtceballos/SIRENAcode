@@ -29,6 +29,7 @@ import shutil
 import tempfile
 import json
 import auxpy
+import sixtevars
 from astropy.io import fits
 from subprocess import check_call
 import xml.etree.ElementTree as ET
@@ -120,16 +121,18 @@ if __name__ == "__main__":
                         Prim & Sec pulses', default="")
     parser.add_argument('--bbfb', default="",
                         choices=['', 'bbfb', 'bbfb_NewPar', 'bbfb_040',
-                                 'bbfb_040_ct'], help="dobbfb=n, dobbfb=y")
+                                 'bbfb_040_ct', 'fll'], help="dobbfb=n, dobbfb=y")
     parser.add_argument('--Lc', default="",
                         help="Inductance over critical value")
     parser.add_argument('--preBuffer', default=0, type=int,
                         help="preBuffer value for optimal filters")
+    parser.add_argument('--Ifit', default=0, type=float,
+                        help="Fitted constant for the I2RFITTED expression")
     parser.add_argument('--B0', default=0, type=int,
                         help="B0 (baseline subtraction; B0>0) of \
                         F0 (B0=0) optimal filter")
     parser.add_argument('--LbT', default="0",
-                        help="Time (s) to average baseline to be subtracted")
+                        help="Time (s) to average baseline")
     parser.add_argument('--Sum0Filt', default=0, type=int,
                         help="Optimal Filter SUM shoud be 0? (0=NO; 1=YES)")
     parser.add_argument('--lags', default=1, type=int,
@@ -169,6 +172,7 @@ if __name__ == "__main__":
     sepsStr = inargs.separations
     detSP = inargs.detSP
     pB = inargs.preBuffer
+    Ifit = inargs.Ifit
     LbT = inargs.LbT
     s0 = inargs.Sum0Filt
     lags = inargs.lags
@@ -189,20 +193,22 @@ if __name__ == "__main__":
     if tstartPulse2 == 0:
         classAries = ["all"]
 
-    idxsmp = auxpy.sampids.index(samprate)
-    separation = auxpy.separations[idxsmp]
+    idxsmp = sixtevars.sampids.index(samprate)
+    separation = sixtevars.separations[idxsmp]
     if sepsStr == "":
         sepsStr = [separation]
 
     # read grading info
-    XMLtree = ET.parse(auxpy.XMLsixte)
+    XMLtree = ET.parse(sixtevars.XMLsixte)
+    if bbfb == "fll":
+        XMLtree = ET.parse(sixtevars.XMLfll)
     XMLroot = XMLtree.getroot()
     for key in XMLroot.findall('grading'):
         num = key.get('num')
         if num == "1":
             invalid = key.get('pre')
             Hres = key.get('post')
-            factor = auxpy.sampfreqs[idxsmp]/auxpy.sampfreqs[0]
+            factor = sixtevars.sampfreqs[idxsmp]/sixtevars.sampfreqs[0]
             Hres = int(int(Hres) * factor)
             invalid = int(int(invalid) * factor)
 
@@ -215,14 +221,14 @@ if __name__ == "__main__":
 
     # 1) Reconstruct energies
     # ------------------------
-    smprtStr, jitterStr, noiseStr, bbfbStr, LcStr, pBStr, LbTStr, \
+    smprtStr, jitterStr, noiseStr, bbfbStr, LcStr, pBStr, IfitStr, LbTStr, \
         s0Str, lagsStr, ctStr, B0str, evtFile, eresolFile = \
         auxpy.reconstruct(pixName, labelLib, samprate, jitter, dcmt,
                           noise, bbfb, Lc, mono1EkeV, mono2EkeV, reconMethod,
                           filterLength, nsamples, pulseLength, nSimPulses,
                           fdomain, detMethod, tstartPulse1, tstartPulse2,
                           nSimPulsesLib, coeffsFile, libTmpl, simDir, outDir,
-                          detSP, pB, LbT, s0, lags, filterct, B0, sepsStr)
+                          detSP, pB, Ifit, LbT, s0, lags, filterct, B0, sepsStr)
 
     # 2) Calibrate (AND/OR) extract Energy resolution info to .json files
     # --------------------------------------------------------------------
@@ -358,12 +364,12 @@ if __name__ == "__main__":
                 # ------------------------------------
                 alias = ("pL" + str(pulseLength) + "_" + detMethod + "_" +
                          fdomain + "_" + labelLib + "_" +
-                         reconMethod + str(filterLength) + pBStr + LbTStr +
+                         reconMethod + str(filterLength) + pBStr + IfitStr + LbTStr +
                          smprtStr + jitterStr + noiseStr + bbfbStr +
                          LcStr + s0Str + lagsStr + ctStr)
                 # alias = ("pL" + str(pulseLength) + "_" + detMethod + "_" +
                 #         fdomain + "_" + labelLib + "_" +
-                #         reconMethod + str(filterLength) + pBStr +
+                #         reconMethod + str(filterLength) + pBStr + IfitStr +
                 #         smprtStr + jitterStr + noiseStr + bbfbStr +
                 #         LcStr + s0Str + "_base100")
                 if "NM" in reconMethod:

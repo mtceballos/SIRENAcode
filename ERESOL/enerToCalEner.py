@@ -9,6 +9,7 @@ Created on Thu Apr 16 13:19:32 2020
 import numpy as np
 import json
 from scipy.interpolate import interp1d
+from astropy.io import ascii
 
 
 def enerToCalEner(inEner, inPhase, coeffsFile, alias):

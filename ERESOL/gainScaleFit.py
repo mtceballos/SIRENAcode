@@ -11,13 +11,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import numpy.polynomial.polynomial as poly
 
-def gainScalePolyFit(xData=None, yData=None, deg=2, ylab="Lines energies (eV)"):
+def gainScalePolyFit(xData=None, yData=None, deg=2, ylab="Lines energies (eV)", xsize=10, ysize=4):
     """
     Fit a polynomial model to the input data (lines) and return slope and intercept
 
     xData: (array) x data
     yData: (array) y data
     deg: (integer) degree of polynomial
+    xsize: horizontal size of plotting area
+    ysize: vetical size of plotting area
     return: coefficients of polynomial fit
     """
 
@@ -35,7 +37,7 @@ def gainScalePolyFit(xData=None, yData=None, deg=2, ylab="Lines energies (eV)"):
     print('R-squared:', Rsquared)
 
     # plot the model
-    fig = plt.figure(figsize=(16, 6))
+    fig = plt.figure(figsize=(xsize, ysize))
     ax1 = fig.add_subplot(1, 2, 1)
     ax1.plot(xData, yData, 'ko', label='Data')
     ax1.plot(x_interval_for_fit, ffit, 'k-', label='Fitted Model', color="red")

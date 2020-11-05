@@ -11,7 +11,7 @@ from astropy.modeling import models, fitting
 import numpy as np
 
 def fit2GaussAndRatio(data=None, a1=50, a2=90, mean1=5800, mean2=5900, sig1=5, sig2=5, nbins1=200, ratio=None,
-                      xlab=None, xlim=(0, 0), ylim=(0, 0)):
+                      xlab=None, xlim=(0, 0), ylim=(0, 0), xsize=10, ysize=4):
 
     """"
 
@@ -31,12 +31,14 @@ def fit2GaussAndRatio(data=None, a1=50, a2=90, mean1=5800, mean2=5900, sig1=5, s
     xlab: xlabel of histogram plot
     xlim: (xmin,xmax) limits of X axis
     xlim: (ymin,ymax) limits of Y axis
+    xsize: horizontal size of plotting area
+    ysize: vertical size of plotting area
 
     returns:
         PHmin,PHmax: x limiting values for Ka2 complex
     """
 
-    fig = plt.figure(figsize=(16, 6))
+    fig = plt.figure(figsize=(xsize, ysize))
     ax1 = fig.add_subplot(1, 2, 1)
 
     # create histogram
@@ -91,6 +93,6 @@ def fit2GaussAndRatio(data=None, a1=50, a2=90, mean1=5800, mean2=5900, sig1=5, s
     ax1.axvline(PHmax, linestyle='--', color='tab:purple')
     plt.legend()
     plt.show()
-
+    fig.tight_layout()
     print("Ka1 PHs in [" + '{:0.3f}'.format(PHmin) + "," + '{:0.3f}'.format(PHmax) + "] a.u.")
     return((PHmin, PHmax))

@@ -11,7 +11,7 @@ from astropy.modeling import models, fitting
 import numpy as np
 
 def fit3gauss2hist(data1=None, data2=None, a1=0.05, a2=0.09, a3=0.05, mean1=5800, mean2=5900, mean3=6500,
-                   sig1=5, sig2=5, sig3=5, nbins1=200, nbins2=200, xlab=None, plot=True):
+                   sig1=5, sig2=5, sig3=5, nbins1=200, nbins2=200, xlab=None, plot=True, xsize=10, ysize=4):
     """"
 
     Fit 2 Gaussians (Ka1, Ka2) to Kas histogram and 1 Gaussian to Kb histogram
@@ -33,11 +33,13 @@ def fit3gauss2hist(data1=None, data2=None, a1=0.05, a2=0.09, a3=0.05, mean1=5800
     nbins2: number of bins for second (Kb) histogram
     xlab: xlabel of histogram plot
     plot: (bool) should histogram and fit be plotted?
+    xsize: horizontal size of plotting area
+    ysize: vetical size of plotting area
 
     returns:
         (mean1, mean2, mean3): tuple of gaussians centres
     """
-    fig = plt.figure(figsize=(20, 6))
+    fig = plt.figure(figsize=(xsize, ysize))
     ax1 = fig.add_subplot(1, 2, 1)
 
     # create histogram
@@ -80,10 +82,10 @@ def fit3gauss2hist(data1=None, data2=None, a1=0.05, a2=0.09, a3=0.05, mean1=5800
         maxy = max(bin_heights)
         xtxt = min(data1)
         ax1.text(xtxt, maxy-0.03, "Double Gaussian", color='tab:orange')
-        ax1.text(xtxt, maxy-0.04, ("Mean(Ka1)=" + '{:0.3f}'.format(mean1) + "a.u"), color='tab:green')
-        ax1.text(xtxt, maxy-0.05, ("FWHM(Ka1)=" + '{:0.3f}'.format(fwhm1) + "ma.u"), color='tab:green')
-        ax1.text(xtxt, maxy-0.06, ("Mean(Ka2)=" + '{:0.3f}'.format(mean2) + "a.u"), color='tab:red')
-        ax1.text(xtxt, maxy-0.07, ("FWHM(Ka2)=" + '{:0.3f}'.format(fwhm2) + "ma.u"), color='tab:red')
+        ax1.text(xtxt, maxy-0.04, ("Mean(Ka2)=" + '{:0.3f}'.format(mean1) + "a.u"), color='tab:green')
+        ax1.text(xtxt, maxy-0.05, ("FWHM(Ka2)=" + '{:0.3f}'.format(fwhm1) + "a.u"), color='tab:green')
+        ax1.text(xtxt, maxy-0.06, ("Mean(Ka1)=" + '{:0.3f}'.format(mean2) + "a.u"), color='tab:red')
+        ax1.text(xtxt, maxy-0.07, ("FWHM(Ka1)=" + '{:0.3f}'.format(fwhm2) + "a.u"), color='tab:red')
         ax1.set_xlabel(xlab)
         ax1.set_ylabel("Density")
         ax1.legend()
@@ -117,7 +119,7 @@ def fit3gauss2hist(data1=None, data2=None, a1=0.05, a2=0.09, a3=0.05, mean1=5800
         maxy = max(bin_heights)
         xtxt = min(data2)
         ax2.text(xtxt, maxy-0.03, ("Mean(Kb)=" + '{:0.3f}'.format(mean3) + "a.u"), color='tab:orange')
-        ax2.text(xtxt, maxy-0.04, ("FWHM(Kb)=" + '{:0.3f}'.format(fwhm3) + "ma.u"), color='tab:orange')
+        ax2.text(xtxt, maxy-0.04, ("FWHM(Kb)=" + '{:0.3f}'.format(fwhm3) + "a.u"), color='tab:orange')
         ax2.set_xlabel(xlab)
         ax2.set_ylabel("Density")
         ax2.legend()

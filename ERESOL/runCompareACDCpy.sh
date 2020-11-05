@@ -16,9 +16,9 @@ clear
 option=$1
 instrument="LPA75um" #"LPA2shunt"
 domain="T"
-M82Str="_M82"
+M82Str="_M82_040"
 NewParStr="" #"_NewPar" (for Tbath sensitivity)
-NewParStr="_040" # (for bias voltage sensitivity) & baseADU sensitivity
+#NewParStr="_040" # (for bias voltage sensitivity) & baseADU sensitivity
 #ctStr="_ct" #  for centre-replaced-by-constant filters  or "" for normal/original filters or 
 #ctStr="_fit" # for filters derived from large filter (after a fitting process)
 ctStr=""
@@ -87,14 +87,14 @@ if [[ "$NewParStr"  ==  "_NewPar" ||  "$NewParStr"  ==  "_040" ||  "$NewParStr" 
     bbfbParam="--bbfb bbfb${NewParStr}"
     jitterStr=""
 fi
-if [ "$M82Str"  ==  "_M82" ] ; then
-        jitterStr="_jitter_M82"
-        jitterParam="--jitter jitter_M82"
+if [ "$M82Str"  ==  "_M82_040" ] ; then
+        jitterStr="_jitter${M82Str}"
+        jitterParam="--jitter jitter${M82Str}"
         bbfbParam=""
         bbfbStr=""
 fi
 
-LbTparam="--LbT=0"
+LbTparam=""
 if [ ${LbT} != 0 ]; then
     LbTstr="_LbT${LbT}"
     LbTparam="--LbT=${LbT}"
@@ -126,7 +126,7 @@ fi
 if [ "${calib}" == "1D" ]; then
     coeffsFile="coeffs_polyfit.dat"  
     coeffsFile="coeffs_polyfit_methods${NewParStr}${LbTstr}.dat" 
-    coeffsFile="coeffs_polyfit_methods${M82Str}${NewParStr}.dat" 
+    coeffsFile="coeffs_polyfit_methods${M82Str}.dat" 
     #coeffsFile="coeffs_polyfit_methods_040_nojitter_nonoise_ct.dat"
     #coeffsFile="coeffs_polyfit_methods${ctStr}.dat"
     #coeffsFile="coeffs_polyfit_methods_040_Rs.dat"
@@ -208,8 +208,8 @@ if  [ $fixedlib6OF_OPTFILT -eq 1 ]; then
     lib="fixedlib6OF"
     meth="OPTFILT"
     nSimPulsesLib=20000 
-    flengths=(8192 4096 2048 1024 512 256 128)
-    flengths=(8192)
+    flengths=(8192 4096 2048 1024 512 256 128 4)
+    flengths=(512 256)
     preBuffer=0
     pBparam=""
      (( ${B0} > 0 )) && { echo "Error: if B0 > 0 you should run fixedlib6OF_OPTFILT_B0"; return 1;}
@@ -380,11 +380,11 @@ if  [ $option -eq 1 ]; then
                     echo "Launching $meth $lib for $mono1EkeV "
                     logf="${instrument}_${detMethod}_${meth}_${filterLength}_${mono1EkeV}${smpStr}${jitterStr}${noiseStr}${bbfbStr}${B0str}.log"
                     command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth  --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $filterLength --fdomain $domain --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod  --filterLength $pulseLength $smpParam --resultsDir gainScale ${jitterParam} ${noiseParam} ${bbfbParam} ${LcParam} ${pBparam} ${sum0Param} ${lagsParam} ${LbTparam} ${ctParam} ${B0param}"
-                    #nohup python $command >& $logf &
+                    nohup python $command >& $logf &
                     echo "Command=python $command "                     
                     echo "Command=python $command >> $logf" 
                 done
-                #sleep 20
+                sleep 20
 	done
 fi
 
@@ -416,8 +416,8 @@ if [ $option -eq 2 ]; then
 
                     logf="${instrument}_$meth${lib}_${detMethod}${filterLength}_${mono1EkeV}${smpStr}${jitterStr}${noiseStr}${bbfbStr}.log"
                     command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $filterLength --fdomain $domain --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod --filterLength $pulseLength ${smpParam} ${jitterParam} ${noiseParam}  ${bbfbParam} ${LcParam} ${pBparam} ${sum0Param} ${lagsParam}  --coeffsFile ${coeffsFile}"
-
-                    nohup python $command >&  $logf &
+                    echo "Command=python $command" 
+                    #nohup python $command >&  $logf &
                     echo "Command=python $command >> $logf" 
                 done    
                 #sleep 10
@@ -452,7 +452,7 @@ if  [ $option -eq 3 ]; then
                     nohup python $command >& $logf &
                     echo "Command=python $command >> $logf" 
                 done
-                sleep 30
+                #sleep 30
 	done
 fi
 
