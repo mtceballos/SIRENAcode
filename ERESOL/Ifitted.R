@@ -23,9 +23,9 @@ gainDir <- "/dataj6/ceballos/INSTRUMEN/EURECA/ERESOL/PAIRS/eresol/gainScale"
 Ndata<- 5016
 EkeVs <- c(0.2,0.5,1,2,3,4,5,6,7,8)
 #Ifits<-c(13,14,15,16,17)
-Ifits<-c(-19000, -20000, -21000)
-#rownames<-paste(Ifits, "muA",sep="")
-rownames<-paste(Ifits, "ADU",sep="")
+Ifits<-c(-19000, -20000, -21000, -22000, -23000)
+units_Ifit <- "adu" # or muA....
+rownames<-paste(Ifits, units_Ifit,sep="")
 colnames<-paste(EkeVs,"keV",sep="")
 Erecons <-matrix(NA,nrow=length(Ifits), ncol=length(EkeVs),dimnames=list(rownames,colnames))
 Erecons_SE <-matrix(NA,nrow=length(Ifits), ncol=length(EkeVs),dimnames=list(rownames,colnames))
@@ -35,7 +35,7 @@ for (ii in 1:length(Ifits)){
     Ifit <- Ifits[ii]
     IfitStr <- paste("Ifit_",Ifit,sep="")
     if (Ifit < 0) IfitStr <- paste("Ifit_m",abs(Ifit),sep="")
-    cat("IfitStr=", IfitStr)
+    cat("IfitStr=", IfitStr,"\n")
     for (ie in 1:length(EkeVs)){
         EkeV <- EkeVs[ie]
         #evtfile <- paste(gainDir,"/Ifit",Ifit,"muA/events_sep40000sam_5000p_SIRENA8192_pL8192_",
@@ -102,7 +102,7 @@ for (i in 1:length(EkeVs)){
     curve(polyCurve(x,coeffs[i,]), add=TRUE)
     abline(h=EkeVs[i], lty=2, col=colors[i], lw=2)
 }
-dev.off()
+#dev.off()
 
 ############## LOOK FOR MINIMIZATION  #####################
 par(mfrow=c(1,2))
@@ -134,6 +134,7 @@ for (ii in 1:length(Ifits)){
 }
 plot(Ifits,chi2)
 
+interval <- c(min(Ifits)*0.99,max(Ifits)*1.1)
 # Try fitting a parabola
 npoly=2
 coeffs<-numeric(npoly+1)
@@ -144,7 +145,8 @@ curve(polyCurve(x,coeffs), add=TRUE,lty=1)
 fpol <- function(x){
     return(polyCurve(x,coeffs))
 }
-opt2<-optimize(fpol, interval = c(12,18))
+
+opt2<-optimize(fpol, interval = interval)
 mini2<-opt2$minimum
 chi22<-as.numeric(opt2$objective)
 
@@ -157,7 +159,7 @@ curve(polyCurve(x,coeffs), add=TRUE, lty=2)
 fpol <- function(x){
     return(polyCurve(x,coeffs))
 }
-opt3<-optimize(fpol, interval = c(12,18))
+opt3<-optimize(fpol, interval = interval)
 mini3<-opt3$minimum
 chi23<-as.numeric(opt3$objective)
 
@@ -171,10 +173,12 @@ if((1-pF23)>0.9){
 }
 miniStr2<-sprintf("%.2f",mini2)
 miniStr3<-sprintf("%.2f",mini3)
-cat("Best fit Ifit(pol2)=",miniStr2,"muA\n")
-cat("Best fit Ifit(pol3)=",miniStr3,"muA\n")
+cat("Best fit Ifit(pol2)=",miniStr2,units_Ifit,"\n")
+cat("Best fit Ifit(pol3)=",miniStr3,units_Ifit,"\n")
 text(x=min(Ifits)+(max(Ifits)-min(Ifits))/2,y=0.9*max(chi2),
-     paste("BF Ifit(p2)=",miniStr2,"muA\n"),cex=0.8)
+     paste("BF Ifit(p2)=",miniStr2,units_Ifit,"\n"),cex=0.8)
 text(x=min(Ifits)+(max(Ifits)-min(Ifits))/2,y=0.8*max(chi2),
-     paste("BF Ifit(p3)=",miniStr3,"muA\n"),cex=0.8)
+     paste("BF Ifit(p3)=",miniStr3,units_Ifit,"\n"),cex=0.8)
 legend("bottomright",c("pol2","pol3"), lty=c(1,2),bty="n", cex=0.5)
+
+dev.off()
