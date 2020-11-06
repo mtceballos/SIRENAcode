@@ -18,6 +18,7 @@ source("~/R/Rfunctions/drawLogPlotBox.r")
 #array <- "LPA2shunt"
 array <- "LPA2.5a" # "LPA75um", "LPA2shunt"
 dre="FLL" # or "BBFB"
+Ifit=-21294.27
 nSimPulses <- "5000" # "20000"
 #nSimPulses <- "1"
 separation <- 40000 #for samprate (corrected below for samprate2)
@@ -53,6 +54,7 @@ if (dre == "FLL" || dre == "TDM"){
     pBs=c(0)
     jitterStr=""
     noiseStr=""
+    IfitStr=""
     pLengths=c(8192)
     ofLengths=c(8192)#, 4096, 2048, 1024, 512, 256, 128, 32, 16, 8)
     nSamples=8192
@@ -64,6 +66,10 @@ if (dre == "FLL" || dre == "TDM"){
 
     i=0
     for (meth in reconMeths){
+        if (meth == "I2RFITTED"){
+            IfitStr=paste("Ifit_", abs(as.integer(Ifit)),sep="")
+            if (Ifit < 0) IfitStr=paste("_Ifit_m", abs(as.integer(Ifit)),sep="")
+        } 
         for (pB in pBs){
             pBstr <- paste("_pB",pB,sep="")
             if (pB == 0) pBstr=""
@@ -73,13 +79,14 @@ if (dre == "FLL" || dre == "TDM"){
                 for (ofLength in ofLengths){
                     i = i+1
                     label<-paste("OF_",meth,"(pL",pLength,",ofL",ofLength,",6keV, STC, s1,",dreStr,
-                                ",pB",pB,")",sep="")
-                    name<-paste("STC_T_fixedlib6OF_",meth,ofLength,pBstr,dreStr,sep="")
+                                ",pB",pB,"Ifit",Ifit,")",sep="")
+                    name<-paste("STC_T_fixedlib6OF_",meth,ofLength,pBstr,IfitStr,dreStr,sep="")
+                    cat("Defining model", name,"\n")
                     lib<-paste("fixedlib6OF_",meth,sep="")
                     models[[i]] <- list(name=name, nSamples=nSamples, samprateStr=samprateStr, 
                                      jitterStr=jitterStr, noiseStr=noiseStr, pLength=pLength, 
-                                     dreStr=dreStr, detMethod="STC", lib=lib, ofLength=ofLength,
-                                     color=maincol[[meth]], point=ipt, ltype=il, lab=label)
+                                     dreStr=dreStr, IfitStr=IfitStr, detMethod="STC", lib=lib, 
+                                     ofLength=ofLength, color=maincol[[meth]], point=ipt, ltype=il, lab=label)
                     il = il + 1
                 } #ofL
             }#pL
@@ -88,7 +95,7 @@ if (dre == "FLL" || dre == "TDM"){
 }
 
 if (dre == "FLL" || dre == "TDM"){
-    save(models, file="/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR.Rdat")
+    save(models, file="/home/ceballos/INSTRUMEN/EURECA/ERESOL/methodsForR_TDM.Rdat")
 }
 #===========================================================================================
 
