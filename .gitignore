@@ -122,3 +122,63 @@ testHarness/simulations/SIXTE
 *.old*
 
 
+ .ipynb_checkpoints/
+.~baselineSensitivity.ipynb
+ .~timeStudyXifusim.ipynb
+*.xcf
+ EresolvsPhi.odp
+*.Rhistory
+ M82*
+ PAIRS/.directory
+  PAIRS/.ipynb_checkpoints/
+ *.svg
+PAIRS/baselineLPA2.5a/
+PAIRS/eresolLPA2.5a/
+PAIRS/jitterLcritSims.ods
+PAIRS/simulSakai_samprate2.csh
+PAIRS/xifusim
+PAIRS/xifusimLPA2.5a/
+Untitled*
+ __pycache__/
+*.pyc
+\#*#
+addkeys.sh
+addkeysR.sh
+annote.py
+applyCorr.py
+arrPhases.csh
+bagPlots.csh
+bagPlots.sh
+baselineADUsSensitivity/
+baselineLevelFluctuationsSensitivity_xifusimLPA2.5a/
+baselineLevelSensitivity_xifusimLPA2.5a/
+baselineSensitivity/#calibrate.sh#
+baselineSensitivity/.ipynb_checkpoints/
+baselineTbathSensitivity_xifusimLPA2.5a/
+biasvoltageSensitivity/
+biasvoltageSensitivity_xifusimLPA2.5a/
+checkR/
+compTessim.sh
+externalTimeStudyXifusimS2.ipynb.uknstatus
+jitterStudy.interact.ipynb
+jitterStudy.py
+jitterStudySteps.ods
+methodsForR_TDM.Rdat
+notebook.tex
+pp*
+recon_resol_Bea.py
+runCompareACDCpy_BEA.csh
+runCompareTDM_Bea.sh
+../myprog*
+../realData/GSFC/channel_1/
+../realData/GSFC/noise.noi
+../realData/GSFC/noise/
+../realData/GSFC/pulse/
+../realData/GSFC/resolution_summary_v2.xlsx
+../realData/GSFC/xcalpy.tar
+../realData/GSFC/xcalpy/
+../realData/GSFC/xifu_detector_lpa_75um_AR0.5_pixoffset_mux40_pitch275um_GSFC.xml
+../realData/Original/
+../realData/carlos/
+../realData/h5Files/*
+../runSamprate.sh
