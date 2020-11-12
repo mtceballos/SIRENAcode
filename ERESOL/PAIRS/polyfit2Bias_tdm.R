@@ -66,6 +66,7 @@ if (dre == "FLL" || dre == "TDM"){
 
     i=0
     for (meth in reconMeths){
+        IfitStr <- ""
         if (meth == "I2RFITTED"){
             IfitStr=paste("Ifit_", abs(as.integer(Ifit)),sep="")
             if (Ifit < 0) IfitStr=paste("_Ifit_m", abs(as.integer(Ifit)),sep="")
@@ -79,7 +80,7 @@ if (dre == "FLL" || dre == "TDM"){
                 for (ofLength in ofLengths){
                     i = i+1
                     label<-paste("OF_",meth,"(pL",pLength,",ofL",ofLength,",6keV, STC, s1,",dreStr,
-                                ",pB",pB,"Ifit",Ifit,")",sep="")
+                                ",",pBstr,",",IfitStr,")",sep="")
                     name<-paste("STC_T_fixedlib6OF_",meth,ofLength,pBstr,IfitStr,dreStr,sep="")
                     cat("Defining model", name,"\n")
                     lib<-paste("fixedlib6OF_",meth,sep="")

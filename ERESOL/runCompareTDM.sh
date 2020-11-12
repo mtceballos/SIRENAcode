@@ -25,11 +25,13 @@ smpStr=""
 pBstr=""
 preBuffer=0 # 
 
-Ifit=-23000
-IfitStr="_Ifit_m23000"
+# Ifit, once fitted, no need to keep this value in naming
+#Ifit=-21294.27
+#IfitStr="_Ifit_m21294"
 
 
-LbT=0.64E-2 # 1000 samples to average baseline or "0" if baseline is not to be subtracted
+
+LbT=6.4E-3 # 1000 samples to average baseline or "0" if baseline is not to be subtracted
 LbTparam="--LbT ${LbT}"
 
 bbfParam=""

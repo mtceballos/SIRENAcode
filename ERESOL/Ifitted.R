@@ -178,7 +178,10 @@ cat("Best fit Ifit(pol3)=",miniStr3,units_Ifit,"\n")
 text(x=min(Ifits)+(max(Ifits)-min(Ifits))/2,y=0.9*max(chi2),
      paste("BF Ifit(p2)=",miniStr2,units_Ifit,"\n"),cex=0.8)
 text(x=min(Ifits)+(max(Ifits)-min(Ifits))/2,y=0.8*max(chi2),
-     paste("BF Ifit(p3)=",miniStr3,units_Ifit,"\n"),cex=0.8)
+     paste
+     
+     
+     ("BF Ifit(p3)=",miniStr3,units_Ifit,"\n"),cex=0.8)
 legend("bottomright",c("pol2","pol3"), lty=c(1,2),bty="n", cex=0.5)
 
 dev.off()
