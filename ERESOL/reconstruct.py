@@ -4,6 +4,8 @@
 Created on Thu Apr 16 12:30:32 2020
 
 @author: ceballos
+
+Reconstruct events ~energy (no calibration)
 """
 
 from os import path, chdir, stat, remove
