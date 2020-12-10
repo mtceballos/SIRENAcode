@@ -4,9 +4,12 @@
 Created on Thu Apr 16 12:36:32 2020
 
 @author: ceballos
+
+Create FITS calibrated file from reconstructed ~energies from SIRENA using polynomial fit to gain scale
 """
 
 from shutil import copy
+import os
 import numpy as np
 from astropy.io import fits
 from enerToCalEner import enerToCalEner
@@ -50,6 +53,8 @@ def convertEnergies(inFile, outFile, coeffsFile, alias):
     # ------------------------------------
     # --- Create and populate output file
     # ------------------------------------
+    if os.path.exists(outFile):
+        os.remove(outFile)
     copy(inFile, outFile)
     f = fits.open(outFile, memmap=True, mode='update')
     hdr = f[0].header
