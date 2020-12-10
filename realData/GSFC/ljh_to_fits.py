@@ -36,7 +36,7 @@ def ljh_to_fits(input_ljh_file, output_fits_file, model_fits_file, verbosity=0, 
     """
 
     if verbosity > 0:
-        print("Reading from ljh file...")
+        print("Reading from ljh file...", input_ljh_file)
 
 
     if (clobber.lower()=="yes" or clobber.lower()=="y") and os.path.isfile(output_fits_file):
@@ -53,7 +53,8 @@ def ljh_to_fits(input_ljh_file, output_fits_file, model_fits_file, verbosity=0, 
     deltat = rec.source.sampleTime
 
     # check consistency of file name with channel info
-    channel_from_name = input_ljh_file[10:-5]
+    basename = os.path.basename(input_ljh_file)
+    channel_from_name = basename[10:-4]
     if not int(channel_from_name) == channel:
         print("Filename does not seems to be consistent with channel info stored in LJH file")
         proceed = input("Do you want to continue?[Y]/N:")
