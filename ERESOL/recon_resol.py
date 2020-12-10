@@ -1,5 +1,5 @@
 """
-RECONSTRUCT multiples files of pairs of pulses at different separations
+RECONSTRUCT multiples files (of pairs) of pulses (at different separations)
 AND (optionally) calibrate energies AND (optionally) calculate Energy
 resolutions (FWHM)
 
@@ -10,7 +10,7 @@ python recon_resol.py
     are provided
 3) (optionally) produce json files with fwhm values pre/post calibration
 
-!!!!!!! Things to review evry time it is run (they can change):
+!!!!!!! Things to review every time it is run (they can change):
         =======================================================
         ** Check resultsDir (nodetSP in case secondaries are not detected,
                            gainScale in case results are for gain scale curves)
@@ -28,10 +28,11 @@ import shutil
 # import sys
 import tempfile
 import json
-import auxpy
 import sixtevars
 from astropy.io import fits
 from subprocess import check_call
+from reconstruct import reconstruct
+from convertEnergies import convertEnergies
 import xml.etree.ElementTree as ET
 
 
@@ -223,7 +224,7 @@ if __name__ == "__main__":
     # ------------------------
     smprtStr, jitterStr, noiseStr, bbfbStr, LcStr, pBStr, IfitStr, LbTStr, \
         s0Str, lagsStr, ctStr, B0str, evtFile, eresolFile = \
-        auxpy.reconstruct(pixName, labelLib, samprate, jitter, dcmt,
+        reconstruct(pixName, labelLib, samprate, jitter, dcmt,
                           noise, bbfb, Lc, mono1EkeV, mono2EkeV, reconMethod,
                           filterLength, nsamples, pulseLength, nSimPulses,
                           fdomain, detMethod, tstartPulse1, tstartPulse2,
@@ -384,7 +385,7 @@ if __name__ == "__main__":
                 #             reconMethod + str(pulseLength) + smprtStr +
                 #             jitterStr + noiseStr + bbfbStr)
                 print("Using alias=", alias)
-                auxpy.convertEnergies(evt, evtcalib, coeffsFile, alias)
+                convertEnergies(evt, evtcalib, coeffsFile, alias)
 
                 fcal = fits.open(evtcalib, memmap=True)
                 nrows = fcal[1].header["NAXIS2"]
