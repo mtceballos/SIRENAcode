@@ -38,6 +38,7 @@ def gainScalePolyFit(xData=None, yData=None, deg=2, ylab="Lines energies (eV)", 
 
     # plot the model
     fig = plt.figure(figsize=(xsize, ysize))
+    fig.suptitle("Gain Scale Fit)")
     ax1 = fig.add_subplot(1, 2, 1)
     ax1.plot(xData, yData, 'ko', label='Data')
     ax1.plot(x_interval_for_fit, ffit, 'k-', label='Fitted Model', color="red")
