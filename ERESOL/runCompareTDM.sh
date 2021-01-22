@@ -19,17 +19,16 @@ domain="T"
 
 # ----------------------------------------------------------------------------------------------------------------------
 bbfbStr="_fll" # "" or "_bbfb" or "_fll"
+bbfbStr="_8pix_tdm" # "" or "_bbfb" or "_fll"
 noiseStr="" # "" or"_nonoise"
 smpStr="" # "" for samprate (156.25kHz)  or "_samprate2" for 78125Hz or "_samprate4" for 39062.5Hz
 smpStr=""
 pBstr=""
 preBuffer=0 # 
 
-# Ifit, once fitted, no need to keep this value in naming
-#Ifit=-21294.27
-#IfitStr="_Ifit_m21294"
-
-
+# Ifit, once fitted, no need to keep this value in naming (?)
+Ifit=-21294.27
+IfitStr="_Ifit_m21294"
 
 LbT=6.4E-3 # 1000 samples to average baseline or "0" if baseline is not to be subtracted
 LbTparam="--LbT ${LbT}"
@@ -37,6 +36,8 @@ LbTparam="--LbT ${LbT}"
 bbfParam=""
 if [ "$bbfbStr"  ==  "_fll" ];  then
     bbfbParam="--bbfb fll"
+elif [ "$bbfbStr"  ==  "_8pix_tdm" ];  then
+    bbfbParam="--bbfb 8pix_tdm"
 elif [ "$bbfbStr"  ==  "_bbfb" ];  then
     bbfbParam="--bbfb bbfb"
 fi
@@ -45,6 +46,8 @@ calib="1D" # "1D" for gainScale curve or "2D" for "gain scale surface"
  # energies to be calibrated
 if [ "${calib}" == "1D" ]; then
     energies=(0.2 0.5 1 2 3 4 5 6 7 8 9 10 11 12)
+    #energies=(7)
+    energies=(0.5 1 2 3 4 5 6 7 8 9 10 11 12)
 elif [ "${calib}" == "2D" ]; then
     energies=(7)
 fi
@@ -65,6 +68,10 @@ fi
 
 if [ "${calib}" == "1D" ]; then
     coeffsFile="coeffs_polyfit_methods"$bbfbStr".dat"  
+    coeffsFile="coeffs_polyfit_ALL_methods_fll_Bea.dat"
+    coeffsFile="coeffs_polyfit_methods_fllADC_shortFilter_pB.dat"
+     coeffsFile="coeffs_polyfit_methods_fllADC_0-padding.dat"
+     coeffsFile="coeffs_polyfit_methods_tdmADC.dat"
 fi
 
 
@@ -121,9 +128,9 @@ fi
 flengths=($pulseLength)
 
 # USE one BY ONE
-fixedlib6OF_OPTFILT=0    # includes 0-padding with SUM/=0 (no action over SUM(filter))
+fixedlib6OF_OPTFILT=1    # includes 0-padding with SUM/=0 (no action over SUM(filter))
 fixedlib6OF_I2R=0
-fixedlib6OF_I2RFITTED=1
+fixedlib6OF_I2RFITTED=0
 
 if  [ $fixedlib6OF_OPTFILT -eq 1 ]; then
     # Global OPTFILT AC fixedlib6 OFLib=yes
@@ -132,7 +139,7 @@ if  [ $fixedlib6OF_OPTFILT -eq 1 ]; then
     meth="OPTFILT"
     nSimPulsesLib=20000 
     flengths=(8192 4096 2048 1024 512 256 128 32 16 8)
-    #flengths=(8192)    
+    flengths=(8192)
 elif [ $fixedlib6OF_I2R -eq 1 ]; then
     
     # Global OPTFILT I2R fixedlib6  --OFLib yes 
@@ -141,7 +148,7 @@ elif [ $fixedlib6OF_I2R -eq 1 ]; then
     meth="I2R"
     nSimPulsesLib=20000
     flengths=(8192 4096 2048 1024 512 256 128 32 16 8)
-    #flengths=(8192)
+    #flengths=(4096)
     
 elif [ $fixedlib6OF_I2RFITTED -eq 1 ]; then
     
@@ -151,7 +158,7 @@ elif [ $fixedlib6OF_I2RFITTED -eq 1 ]; then
     meth="I2RFITTED"
     nSimPulsesLib=20000
     flengths=(8192 4096 2048 1024 512 256 128 32 16 8)
-    flengths=(8192)
+    #flengths=(1024)
     IfitParam="--Ifit ${Ifit}"
 fi
 
@@ -160,7 +167,7 @@ echo "(smpParam: $smpParam) (noiseParam=$noiseParam)  (pBparam=$pBparam)  (IfitP
 nenergies=${#energies[@]}
 nfls=${#flengths[@]}
 
-###########    LONG FILTER #####################################################
+###########    LONG FILTER  0-padding #####################################################
 if  [ $option -eq 1 ]; then
 	# =================================================
 	# To create gain scale curves & coefficients table
@@ -183,7 +190,7 @@ if  [ $option -eq 1 ]; then
                     logf="${instrument}_${detMethod}_${meth}_${filterLength}_${mono1EkeV}${smpStr}${noiseStr}${bbfbStr}${pBStr}.log"
                     command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth  --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $filterLength --fdomain $domain --tstartPulse1 $tstartPulse1  --libTmpl LONG --detMethod $detMethod  --filterLength $pulseLength $smpParam --resultsDir gainScale  ${noiseParam}  ${bbfbParam} ${pBparam} ${LbTparam} ${IfitParam}"
                     nohup python $command >& $logf &
-                    echo "Command=python $command "                     
+                    #echo "Command=python $command "                     
                     echo "Command=python $command >> $logf" 
                 done
                 sleep 20
@@ -217,12 +224,12 @@ if [ $option -eq 2 ]; then
                     echo "Launching $meth $lib for $mono1EkeV  for flength= ${filterLength}"
                     
                     logf="${instrument}_${detMethod}_${meth}_${filterLength}_${mono1EkeV}${smpStr}${noiseStr}${bbfbStr}${pBStr}.log"
-                    command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $filterLength --fdomain $domain --tstartPulse1 $tstartPulse1 --detMethod $detMethod --filterLength $pulseLength ${smpParam} ${noiseParam} ${bbfbParam} ${pBparam} ${IfitParam} --coeffsFile ${coeffsFile}"
-                    echo "Command=python $command" 
-                    #nohup python $command >&  $logf &
+                    command="recon_resol.py --pixName ${instrument} --labelLib $lib --monoEnergy1 $mono1EkeV --monoEnergy2 $mono2EkeV --reconMethod $meth --nsamples $nSamples --nSimPulses $nSimPulses --nSimPulsesLib $nSimPulsesLib --pulseLength $filterLength --fdomain $domain --tstartPulse1 $tstartPulse1 --detMethod $detMethod --filterLength $pulseLength ${smpParam} ${noiseParam} ${bbfbParam} ${pBparam} ${LbTparam} ${IfitParam} --coeffsFile ${coeffsFile}"
+                    #echo "Command=python $command" 
+                    nohup python $command >&  $logf &
                     echo "Command=python $command >> $logf" 
                 done    
-                #sleep 10
+                sleep 10
 	done
 fi
 
@@ -254,7 +261,7 @@ if  [ $option -eq 3 ]; then
                     nohup python $command >& $logf &
                     echo "Command=python $command >> $logf" 
                 done
-                #sleep 30
+                sleep 30
 	done
 fi
 
@@ -284,7 +291,7 @@ if [ $option -eq 4 ]; then
                     nohup python $command >&  $logf &
                     echo "Command=python $command >> $logf" 
                 done    
-               #sleep 15
+               sleep 15
 	done
 fi
 

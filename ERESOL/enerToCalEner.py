@@ -4,9 +4,12 @@
 Created on Thu Apr 16 13:19:32 2020
 
 @author: ceballos
+
+Routine to get calibrated energies from reconstructed ~energies from SIRENA using polynomial fit to gain scale
 """
 
 import numpy as np
+import numpy.polynomial.polynomial as poly1D
 import json
 from scipy.interpolate import interp1d
 from astropy.io import ascii
@@ -89,22 +92,26 @@ def enerToCalEner(inEner, inPhase, coeffsFile, alias):
             # subtract "y" (0 = a0 + a1*x + a2*x^2 + ... - y) :
             npCoeffs = np.array(coeffsDict[alias])
             npCoeffs[0] -= inEner[ie]
+
             # reversed to say fit with poly1d definition:
-            npCoeffsRev = npCoeffs[::-1]
-            polyfit = np.poly1d(npCoeffsRev)
+            #npCoeffsRev = npCoeffs[::-1]
+            #polyfit = np.poly1d(npCoeffsRev)
+            #r = np.roots(polyfit)
+
             # get real root (value of Ereal for a given Erecons )
-            r = np.roots(polyfit)
+            r = poly1D.polyroots(npCoeffs)
             # real && >0 roots
-            # print("r=", r)
+            #print("r=", r)
             rreal = r.real[abs(r.imag) < 1e-5]
-            # print("rreal=", rreal)
+            #print("rreal=", rreal)
             rrealpos = rreal[rreal > 0]
-            # print("rrealpos=", rrealpos)
+            #print("rrealpos=", rrealpos)
             # closest root
-            # print(inEner[ie])
-            rclosest = min(enumerate(rrealpos),
-                           key=lambda x: abs(x[1]-inEner[ie]))[1] # (idx,value)
-            # print("For:", alias, " Recon energy=", rclosest)
+            #print(inEner[ie])
+            #rclosest = min(enumerate(rrealpos),
+            #               key=lambda x: abs(x[1]-inEner[ie]))[1] # (idx,value)
+            rclosest = min(rrealpos)
+            #print("For:", alias, " Recon energy=", rclosest)
 
             calEner[ie] = rclosest
 

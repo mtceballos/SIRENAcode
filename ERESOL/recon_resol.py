@@ -122,7 +122,8 @@ if __name__ == "__main__":
                         Prim & Sec pulses', default="")
     parser.add_argument('--bbfb', default="",
                         choices=['', 'bbfb', 'bbfb_NewPar', 'bbfb_040',
-                                 'bbfb_040_ct', 'fll'], help="dobbfb=n, dobbfb=y")
+                                 'bbfb_040_ct', 'fll', '8pix_tdm'],
+                                help="dobbfb=n, dobbfb=y")
     parser.add_argument('--Lc', default="",
                         help="Inductance over critical value")
     parser.add_argument('--preBuffer', default=0, type=int,
@@ -203,6 +204,8 @@ if __name__ == "__main__":
     XMLtree = ET.parse(sixtevars.XMLsixte)
     if bbfb == "fll":
         XMLtree = ET.parse(sixtevars.XMLfll)
+    elif bbfb == "8pix_tdm":
+        XMLtree = ET.parse(sixtevars.XMLtdm)
     XMLroot = XMLtree.getroot()
     for key in XMLroot.findall('grading'):
         num = key.get('num')

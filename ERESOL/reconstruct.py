@@ -13,7 +13,7 @@ import shlex
 from astropy.io import fits
 from subprocess import check_call, STDOUT
 from shutil import rmtree
-from sixtevars import XMLfll, XMLsixte, sampids, sampStrs, separations, samplesUps,\
+from sixtevars import XMLtdm, XMLfll, XMLsixte, sampids, sampStrs, separations, samplesUps,\
     samplesDowns, nSigmss, scaleFactor
 import tempfile
 
@@ -121,6 +121,9 @@ def reconstruct(pixName, labelLib, samprate, jitter, dcmt, noise, bbfb, Lc,
     elif bbfb == "fll":
         bbfbStr = "_fll"
         XML = XMLfll
+    elif bbfb == "8pix_tdm":
+        bbfbStr = "_8pix_tdm"
+        XML = XMLtdm
 
     if "NewPar" in bbfb or "040" in bbfb:
         bbfbStr = "_" + bbfb
